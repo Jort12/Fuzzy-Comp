@@ -9,7 +9,7 @@ from kesslergame import Scenario, KesslerGame, GraphicsType
 from test_controller import TestController
 from test_controller2 import TestController2
 from graphics_both import GraphicsBoth
-
+from HeadingFuzz import SimpleTactic
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
                             num_asteroids=10,
@@ -36,7 +36,7 @@ game = KesslerGame(settings=game_settings)  # Use this to visualize the game sce
 
 # Evaluate the game
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=my_test_scenario, controllers=[TestController(), TestController2()])
+score, perf_data = game.run(scenario=my_test_scenario, controllers=[TestController(), SimpleTactic()])
 
 # Print out some general info about the result
 print('Scenario eval time: '+str(time.perf_counter()-pre))

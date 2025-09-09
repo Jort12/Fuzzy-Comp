@@ -3,14 +3,24 @@ from kesslergame.controller import KesslerController
 
 
 def triag(x, a, b, c):
-    if(x<a and x >c):
-        mu = 0
-    elif (x<b and x>=a):
-        mu = (x-a)/(b-a)
-    elif (x<=c and x>=b):
-        mu = (c-x)/(c-b)
+    if x <= a or x >= c:
+        return 0.0
+    elif a < x <= b:
+        return (x - a) / (b - a)
+    elif b < x < c:
+        return (c - x) / (c - b)
+    elif x == b:
+        return 1.0
+
+def fuzzify_rel_speed(vr):
+    mu = {}
+    mu["away_fast"]= triag(vr, -200, -150, -100)
+    mu["away_slow"]= triag(vr, -120, -60, 0)
+    mu["zero"]= triag(vr, -20, 0, 20)
+    mu["approach_slow"]= triag(vr, 0, 60, 120)
+    mu["approach_fast"]= triag(vr, 80, 160, 240)
     return mu
-    
+
 
 def fuzzify_heading(err):
     mu_small = triag(err,0,0,20)
@@ -21,10 +31,10 @@ def fuzzify_heading(err):
 
 
 def defuzz_turn(mu):
-    rate = {"small": 25, "medium": 50, "large": 100}
+    rate = {"small": 120, "medium": 170, "large": 240}
     num = sum(mu[k] * rate[k] for k in mu )
     denominator = sum(mu.values())
-    return num/denominator if num>0 else 0
+    return num / denominator if denominator > 0 else 0
 
 
 def wrap180(d): 
@@ -59,7 +69,7 @@ class SimpleTactic(KesslerController):
                 pts.append((x, y))
                 
             if not pts:
-                return 0.0, 30.0, False, False  # idle spin if no visible targets
+                return 0.0, 30.0, False, False 
             # nearest asteroid
             nearest = None
             nearest_dist = float("inf")
@@ -79,10 +89,12 @@ class SimpleTactic(KesslerController):
             else:
                 return 0.0, 60.0, False, False
 
-            turn_rate = max(-180.0, min(180.0, 3.0 * err))
+            mu = fuzzify_heading(abs(err))      
+            turn_mag = defuzz_turn(mu)             
+            turn_rate = turn_mag if err >= 0 else -turn_mag
 
             base_thrust = 10
-            thrust =100.0 if (abs(err) < 25.0 or nearest_dist > 250.0) else base_thrust
+            thrust =-50.0 if (abs(err) < 25.0 or nearest_dist > 250.0) else base_thrust
 
             fire = (abs(err) < 12.0) and (nearest_dist < 700.0)
 
