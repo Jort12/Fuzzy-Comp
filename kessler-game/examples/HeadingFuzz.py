@@ -22,6 +22,7 @@ def fuzzify_rel_speed(vr):
     return mu
 
 
+
 def fuzzify_heading(err):
     mu_small = triag(err,0,0,20)
     mu_mid = triag(err, 10,30,50)
@@ -30,8 +31,17 @@ def fuzzify_heading(err):
     return {"small": mu_small, "medium": mu_mid, "large": mu_large}
 
 
+def fuzz_fire(err, vr, dist):
+    mu_heading_err = fuzzify_heading(err)
+    mu_rel_speed = fuzzify_rel_speed(vr)
+    approach = max(mu_rel_speed["approach_slow"], mu_rel_speed["approach_fast"])
+    fire_strength = min(mu_heading_err["small"], approach)
+    if dist >=600: fire_strength =0
+    if dist <100: fire_strength =1
+    return fire_strength >0.37
+
 def defuzz_turn(mu):
-    rate = {"small": 120, "medium": 170, "large": 240}
+    rate = {"small": 140, "medium": 190, "large": 300}
     num = sum(mu[k] * rate[k] for k in mu )
     denominator = sum(mu.values())
     return num / denominator if denominator > 0 else 0
@@ -89,13 +99,21 @@ class SimpleTactic(KesslerController):
             else:
                 return 0.0, 60.0, False, False
 
+            svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
+            avx, avy = getattr(asteroid, "velocity", (0.0, 0.0))
+            mag = math.hypot(dx, dy)
+            ux, uy = (dx/mag, dy/mag) if mag > 1e-6 else (0.0, 0.0)
+            vr = (avx - svx)*ux + (avy - svy)*uy
+
+            
             mu = fuzzify_heading(abs(err))      
             turn_mag = defuzz_turn(mu)             
             turn_rate = turn_mag if err >= 0 else -turn_mag
 
             base_thrust = 10
-            thrust =-50.0 if (abs(err) < 25.0 or nearest_dist > 250.0) else base_thrust
+            thrust =-80.0 if (abs(err) < 25.0 or nearest_dist < 250.0) else base_thrust
 
-            fire = (abs(err) < 12.0) and (nearest_dist < 700.0)
+            fire = fuzz_fire(err, vr, nearest_dist)
+
 
             return float(thrust), float(turn_rate), bool(fire), False
