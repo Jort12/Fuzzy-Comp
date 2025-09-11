@@ -14,11 +14,11 @@ def triag(x, a, b, c):
 
 def fuzzify_rel_speed(vr):
     mu = {}
-    mu["away_fast"]= triag(vr, -200, -150, -100)
-    mu["away_slow"]= triag(vr, -120, -60, 0)
-    mu["zero"]= triag(vr, -20, 0, 20)
-    mu["approach_slow"]= triag(vr, 0, 60, 120)
-    mu["approach_fast"]= triag(vr, 80, 160, 240)
+    mu["away_fast"]= triag(vr, -190, -130, -80)
+    mu["away_slow"]= triag(vr, -110, -40, 0)
+    mu["zero"]= triag(vr, -30, 0, 30)
+    mu["approach_slow"]= triag(vr, 0, 70, 120)
+    mu["approach_fast"]= triag(vr, 100, 180, 250)
     return mu
 
 
@@ -38,10 +38,10 @@ def fuzz_fire(err, vr, dist):
     fire_strength = min(mu_heading_err["small"], approach)
     if dist >=600: fire_strength =0
     if dist <100: fire_strength =1
-    return fire_strength >0.37
+    return fire_strength >0.5
 
 def defuzz_turn(mu):
-    rate = {"small": 140, "medium": 190, "large": 300}
+    rate = {"small": 150, "medium": 190, "large": 300}
     num = sum(mu[k] * rate[k] for k in mu )
     denominator = sum(mu.values())
     return num / denominator if denominator > 0 else 0
@@ -65,7 +65,6 @@ class SimpleTactic(KesslerController):
             sx, sy = ship_state.position #Get x y of the ship
             heading = get_heading_degrees(ship_state)
 
-            #Get asteroids states, if nothing then stay still
             asteroids = getattr(game_state, "asteroids", None) or getattr(game_state, "asteroid_states", None) or []
             pts = []
             

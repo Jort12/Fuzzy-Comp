@@ -2,7 +2,8 @@ import math
 from kesslergame.controller import KesslerController
 
 def wrap180(d): 
-    return (d + 180.0) % 360.0 - 180.0 #make sure the rotation is between -180 and 180
+    return (d + 180.0) % 360.0 - 180.0  #make sure the rotation is between -180 and 180
+
 
 def get_heading_degrees(ship_state):
     if hasattr(ship_state, "heading"):
