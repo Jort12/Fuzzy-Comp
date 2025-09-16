@@ -22,7 +22,6 @@ def fuzzify_rel_speed(vr):
     return mu
 
 
-
 def fuzzify_heading(err):
     mu_small = triag(err,0,0,20)
     mu_mid = triag(err, 10,30,50)
@@ -31,16 +30,16 @@ def fuzzify_heading(err):
     return {"small": mu_small, "medium": mu_mid, "large": mu_large}
 
 
-def fuzz_fire(err, vr, dist):
+def fuzz_fire(err, vr, dist): #
     mu_heading_err = fuzzify_heading(err)
     mu_rel_speed = fuzzify_rel_speed(vr)
     approach = max(mu_rel_speed["approach_slow"], mu_rel_speed["approach_fast"])
-    fire_strength = min(mu_heading_err["small"], approach)
+    fire_strength = min(mu_heading_err["small"], approach) #If heading error is small AND are approaching, then fire
     if dist >=600: fire_strength =0
     if dist <100: fire_strength =1
-    return fire_strength >0.5
+    return fire_strength >0.6
 
-def defuzz_turn(mu):
+def defuzz_turn(mu):#Takagi
     rate = {"small": 150, "medium": 190, "large": 300}
     num = sum(mu[k] * rate[k] for k in mu )
     denominator = sum(mu.values())
