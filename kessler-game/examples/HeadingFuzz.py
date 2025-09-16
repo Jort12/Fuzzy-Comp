@@ -30,7 +30,7 @@ def fuzzify_heading(err):
     return {"small": mu_small, "medium": mu_mid, "large": mu_large}
 
 
-def fuzz_fire(err, vr, dist): #
+def fuzz_fire(err, vr, dist): #Mamdani
     mu_heading_err = fuzzify_heading(err)
     mu_rel_speed = fuzzify_rel_speed(vr)
     approach = max(mu_rel_speed["approach_slow"], mu_rel_speed["approach_fast"])
