@@ -1,160 +1,30 @@
 import math
 from kesslergame.controller import KesslerController
 
-
-def triag(x, a, b, c):#triangular membership function
+def triag(x, a, b, c):
     if x <= a or x >= c:
         return 0.0
     elif a < x <= b:
-        return (x - a) / (b - a)
+        return (x - a) / (b - a)  # slope magic
     elif b < x < c:
-        return (c - x) / (c - b)
+        return (c - x) / (c - b) 
     elif x == b:
-        return 1.0
+        return 1.0 
 
-
-def trap(x, a, b, c, d):#trapezoidal membership function
-    if x <= a or x >= d:
-        return 0.0
-    elif a < x < b:
-        return (x - a) / (b - a)
-    elif b <= x <= c:
-        return 1.0
-    elif c < x < d:
-        return (d - x) / (d - c)
-
-
-def fuzzify_rel_speed(vr): #Fuzzuy sets for relative speed
-    mu = {}
-    mu["away_fast"] = triag(vr, -250, -150, -80)
-    mu["away_slow"] = triag(vr, -120, -50, 10)
-    mu["zero"] = triag(vr, -20, 0, 20)
-    mu["approach_slow"] = triag(vr, -10, 50, 100)
-    mu["approach_fast"] = triag(vr, 80, 150, 250)
-    return mu
-
-
-def fuzzify_heading(err):#fuzzy sets for heading error
-    mu = {}
-    mu["very_small"] = triag(abs(err), 0, 0, 5)
-    mu["small"] = triag(abs(err), 2, 8, 20)
-    mu["medium"] = triag(abs(err), 15, 35, 60)
-    mu["large"] = triag(abs(err), 50, 90, 180)
-    return mu
-
-
-def fuzzify_distance(dist):#fuzzy sets for distance to target
-    mu = {}
-    mu["very_close"] = triag(dist, 0, 50, 120)
-    mu["close"] = triag(dist, 80, 150, 250)
-    mu["medium"] = triag(dist, 200, 350, 500)
-    mu["far"] = triag(dist, 450, 600, 800)
-    mu["very_far"] = triag(dist, 750, 1000, 1500)
-    return mu
-
-
-def fuzzify_asteroid_size(size):#fuzzy sets for asteroid size
-    mu = {}
-    mu["small"] = triag(size, 0, 4, 8)    # Size 4 asteroids
-    mu["medium"] = triag(size, 6, 3, 6)   # Size 3 asteroids  
-    mu["large"] = triag(size, 1, 2, 4)    # Size 1-2 asteroids
-    return mu
-
-
-def fuzzify_threat_level(closing_speed, distance, size):
-    #Higher threat for: faster approach, closer distance, larger size
-    threat_score = (closing_speed / 100.0) + (300.0 / max(distance, 1)) + (size / 4.0)
-    
-    mu = {}
-    mu["low"] = triag(threat_score, 0, 1, 3)
-    mu["medium"] = triag(threat_score, 2, 4, 6)
-    mu["high"] = triag(threat_score, 5, 7, 10)
-    mu["critical"] = triag(threat_score, 8, 12, 20)
-    return mu
-
-
-def fire_decision(heading_err, rel_speed, distance, size):#Mamdani firing system
-    mu_heading = fuzzify_heading(heading_err)
-    mu_speed = fuzzify_rel_speed(rel_speed)
-    mu_dist = fuzzify_distance(distance)
-    mu_size = fuzzify_asteroid_size(size)
-    
-    #Rule 1: Perfect shot - very small error AND approaching
-    rule1 = min(mu_heading["very_small"], 
-                max(mu_speed["approach_slow"], mu_speed["approach_fast"]))
-    
-    #Rule 2: Good shot - small error AND close distance
-    rule2 = min(mu_heading["small"], mu_dist["close"])
-    
-    #Rule 3: Defensive shot - very close distance (emergency)
-    rule3 = mu_dist["very_close"]
-    
-    #Rule 4: Priority target - large asteroid AND reasonable accuracy
-    rule4 = min(mu_size["large"], 
-                max(mu_heading["very_small"], mu_heading["small"]))
-    
-    #Rule 5: Don't fire if too far or moving away fast
-    inhibit1 = mu_dist["very_far"]
-    inhibit2 = mu_speed["away_fast"]
-    
-    #Combine rules
-    fire_strength = max(rule1 * 1.0, rule2 * 0.8, rule3 * 0.9, rule4 * 0.7)
-    fire_strength = max(0, fire_strength - max(inhibit1, inhibit2) * 0.5)
-    
-    return fire_strength > 0.6
-
-
-def defuzz_turn(mu):#Defuzzification for turn rate
-    rate = {
-        "very_small": 30,
-        "small": 120, 
-        "medium": 200, 
-        "large": 300
-    }
-    
-    num = sum(mu[k] * rate[k] for k in mu if k in rate)
-    denominator = sum(mu.values())
-    return num / denominator if denominator > 0 else 0
-
-
-def thrust_control(distance, rel_speed, heading_err):
-    mu_dist = fuzzify_distance(distance)
-    mu_speed = fuzzify_rel_speed(rel_speed)
-    mu_heading = fuzzify_heading(heading_err)
-    
-    #Rule 1: Thrust forward if far and need to approach
-    thrust_approach = min(mu_dist["far"], mu_speed["away_slow"])
-    
-    #Rule 2: Reverse thrust if too close and approaching fast
-    thrust_reverse = min(mu_dist["very_close"], mu_speed["approach_fast"])
-    
-    #Rule 3: Maintain distance if good positioning
-    thrust_maintain = min(mu_dist["medium"], mu_heading["small"])
-    
-    #Defuzzify thrust
-    if thrust_reverse > 0.6:
-        return -150  # Reverse
-    elif thrust_approach > 0.5:
-        return 100   # Forward
-    elif thrust_maintain > 0.4:
-        return 30    # Gentle forward
-    else:
-        return 0     # Coast
-
-
-def wrap180(d):  #makes sure angle is between -180 and +180
+# makes the numbers wrap around -180 to +180
+def wrap180(d):
     return (d + 180.0) % 360.0 - 180.0
 
-
+# grab the ship’s angle... hopefully
 def get_heading_degrees(ship_state):
     if hasattr(ship_state, "heading"):
         return float(ship_state.heading)
     if hasattr(ship_state, "angle"):
         return math.degrees(float(ship_state.angle))
-    return 0.0
+    return 0.0 
 
-
-def intercept_point(ship_pos, ship_vel, bullet_speed, target_pos, target_vel): #calculate shooting ahead
+#try to guess where to shoot
+def intercept_point(ship_pos, ship_vel, bullet_speed, target_pos, target_vel):
     dx, dy = target_pos[0] - ship_pos[0], target_pos[1] - ship_pos[1]
     dvx, dvy = target_vel[0] - ship_vel[0], target_vel[1] - ship_vel[1]
 
@@ -165,7 +35,6 @@ def intercept_point(ship_pos, ship_vel, bullet_speed, target_pos, target_vel): #
     disc = b*b - 4*a*c
     if disc < 0 or abs(a) < 1e-6:
         return target_pos
-
     t1 = (-b + math.sqrt(disc)) / (2*a)
     t2 = (-b - math.sqrt(disc)) / (2*a)
     t_candidates = [t for t in (t1, t2) if t > 0]
@@ -173,11 +42,13 @@ def intercept_point(ship_pos, ship_vel, bullet_speed, target_pos, target_vel): #
     if not t_candidates:
         return target_pos
 
-    t = min(t_candidates)
+    t = min(t_candidates) 
     return (target_pos[0] + target_vel[0]*t,
             target_pos[1] + target_vel[1]*t)
 
-
+# threat priority calculation for targeting
+"""A higher score means a more threatening asteroid,
+calculate relative speed, factor in size and distance. """
 def calculate_threat_priority(asteroid, ship_pos, ship_vel):
     ax, ay = asteroid.position
     dx, dy = ax - ship_pos[0], ay - ship_pos[1]
@@ -186,87 +57,144 @@ def calculate_threat_priority(asteroid, ship_pos, ship_vel):
     avx, avy = getattr(asteroid, "velocity", (0.0, 0.0))
     closing_speed = ((avx - ship_vel[0]) * dx + (avy - ship_vel[1]) * dy) / max(distance, 1)
     
-    # Get asteroid size (smaller size number = larger asteroid)
     size = getattr(asteroid, "size", 2)
     
-    # Higher priority for: closer, faster approach, larger size
+    """(1000 / distance) → closer asteroids = higher priority.
+(max(closing_speed, 0) / 50) → if the asteroid is rushing toward you, add danger. If moving away, ignore it (max(...,0)).
+(5 - size) → smaller asteroids add to priority (because maybe they’re harder to hit or dodge)."""
     priority = (1000.0 / max(distance, 1)) + max(closing_speed, 0) / 50.0 + (5 - size)
     return priority
 
+def find_closest_threat(asteroids, ship_pos):
+    closest_dist = float('inf')
+    closest_asteroid = None
+    
+    for asteroid in asteroids:
+        ax, ay = asteroid.position
+        distance = math.hypot(ax - ship_pos[0], ay - ship_pos[1])#hypot is very very nice
+        if distance < closest_dist:
+            closest_dist = distance
+            closest_asteroid = asteroid
+    
+    return closest_asteroid, closest_dist
+
 
 class FuzzyTactic(KesslerController):
-    name = "FuzzyTactic"
-    
+    name = "DefensiveFuzzyTactic"
     def __init__(self):
-        self.target_memory = {}  #Remember recent targets
-        self.last_fire_time = 0
+        self.debug_counter = 0  # just to not spam too much
         
     def actions(self, ship_state, game_state):
+        self.debug_counter += 1
+        
         asteroids = getattr(game_state, "asteroids", [])
         if not asteroids:
-            return 0.0, 0.0, False, False
+            return 0.0, 0.0, False, False 
 
-        #Ship state
         sx, sy = ship_state.position
         heading = get_heading_degrees(ship_state)
         svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
-        
-        #Find highest priority target instead of just nearest
-        best_asteroid = None
-        best_priority = -float("inf")
-        
-        for asteroid in asteroids:
-            priority = calculate_threat_priority(asteroid, (sx, sy), (svx, svy))
-            if priority > best_priority:
-                best_priority = priority
-                best_asteroid = asteroid
-        
-        if best_asteroid is None:
-            return 0.0, 0.0, False, False
-        
-        #Target analysis
-        ax, ay = best_asteroid.position
+
+        closest_asteroid, closest_distance = find_closest_threat(asteroids, (sx, sy))
+        if closest_asteroid is None:
+            return 0.0, 0.0, False, False # no threats, safe
+
+        ax, ay = closest_asteroid.position
         dx, dy = ax - sx, ay - sy
-        distance = math.hypot(dx, dy)
-        
-        avx, avy = getattr(best_asteroid, "velocity", (0.0, 0.0))
-        mag = max(distance, 1e-6)
-        ux, uy = dx / mag, dy / mag
-        rel_speed = (avx - svx) * ux + (avy - svy) * uy
-        
-        asteroid_size = getattr(best_asteroid, "size", 2)
-        
-        #Intercept calculation
-        bullet_speed = getattr(ship_state, "bullet_speed", 800.0)
-        ix, iy = intercept_point(
-            (sx, sy), (svx, svy), bullet_speed,
-            best_asteroid.position, best_asteroid.velocity
-        )
-        
-        #Heading error to intercept
-        dx_i, dy_i = ix - sx, iy - sy
-        desired = math.degrees(math.atan2(dy_i, dx_i))
-        heading_err = wrap180(desired - heading)
-        
-        mu_heading = fuzzify_heading(abs(heading_err))
-        turn_mag = defuzz_turn(mu_heading)
-        turn_rate = turn_mag if heading_err >= 0 else -turn_mag
-        
-        #shootign decision
-        fire = fire_decision(abs(heading_err), rel_speed, distance, asteroid_size)
-        
-        #thrust control
-        thrust = thrust_control(distance, rel_speed, abs(heading_err))
-        
-        # Simple mine dropping logic (drop if very close and approaching)
-        drop_mine = distance < 80 and rel_speed > 100
-        
-        # Apply control limits
+        avx, avy = getattr(closest_asteroid, "velocity", (0.0, 0.0))
+
+        rel_vel_x, rel_vel_y = avx - svx, avy - svy
+        approaching_speed = (rel_vel_x * dx + rel_vel_y * dy) / max(closest_distance, 1)
+
+        # fuzzy vibes
+        very_close = triag(closest_distance, 0, 80, 160)
+        close = triag(closest_distance, 120, 200, 300)
+        medium = triag(closest_distance, 250, 400, 600)
+        far = triag(closest_distance, 500, 700, 1000)
+
+        fast_approach = triag(approaching_speed, 50, 150, 300)
+        slow_approach = triag(approaching_speed, 10, 50, 100)
+        moving_away = triag(approaching_speed, -200, -50, 10)
+
+        danger_level = max(very_close, min(close, max(fast_approach, slow_approach)))
+
+        if self.debug_counter % 30 == 0:
+            print(f"DEBUG: dist={closest_distance:.0f}, approach={approaching_speed:.0f}, danger={danger_level:.2f}")
+
+        if closest_distance < 120 and approaching_speed > 30:
+            #panic mode
+            perp1 = (-dy, dx)
+            perp2 = (dy, -dx)
+            score1 = sum((bx-sx)*perp1[0] + (by-sy)*perp1[1] for (bx,by) in [a.position for a in asteroids])
+            score2 = sum((bx-sx)*perp2[0] + (by-sy)*perp2[1] for (bx,by) in [a.position for a in asteroids])
+            perp = perp1 if score1 > score2 else perp2
+
+            dodge_angle = math.degrees(math.atan2(perp[1], perp[0]))
+            dodge_err = wrap180(dodge_angle - heading)
+            turn_rate = max(-180.0, min(180.0, dodge_err * 4.0))
+            thrust = 150.0
+
+            if self.debug_counter % 30 == 0:
+                print("MODE: CRITICAL DODGE (aka panic mode)")
+
+        elif danger_level > 0.3:
+            # back off
+            approach_angle = math.degrees(math.atan2(dy, dx))
+            aim_err = wrap180(approach_angle - heading)
+            turn_rate = max(-180.0, min(180.0, aim_err * 3.0))
+            thrust = -120.0
+
+            if self.debug_counter % 30 == 0:
+                print("MODE: DANGER DRIFT (moonwalking away)")
+
+        elif medium > 0.2:
+            # pew pew time
+            thrust = 80.0
+            best_asteroid = max(asteroids, key=lambda a: calculate_threat_priority(a, (sx,sy), (svx,svy)))
+            if best_asteroid:
+                bullet_speed = 800.0  # fast pew
+                ix, iy = intercept_point((sx, sy), (svx, svy), bullet_speed,
+                                        best_asteroid.position, best_asteroid.velocity)
+                dx_i, dy_i = ix - sx, iy - sy
+                desired_heading = math.degrees(math.atan2(dy_i, dx_i))
+                heading_err = wrap180(desired_heading - heading)
+                turn_rate = max(-180.0, min(180.0, heading_err * 3.0))
+            else:
+                turn_rate = 0.0
+            if self.debug_counter % 30 == 0:
+                print("MODE: ENGAGEMENT (pew pew)")
+
+        else:
+            #cruising, 
+            thrust = 120.0
+            approach_angle = math.degrees(math.atan2(dy, dx))
+            approach_err = wrap180(approach_angle - heading)
+            turn_rate = max(-180.0, min(180.0, approach_err * 2.0))
+            if self.debug_counter % 30 == 0:
+                print("MODE: FAR APPROACH (cruisin')")
+
+        if closest_distance > 100:
+            best_asteroid = max(asteroids, key=lambda a: calculate_threat_priority(a, (sx,sy), (svx,svy)))
+            bullet_speed = 800.0
+            ix, iy = intercept_point((sx, sy), (svx, svy), bullet_speed,
+                                    best_asteroid.position, best_asteroid.velocity)
+            dx_i, dy_i = ix - sx, iy - sy
+            desired_heading = math.degrees(math.atan2(dy_i, dx_i))
+            heading_err = wrap180(desired_heading - heading)
+            target_distance = math.hypot(dx_i, dy_i)
+            fire = abs(heading_err) < 20 and target_distance < 700
+        else:
+            fire = False
+
+        asteroid_size = getattr(closest_asteroid, "size", 2)
+        drop_mine = (closest_distance < 60 and asteroid_size >= 3 and approaching_speed > 80)
+
+        # squish into ship’s limits so it doesn’t freak out
         if hasattr(ship_state, "thrust_range"):
             lo, hi = ship_state.thrust_range
-            thrust = min(max(thrust, lo), hi)
+            thrust = max(lo, min(hi, thrust))
         if hasattr(ship_state, "turn_rate_range"):
             lo, hi = ship_state.turn_rate_range
-            turn_rate = min(max(turn_rate, lo), hi)
-        
+            turn_rate = max(lo, min(hi, turn_rate))
+
         return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
