@@ -9,7 +9,7 @@ from kesslergame import Scenario, KesslerGame, GraphicsType
 from test_controller import TestController
 from graphics_both import GraphicsBoth
 from chatGPT import AdvancedTactic
-from HeadingFuzz import SimpleTactic as fuzzTac
+from HeadingFuzz import FuzzyTactic as fuzzTac
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
                             num_asteroids=10,
@@ -36,10 +36,3 @@ game = KesslerGame(settings=game_settings)  # Use this to visualize the game sce
 pre = time.perf_counter()
 score, perf_data = game.run(scenario=my_test_scenario, controllers=[fuzzTac(), AdvancedTactic()])
 
-# Print out some general info about the result
-print('Scenario eval time: '+str(time.perf_counter()-pre))
-print(score.stop_reason)
-print('Asteroids hit: ' + str([team.asteroids_hit for team in score.teams]))
-print('Deaths: ' + str([team.deaths for team in score.teams]))
-print('Accuracy: ' + str([team.accuracy for team in score.teams]))
-print('Mean eval time: ' + str([team.mean_eval_time for team in score.teams]))
