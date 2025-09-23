@@ -123,10 +123,26 @@ class FuzzyTactic(KesslerController):
 
         if closest_distance < 120 and approaching_speed > 30:
             #panic mode
+            #dx, dy: vector from ship to asteroid
+            #moving sideways depends on the amount of asteroids
+            
             perp1 = (-dy, dx)
             perp2 = (dy, -dx)
-            score1 = sum((bx-sx)*perp1[0] + (by-sy)*perp1[1] for (bx,by) in [a.position for a in asteroids])
-            score2 = sum((bx-sx)*perp2[0] + (by-sy)*perp2[1] for (bx,by) in [a.position for a in asteroids])
+            
+            
+            #all asteroid positions
+            asteroid_positions = [a.position for a in asteroids]
+
+            #compute vector from ship to asteroid
+            vectors_to_asteroids = [(bx - sx, by - sy) for (bx, by) in asteroid_positions]
+
+            dot_products_perp1 = [(vx * perp1[0] + vy * perp1[1]) for (vx, vy) in vectors_to_asteroids]
+            dot_products_perp2 = [(vx * perp2[0] + vy * perp2[1]) for (vx, vy) in vectors_to_asteroids]
+
+
+            #counting how many asteroids are on each side
+            score1 = sum(dot_products_perp1)
+            score2 = sum(dot_products_perp2)
             perp = perp1 if score1 > score2 else perp2
 
             dodge_angle = math.degrees(math.atan2(perp[1], perp[0]))
