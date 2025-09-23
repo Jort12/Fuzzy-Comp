@@ -1,0 +1,2 @@
+from openai import OpenAI
+client = OpenAI(api_key="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 ")
