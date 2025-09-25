@@ -25,6 +25,7 @@ def get_heading_degrees(ship_state):
 
 #try to guess where to shoot
 def intercept_point(ship_pos, ship_vel, bullet_speed, target_pos, target_vel):
+    
     dx, dy = target_pos[0] - ship_pos[0], target_pos[1] - ship_pos[1]
     dvx, dvy = target_vel[0] - ship_vel[0], target_vel[1] - ship_vel[1]
 
@@ -61,7 +62,10 @@ def calculate_threat_priority(asteroid, ship_pos, ship_vel):
     
     """(1000 / distance) → closer asteroids = higher priority.
 (max(closing_speed, 0) / 50) → if the asteroid is rushing toward you, add danger. If moving away, ignore it (max(...,0)).
-(5 - size) → smaller asteroids add to priority (because maybe they’re harder to hit or dodge)."""
+(5 - size) → smaller asteroids add to priority (because maybe they’re harder to hit or dodge).
+
+"""
+
     priority = (1000.0 / max(distance, 1)) + max(closing_speed, 0) / 50.0 + (5 - size)
     return priority
 
@@ -183,9 +187,9 @@ class FuzzyTactic(KesslerController):
         else:
             #cruising, 
             thrust = 120.0
-            approach_angle = math.degrees(math.atan2(dy, dx))
-            approach_err = wrap180(approach_angle - heading)
-            turn_rate = max(-180.0, min(180.0, approach_err * 2.0))
+            approach_angle = math.degrees(math.atan2(dy, dx)) # angle to the closest asteroid
+            approach_err = wrap180(approach_angle - heading) # how far off is it from our heading
+            turn_rate = max(-180.0, min(180.0, approach_err * 2.0)) #clamping with gain factor of 2.0, the farther off, the harder we turn
             if self.debug_counter % 30 == 0:
                 print("MODE: FAR APPROACH (cruisin')")
 
