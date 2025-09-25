@@ -13,8 +13,10 @@
 
 - **triag** → defines fuzzy sets for distance/velocity.  
 - **wrap180** → keeps heading errors manageable.  
-- **intercept_point** → predictive aiming.  
+- **get_heading_degrees** → finds the ship’s facing direction.  
+- **intercept_point** → predictive aiming (where bullet & asteroid meet).  
 - **calculate_threat_priority** → ranks asteroids (distance, closing speed, size).  
+- **find_closest_threat** → nearest asteroid by distance.  
 
 ---
 
@@ -33,11 +35,14 @@ moving_away   = triag(speed,-200,-50,10)
 danger_level = max(very_close, min(close, max(fast_approach, slow_approach)))
 ```
 
-- Distance + approach speed → combined into a **danger score**.  
+- Combines **distance** and **approach speed** into a single danger score.  
+- This danger level drives which behavior (mode) is selected.  
 
 ---
 
 ## 3. Modes (Decision Logic)
+
+The controller switches between four modes depending on danger:
 
 ### (a) **Critical Dodge (panic mode)**  
 
@@ -48,8 +53,8 @@ if dist < 120 and speed > 30:
     thrust, turn_rate = 150.0, dodge_err * 4.0
 ```
 
-- Trigger: asteroid very close & rushing.  
-- Action: strong thrust sideways (perpendicular to asteroid).  
+- **Trigger:** very close asteroid rushing in.  
+- **Action:** emergency sidestep → strong sideways thrust, sharp turn.  
 
 ---
 
@@ -61,8 +66,8 @@ elif danger_level > 0.3:
     turn_rate = aim_err * 3.0
 ```
 
-- Trigger: danger moderately high.  
-- Action: reverse thrust while turning away.  
+- **Trigger:** moderately high danger.  
+- **Action:** back away with reverse thrust, keep asteroid in view.  
 
 ---
 
@@ -77,8 +82,8 @@ elif medium > 0.2:
     turn_rate = heading_err * 3.0
 ```
 
-- Trigger: target at medium range.  
-- Action: move in slowly, pick most dangerous asteroid, aim with intercept math, shoot.  
+- **Trigger:** asteroid at medium distance, not too dangerous.  
+- **Action:** thrust forward slowly, aim using intercept prediction, fire if aligned.  
 
 ---
 
@@ -90,8 +95,8 @@ else:
     turn_rate = approach_err * 2.0
 ```
 
-- Trigger: far or safe.  
-- Action: cruise toward nearest asteroid.  
+- **Trigger:** asteroid far away or safe.  
+- **Action:** cruise toward target asteroid with gentle turns.  
 
 ---
 
@@ -106,7 +111,7 @@ else:
 drop_mine = (dist < 60 and asteroid_size >= 3 and speed > 80)
 ```
 
-- **Fire gun** → when aligned (<20° error) & within 700 units.  
+- **Fire gun** → when within 20° aim and <700 units.  
 - **Drop mine** → if asteroid is very close, large, and closing fast.  
 
 ---
@@ -120,13 +125,27 @@ if hasattr(ship_state,"turn_rate_range"):
     turn_rate = max(lo, min(hi, turn_rate))
 ```
 
-- clamping ship attributes into ship's limit.  
+- Ensures thrust and turn rate stay within ship’s limits.  
 
 ---
-**Summary:**  
 
-- Close + fast → **panic dodge**  
-- Medium danger → **drift backward**  
-- Medium range safe → **engage & shoot**  
-- Far → **cruise forward**  
-- Weapons fire only when aligned, mines drop only under extreme close danger.  
+## 6. Flow of Thought (Narrative)
+
+1. **Look around** → detect asteroids.  
+2. **Pick closest** → compute its distance & speed.  
+3. **Fuzzify danger** → translate numbers into categories (close, medium, far; fast, slow, away).  
+4. **Decide behavior** → Panic → Drift → Engage → Cruise.  
+5. **Act** → thrust, turn, fire, drop mine.  
+6. **Clamp** → keep actions within safe ship bounds.  
+
+---
+
+**Summary:**  
+- Too close & fast → **panic dodge**.  
+- Danger but not panic → **back off**.  
+- Medium safe range → **engage & shoot**.  
+- Far → **cruise in**.  
+- Weapons fire only when aligned, mines drop under extreme close danger.  
+
+This is essentially a **state machine** driven by fuzzy danger assessment.  
+
