@@ -9,7 +9,7 @@ from kesslergame import Scenario, KesslerGame, GraphicsType
 from test_controller import TestController
 from test_controller2 import TestController2
 from graphics_both import GraphicsBoth
-from HeadingFuzz import SimpleTactic
+from hybrid_fuzzy import SimpleTactic
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
                             num_asteroids=10,

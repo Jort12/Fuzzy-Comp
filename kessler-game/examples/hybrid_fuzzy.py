@@ -100,7 +100,7 @@ def rear_clearance(ship_pos, heading_deg, asteroids, check_range=200.0, safety=4
     return True
 
 
-class FuzzyTactic(KesslerController):
+class hybrid_controller(KesslerController):
     name = "DefensiveFuzzyTactic"
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much

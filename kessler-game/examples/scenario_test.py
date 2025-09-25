@@ -8,8 +8,7 @@ from simple_tactic import SimpleTactic
 from kesslergame import Scenario, KesslerGame, GraphicsType
 from test_controller import TestController
 from graphics_both import GraphicsBoth
-from chatGPT import AdvancedTactic
-from HeadingFuzz import FuzzyTactic as fuzzTac
+from hybrid_fuzzy import hybrid_controller
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
                             num_asteroids=10,
@@ -34,5 +33,5 @@ game = KesslerGame(settings=game_settings)  # Use this to visualize the game sce
 
 # Evaluate the game
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=my_test_scenario, controllers=[fuzzTac(), AdvancedTactic()])
+score, perf_data = game.run(scenario=my_test_scenario, controllers=[hybrid_controller(), TestController()])
 
