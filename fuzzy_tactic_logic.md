@@ -11,12 +11,12 @@
     find_closest_threat(asteroids, ship_pos): ...
 ```
 
-- **triag** → defines fuzzy sets for distance/velocity.  
-- **wrap180** → keeps heading errors manageable.  
-- **get_heading_degrees** → finds the ship’s facing direction.  
-- **intercept_point** → predictive aiming (where bullet & asteroid meet).  
-- **calculate_threat_priority** → ranks asteroids (distance, closing speed, size).  
-- **find_closest_threat** → nearest asteroid by distance.  
+- **triag** -> defines fuzzy sets for distance/velocity.  
+- **wrap180** -> keeps heading errors manageable.  
+- **get_heading_degrees** -> finds the ship’s facing direction.  
+- **intercept_point** -> predictive aiming (where bullet & asteroid meet).  
+- **calculate_threat_priority** -> ranks asteroids (distance, closing speed, size).  
+- **find_closest_threat** -> nearest asteroid by distance.  
 
 ---
 
@@ -54,7 +54,7 @@ if dist < 120 and speed > 30:
 ```
 
 - **Trigger:** very close asteroid rushing in.  
-- **Action:** emergency sidestep → strong sideways thrust, sharp turn.  
+- **Action:** emergency sidestep -> strong sideways thrust, sharp turn.  
 
 ---
 
@@ -111,8 +111,8 @@ else:
 drop_mine = (dist < 60 and asteroid_size >= 3 and speed > 80)
 ```
 
-- **Fire gun** → when within 20° aim and <700 units.  
-- **Drop mine** → if asteroid is very close, large, and closing fast.  
+- **Fire gun** -> when within 20° aim and <700 units.  
+- **Drop mine** -> if asteroid is very close, large, and closing fast.  
 
 ---
 
@@ -129,22 +129,23 @@ if hasattr(ship_state,"turn_rate_range"):
 
 ---
 
-## 6. Flow of Thought (Narrative)
+## 6. Flow of Thought
 
-1. **Look around** → detect asteroids.  
-2. **Pick closest** → compute its distance & speed.  
-3. **Fuzzify danger** → translate numbers into categories (close, medium, far; fast, slow, away).  
-4. **Decide behavior** → Panic → Drift → Engage → Cruise.  
-5. **Act** → thrust, turn, fire, drop mine.  
-6. **Clamp** → keep actions within safe ship bounds.  
+1. **Look around** -> detect asteroids.  
+2. **Pick closest** -> compute its distance & speed.  
+3. **Fuzzify danger** -> translate numbers into categories (close, medium, far; fast, slow, away).  
+4. **Decide behavior** -> Panic -> Drift -> Engage -> Cruise.  
+5. **Act** -> thrust, turn, fire, drop mine.  
+6. **Clamp** -> keep actions within safe ship bounds.  
 
 ---
 
 **Summary:**  
-- Too close & fast → **panic dodge**.  
-- Danger but not panic → **back off**.  
-- Medium safe range → **engage & shoot**.  
-- Far → **cruise in**.  
+
+- Too close & fast -> **panic dodge**.  
+- Danger but not panic -> **back off**.  
+- Medium safe range -> **engage & shoot**.  
+- Far -> **cruise in**.  
 - Weapons fire only when aligned, mines drop under extreme close danger.  
 
 This is essentially a **state machine** driven by fuzzy danger assessment.  
