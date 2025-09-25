@@ -1,4 +1,4 @@
-# FuzzyTactic Logic Overview
+# FuzzyTactic Logic Overview (Updated)
 
 ## 1. Utilities
 
@@ -9,14 +9,16 @@
     intercept_point(ship_pos, ship_vel, bullet_speed, target_pos, target_vel): ...
     calculate_threat_priority(asteroid, ship_pos, ship_vel): ...
     find_closest_threat(asteroids, ship_pos): ...
+    rear_clearance(ship_pos, heading_deg, asteroids, check_range=200, safety=40): ...
 ```
 
-- **triag** -> defines fuzzy sets for distance/velocity.  
-- **wrap180** -> keeps heading errors manageable.  
-- **get_heading_degrees** -> finds the ship’s facing direction.  
-- **intercept_point** -> predictive aiming (where bullet & asteroid meet).  
-- **calculate_threat_priority** -> ranks asteroids (distance, closing speed, size).  
-- **find_closest_threat** -> nearest asteroid by distance.  
+- **triag** → defines fuzzy sets for distance/velocity.  
+- **wrap180** → keeps heading errors manageable.  
+- **get_heading_degrees** → finds the ship’s facing direction.  
+- **intercept_point** → predictive aiming (where bullet & asteroid meet).  
+- **calculate_threat_priority** → ranks asteroids (distance, closing speed, size).  
+- **find_closest_threat** → nearest asteroid by distance.  
+- **rear_clearance** → checks if the space behind the ship is clear for reversing.  
 
 ---
 
@@ -42,7 +44,7 @@ danger_level = max(very_close, min(close, max(fast_approach, slow_approach)))
 
 ## 3. Modes (Decision Logic)
 
-The controller switches between four modes depending on danger:
+The controller switches between modes depending on danger:
 
 ### (a) **Critical Dodge (panic mode)**  
 
@@ -54,7 +56,7 @@ if dist < 120 and speed > 30:
 ```
 
 - **Trigger:** very close asteroid rushing in.  
-- **Action:** emergency sidestep -> strong sideways thrust, sharp turn.  
+- **Action:** emergency sidestep → strong sideways thrust, sharp turn.  
 
 ---
 
@@ -62,12 +64,18 @@ if dist < 120 and speed > 30:
 
 ```python
 elif danger_level > 0.3:
-    thrust = -120.0
-    turn_rate = aim_err * 3.0
+    if rear_clearance(...):
+        thrust = -120.0
+        turn_rate = aim_err * 3.0
+    else:
+        thrust = 120.0
+        turn_rate = dodge_err * 3.0
 ```
 
 - **Trigger:** moderately high danger.  
-- **Action:** back away with reverse thrust, keep asteroid in view.  
+- **Action:**
+  - If rear is clear → reverse drift (back off).  
+  - If rear is blocked → dodge sideways instead.  
 
 ---
 
@@ -104,15 +112,18 @@ else:
 
 ```python
 if dist > 100:
-    fire = abs(heading_err) < 20 and target_distance < 700
+    fire = (
+        abs(heading_err) < 20 and
+        target_distance < 700 and
+        closing_speed > 0)
 else:
     fire = False
 
 drop_mine = (dist < 60 and asteroid_size >= 3 and speed > 80)
 ```
 
-- **Fire gun** -> when within 20° aim and <700 units.  
-- **Drop mine** -> if asteroid is very close, large, and closing fast.  
+- **Fire gun** → when within 20° aim, <700 units, and target is closing in.  
+- **Drop mine** → if asteroid is very close, large, and closing fast.  
 
 ---
 
@@ -131,22 +142,22 @@ if hasattr(ship_state,"turn_rate_range"):
 
 ## 6. Flow of Thought
 
-1. **Look around** -> detect asteroids.  
-2. **Pick closest** -> compute its distance & speed.  
-3. **Fuzzify danger** -> translate numbers into categories (close, medium, far; fast, slow, away).  
-4. **Decide behavior** -> Panic -> Drift -> Engage -> Cruise.  
-5. **Act** -> thrust, turn, fire, drop mine.  
-6. **Clamp** -> keep actions within safe ship bounds.  
+1. **Look around** → detect asteroids.  
+2. **Pick closest** → compute its distance & speed.  
+3. **Fuzzify danger** → translate numbers into categories (close, medium, far; fast, slow, away).  
+4. **Decide behavior** → Panic → Drift (rear-clear or sidestep) → Engage → Cruise.  
+5. **Act** → thrust, turn, fire, drop mine.  
+6. **Clamp** → keep actions within safe ship bounds.  
 
 ---
 
 **Summary:**  
 
-- Too close & fast -> **panic dodge**.  
-- Danger but not panic -> **back off**.  
-- Medium safe range -> **engage & shoot**.  
-- Far -> **cruise in**.  
-- Weapons fire only when aligned, mines drop under extreme close danger.  
+- Too close & fast → **panic dodge**.  
+- Danger but not panic → **back off if rear is clear, otherwise sidestep**.  
+- Medium safe range → **engage & shoot**.  
+- Far → **cruise in**.  
+- Weapons fire only when aligned, closing, and in range.  
+- Mines drop under extreme close danger.  
 
-This is essentially a **state machine** driven by fuzzy danger assessment.  
-
+This is essentially a **state machine** with extra logic for rear clearance and firing conditions.
