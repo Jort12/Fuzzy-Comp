@@ -83,6 +83,23 @@ def find_closest_threat(asteroids, ship_pos):
     return closest_asteroid, closest_dist
 
 
+def rear_clearance(ship_pos, heading_deg, asteroids, check_range=200.0, safety=40.0):
+    #vector pointing behind the ship
+    hx = math.cos(math.radians(heading_deg + 180))
+    hy = math.sin(math.radians(heading_deg + 180))
+    sx, sy = ship_pos
+    for a in asteroids:
+        ax, ay = a.position
+        dx, dy = ax - sx, ay - sy
+        proj = dx*hx + dy*hy
+        if 0 < proj < check_range:
+            #perpendicular distance
+            perp = abs(dx*(-hy) + dy*hx) / max((hx*hx + hy*hy)**0.5, 1e-6)
+            if perp < safety:
+                return False  # blocked
+    return True
+
+
 class FuzzyTactic(KesslerController):
     name = "DefensiveFuzzyTactic"
     def __init__(self):
@@ -158,14 +175,27 @@ class FuzzyTactic(KesslerController):
                 print("MODE: CRITICAL DODGE (aka panic mode)")
 
         elif danger_level > 0.3:
-            # back off
-            approach_angle = math.degrees(math.atan2(dy, dx))
-            aim_err = wrap180(approach_angle - heading)
-            turn_rate = max(-180.0, min(180.0, aim_err * 3.0))
-            thrust = -120.0
-
-            if self.debug_counter % 30 == 0:
-                print("MODE: DANGER DRIFT (moonwalking away)")
+            if rear_clearance((sx, sy), heading, asteroids):# clear behind, back off
+                approach_angle = math.degrees(math.atan2(dy, dx))
+                aim_err = wrap180(approach_angle - heading)
+                turn_rate = max(-180.0, min(180.0, aim_err * 3.0))
+                thrust = -120.0
+                if self.debug_counter % 30 == 0:
+                    print("MODE: DANGER DRIFT (moonwalking away)")
+            else: # blocked behind, dodge sideways
+                perp1 = (-dy, dx)
+                perp2 = (dy, -dx)
+                asteroid_positions = [a.position for a in asteroids]
+                vectors_to_asteroids = [(bx - sx, by - sy) for (bx, by) in asteroid_positions]
+                score1 = sum(vx * perp1[0] + vy * perp1[1] for (vx, vy) in vectors_to_asteroids)
+                score2 = sum(vx * perp2[0] + vy * perp2[1] for (vx, vy) in vectors_to_asteroids)
+                perp = perp1 if score1 > score2 else perp2
+                dodge_angle = math.degrees(math.atan2(perp[1], perp[0]))
+                dodge_err = wrap180(dodge_angle - heading)
+                turn_rate = max(-180.0, min(180.0, dodge_err * 3.0))
+                thrust = 120.0  # push sideways
+                if self.debug_counter % 30 == 0:
+                    print("MODE: BLOCKED REAR → SIDE-STEP")
 
         elif medium > 0.2:
             # pew pew time
@@ -202,14 +232,26 @@ class FuzzyTactic(KesslerController):
             desired_heading = math.degrees(math.atan2(dy_i, dx_i))
             heading_err = wrap180(desired_heading - heading)
             target_distance = math.hypot(dx_i, dy_i)
-            fire = abs(heading_err) < 20 and target_distance < 700
+
+            #rv check
+            bx, by = best_asteroid.position
+            bvx, bvy = getattr(best_asteroid, "velocity", (0.0, 0.0))
+            rel_vx, rel_vy = bvx - svx, bvy - svy
+            rel_dx, rel_dy = bx - sx, by - sy
+            closing_speed = (rel_vx * rel_dx + rel_vy * rel_dy) / max(target_distance, 1)
+
+            fire =(
+                abs(heading_err) < 20 and
+                target_distance < 700 and
+                closing_speed > 0)
         else:
             fire = False
+
 
         asteroid_size = getattr(closest_asteroid, "size", 2)
         drop_mine = (closest_distance < 60 and asteroid_size >= 3 and approaching_speed > 80)
 
-        # squish into ship’s limits so it doesn’t freak out
+        # clamp into ship’s limits so it doesn’t freak out
         if hasattr(ship_state, "thrust_range"):
             lo, hi = ship_state.thrust_range
             thrust = max(lo, min(hi, thrust))
