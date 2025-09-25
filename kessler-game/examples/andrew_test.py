@@ -1,62 +1,52 @@
 # andrew_test.py
-# A controller for KesslerGame that dodges asteroids, shoots with lead aim,
-# and drops mines when surrounded.
+# Aggressive controller
+# - Hunts asteroids with lead aim and high thrust
+# - Drops mines when something is close
+# - After dropping a mine, briefly steers away from it BUT still attacks
+#   by blending away-from-mine and aim-to-target directions.
 
 import math
 from kesslergame.controller import KesslerController
 
 
 # --------------------------
-# Small helpers
+# Helpers
 # --------------------------
 
 def wrap180(deg: float) -> float:
-    """Normalize degrees to (-180, 180]."""
     return (deg + 180.0) % 360.0 - 180.0
-
 
 def clamp(x: float, lo: float, hi: float) -> float:
     return lo if x < lo else hi if x > hi else x
 
-
 def get_attr(obj, names, default=None):
-    """Return first attribute that exists on obj from names; else default."""
     for n in names:
         if hasattr(obj, n):
             return getattr(obj, n)
     return default
 
-
 def get_heading_degrees(ship_state) -> float:
-    """Gracefully read heading in degrees (fallback from radians if needed)."""
     if hasattr(ship_state, "heading"):
         try:
             return float(ship_state.heading)
         except Exception:
             pass
-    if hasattr(ship_state, "angle"):  # radians
+    if hasattr(ship_state, "angle"):
         try:
             return math.degrees(float(ship_state.angle))
         except Exception:
             pass
     return 0.0
 
-
 def lead_time(rel_px, rel_py, rel_vx, rel_vy, proj_speed, eps=1e-6):
-    """
-    Solve |p + v t| = s t for earliest t > 0 ; None if projectile too slow.
-    p = relative position, v = relative velocity, s = projectile speed.
-    """
     a = (rel_vx * rel_vx + rel_vy * rel_vy) - proj_speed * proj_speed
     b = 2.0 * (rel_px * rel_vx + rel_py * rel_vy)
     c = rel_px * rel_px + rel_py * rel_py
-
     if abs(a) < eps:
         if abs(b) < eps:
             return None
         t = -c / b
         return t if t > 0 else None
-
     disc = b * b - 4 * a * c
     if disc < 0:
         return None
@@ -66,12 +56,7 @@ def lead_time(rel_px, rel_py, rel_vx, rel_vy, proj_speed, eps=1e-6):
     ts = [t for t in (t1, t2) if t > 0]
     return min(ts) if ts else None
 
-
 def time_to_collision(px, py, vx, vy, radius, eps=1e-6):
-    """
-    Solve |p + v t| = r for earliest t >= 0 ; None if miss.
-    Useful for quick “imminent collision” checks with a safety bubble radius.
-    """
     a = vx * vx + vy * vy
     if a < eps:
         return None
@@ -86,61 +71,83 @@ def time_to_collision(px, py, vx, vy, radius, eps=1e-6):
     cand = [t for t in (t1, t2) if t >= 0]
     return min(cand) if cand else None
 
+def angle_lerp_deg(a_deg: float, b_deg: float, w: float) -> float:
+    """Slerp-like blend between angles in degrees, w in [0,1]."""
+    a = math.radians(a_deg)
+    b = math.radians(b_deg)
+    d = math.atan2(math.sin(b - a), math.cos(b - a))
+    out = a + clamp(w, 0.0, 1.0) * d
+    return math.degrees(out)
+
 
 # --------------------------
-# Andrew tactic (controller)
+# Controller
 # --------------------------
 
 class AndrewTactic(KesslerController):
-    
+    name = "AndrewTacticBalancedAggro"
 
-    name = "AndrewTactic"
+    FIRE_AIM_ERR_DEG   = 14.0
+    FIRE_MAX_RANGE     = 900.0
+    FIRE_MIN_RANGE     = 50.0
 
-    # --- Tunables ---
-    FIRE_AIM_ERR_DEG   = 8.0
-    FIRE_MAX_RANGE     = 700.0
-    FIRE_MIN_RANGE     = 120.0
-    APPROACH_DIST_HI   = 500.0
-    APPROACH_DIST_LO   = 170.0
+    APPROACH_DIST_HI   = 800.0
+    APPROACH_DIST_MED  = 300.0
+    APPROACH_DIST_LO   = 90.0
 
-    DANGER_RADIUS      = 135.0      # “safety bubble” around ship for TTC
-    COLLISION_TTC      = 1.0        # seconds
+    DANGER_RADIUS      = 120.0
+    COLLISION_TTC      = 0.6
 
-    BASE_THRUST        = 35.0
-    MAX_THRUST         = 100.0
-    TURN_GAIN          = 4.0        # proportional heading controller (deg -> deg/s)
-    MAX_TURN_RATE      = 180.0      # deg/s clamp
+    BASE_THRUST        = 70.0
+    MAX_THRUST         = 160.0
 
-    SURROUND_RADIUS    = 180.0
-    SURROUND_MIN_COUNT = 3
+    TURN_GAIN          = 6.0
+    MAX_TURN_RATE      = 260.0
 
-    DEFAULT_PROJECTILE_SPEED = 620.0  # fallback if not in game_state
+    SURROUND_RADIUS    = 230.0
+    SURROUND_MIN_COUNT = 1
+    MINE_COOLDOWN_STEPS = 18
+
+    MINE_EVADE_STEPS     = 24
+    MINE_SAFE_DIST       = 220.0
+    MINE_EVADE_WEIGHT_MAX = 1.0
+
+    DEFAULT_PROJECTILE_SPEED = 640.0
+
+    def __init__(self):
+        super().__init__()
+        self._mine_evade_steps = 0
+        self._mine_cooldown = 0
+        self._mine_pos = None
 
     def actions(self, ship_state, game_state):
-        # Ship state
+        # Ship
         sx, sy = get_attr(ship_state, ["position"], (0.0, 0.0))
         svx, svy = get_attr(ship_state, ["velocity", "vel"], (0.0, 0.0)) or (0.0, 0.0)
         heading = get_heading_degrees(ship_state)
 
-        # Projectile speed (engine dependent)
+        # World
         proj_speed = (
             get_attr(game_state, ["projectile_speed", "bullet_speed", "laser_speed"],
                      self.DEFAULT_PROJECTILE_SPEED)
             or self.DEFAULT_PROJECTILE_SPEED
         )
-
-        # Asteroids list (schema tolerant)
         asteroids = (
             get_attr(game_state, ["asteroids"], None)
             or get_attr(game_state, ["asteroid_states"], [])
             or []
         )
 
-        # idle spin if nothing to do
-        if not asteroids:
-            return 15.0, 25.0, False, False
+        if self._mine_cooldown > 0:
+            self._mine_cooldown -= 1
+        if self._mine_evade_steps > 0:
+            self._mine_evade_steps -= 1
 
-        # Build normalized target list: (dx, dy, rvx, rvy, dist)
+        # Roam if nothing to do
+        if not asteroids:
+            return self.BASE_THRUST, 40.0, False, False
+
+        # Build targets: (dx, dy, rvx, rvy, dist, ahead_bias)
         targets = []
         for a in asteroids:
             pos = get_attr(a, ["position", "pos"], None)
@@ -152,71 +159,83 @@ class AndrewTactic(KesslerController):
             dx, dy = ax - sx, ay - sy
             dist = math.hypot(dx, dy)
             rvx, rvy = avx - svx, avy - svy
-            targets.append((dx, dy, rvx, rvy, dist))
-
-        if not targets:
-            return 15.0, 25.0, False, False
-
-        # Evasion: any asteroid with TTC into our DANGER_RADIUS soon?
-        imminent = False
-        for (dx, dy, rvx, rvy, dist) in targets:
-            ttc = time_to_collision(dx, dy, rvx, rvy, self.DANGER_RADIUS)
-            if ttc is not None and ttc <= self.COLLISION_TTC:
-                imminent = True
-                break
-
-        # Offensive target selection: nearer + more “ahead” is better 
-        best = None
-        best_score = -1e18
-        for (dx, dy, rvx, rvy, dist) in targets:
             desired = math.degrees(math.atan2(dy, dx))
             err = wrap180(desired - heading)
             ahead_bias = math.cos(math.radians(abs(err)))
-            score = -0.0035 * dist + 0.7 * ahead_bias
+            targets.append((dx, dy, rvx, rvy, dist, ahead_bias))
+
+        if not targets:
+            return self.BASE_THRUST, 40.0, False, False
+
+        # Imminent collision?
+        imminent = any(
+            (ttc := time_to_collision(dx, dy, rvx, rvy, self.DANGER_RADIUS)) is not None
+            and ttc <= self.COLLISION_TTC
+            for (dx, dy, rvx, rvy, _, _) in targets
+        )
+
+        # Choose target
+        best = None
+        best_score = -1e18
+        for (dx, dy, rvx, rvy, dist, ahead_bias) in targets:
+            score = -0.0020 * dist + 0.95 * ahead_bias
             if score > best_score:
                 best_score = score
                 best = (dx, dy, rvx, rvy, dist)
-
         dx, dy, rvx, rvy, dist = best
 
-        #  Predictive lead aim
+        # Lead aim
         t_hit = lead_time(dx, dy, rvx, rvy, proj_speed)
-        if t_hit is not None and t_hit < 3.0:
+        if t_hit is not None and 0 < t_hit < 3.0:
             aim_x = dx + rvx * t_hit
             aim_y = dy + rvy * t_hit
         else:
             aim_x, aim_y = dx, dy
+        aim_deg = math.degrees(math.atan2(aim_y, aim_x))
 
-        desired = math.degrees(math.atan2(aim_y, aim_x))
-        err = wrap180(desired - heading)
+        # If recently dropped a mine, blend away from mine with aim
+        desired_deg = aim_deg
+        if self._mine_evade_steps > 0 and self._mine_pos is not None:
+            mx, my = self._mine_pos
+            away_x, away_y = (sx - mx), (sy - my)
+            if abs(away_x) > 1e-6 or abs(away_y) > 1e-6:
+                away_deg = math.degrees(math.atan2(away_y, away_x))
+                d_from_mine = math.hypot(away_x, away_y)
+                w = clamp((self.MINE_SAFE_DIST - d_from_mine) / self.MINE_SAFE_DIST, 0.0, self.MINE_EVADE_WEIGHT_MAX)
+                desired_deg = angle_lerp_deg(aim_deg, away_deg, w)
 
-        # Turn control
+        # Turn
+        err = wrap180(desired_deg - heading)
         turn_rate = clamp(self.TURN_GAIN * err, -self.MAX_TURN_RATE, self.MAX_TURN_RATE)
 
-        # Thrust & fire logic
+        # Thrust & fire
         if imminent:
-            # Strafe by biasing turn hard perpendicular to aim direction,
-            # and full thrust to escape.
             side = -1.0 if err > 0 else 1.0
-            turn_rate = clamp(turn_rate + side * 80.0, -self.MAX_TURN_RATE, self.MAX_TURN_RATE)
+            turn_rate = clamp(turn_rate + side * 90.0, -self.MAX_TURN_RATE, self.MAX_TURN_RATE)
             thrust = self.MAX_THRUST
-            fire = False  #survival over shooting while dodging
+            aim_err = abs(wrap180(aim_deg - heading))
+            fire = (self.FIRE_MIN_RANGE <= dist <= self.FIRE_MAX_RANGE) and (aim_err < self.FIRE_AIM_ERR_DEG / 2.0)
         else:
-            # Distance-based thrust profile
             if dist > self.APPROACH_DIST_HI:
                 thrust = self.MAX_THRUST
-            elif dist < self.APPROACH_DIST_LO:
-                thrust = -0.55 * self.MAX_THRUST  # back off if too close
-            else:
+            elif dist > self.APPROACH_DIST_MED:
+                thrust = 0.85 * self.MAX_THRUST
+            elif dist > self.APPROACH_DIST_LO:
                 thrust = self.BASE_THRUST
-
-            # Fire only if aligned and at a sane range
-            aim_err = abs(err)
+            else:
+                thrust = -0.30 * self.MAX_THRUST 
+            aim_err = abs(wrap180(aim_deg - heading))
             fire = (self.FIRE_MIN_RANGE <= dist <= self.FIRE_MAX_RANGE) and (aim_err < self.FIRE_AIM_ERR_DEG)
 
-        # Drop a mine when crowded
-        nearby = sum(1 for (_, _, _, _, d) in targets if d <= self.SURROUND_RADIUS)
-        drop_mine = nearby >= self.SURROUND_MIN_COUNT
+        nearby = sum(1 for (_, _, _, _, d, _) in targets if d <= self.SURROUND_RADIUS)
+        want_drop = (nearby >= self.SURROUND_MIN_COUNT) and (self._mine_cooldown == 0)
+
+        drop_mine = False
+        if want_drop:
+            drop_mine = True
+            self._mine_pos = (sx, sy)
+            self._mine_evade_steps = self.MINE_EVADE_STEPS
+            self._mine_cooldown = self.MINE_COOLDOWN_STEPS
 
         return float(clamp(thrust, -self.MAX_THRUST, self.MAX_THRUST)), float(turn_rate), bool(fire), bool(drop_mine)
 
