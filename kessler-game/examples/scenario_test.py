@@ -10,7 +10,8 @@ from test_controller import TestController
 from graphics_both import GraphicsBoth
 from chatGPT import AdvancedTactic
 from HeadingFuzz import SimpleTactic as fuzzTac
-from andrew_test import AndrewTactic
+from fuzzy_aggressive_controller import AggressiveFuzzyController
+from test_controller_fuzzy import FuzzyController
 
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
@@ -38,10 +39,9 @@ game = KesslerGame(settings=game_settings)  # Use this to visualize the game sce
 pre = time.perf_counter()
 score, perf_data = game.run(
     scenario=my_test_scenario,
-    controllers=[fuzzTac(), AndrewTactic()]
+    controllers=[FuzzyController(), AggressiveFuzzyController()]
 )
 
-# Print out some general info about the result
 print('Scenario eval time: ' + str(time.perf_counter() - pre))
 print(score.stop_reason)
 print('Asteroids hit: ' + str([team.asteroids_hit for team in score.teams]))
