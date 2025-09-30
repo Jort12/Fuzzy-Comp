@@ -1,7 +1,6 @@
 # mouse_keyboard_controller.py
 from kesslergame import KesslerController
 from pynput import keyboard, mouse
-import threading
 
 class HumanController(KesslerController):
     def __init__(self):
