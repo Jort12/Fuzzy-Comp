@@ -1,3 +1,8 @@
+#Author: Andrew Jeske
+#Date: September 2025
+#Description: Aggressive fuzzy logic controller
+
+
 import math
 import numpy as np
 import skfuzzy as fuzz

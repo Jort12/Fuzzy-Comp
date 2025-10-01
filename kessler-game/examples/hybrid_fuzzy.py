@@ -1,51 +1,13 @@
+#Author: Kyle Nguyen
+#Date: September 2025
+#Description: Hybrid fuzzy logic controller
+
 import math
 from kesslergame.controller import KesslerController
+from util import wrap180, triag, intercept_point
 
-def triag(x, a, b, c):
-    if x <= a or x >= c:
-        return 0.0
-    elif a < x <= b:
-        return (x - a) / (b - a)  # slope magic
-    elif b < x < c:
-        return (c - x) / (c - b) 
-    elif x == b:
-        return 1.0 
 
-# makes the numbers wrap around -180 to +180
-def wrap180(d):
-    return (d + 180.0) % 360.0 - 180.0
 
-# grab the ship’s angle... hopefully
-def get_heading_degrees(ship_state):
-    if hasattr(ship_state, "heading"):
-        return float(ship_state.heading)
-    if hasattr(ship_state, "angle"):
-        return math.degrees(float(ship_state.angle))
-    return 0.0 
-
-#try to guess where to shoot
-def intercept_point(ship_pos, ship_vel, bullet_speed, target_pos, target_vel):
-    
-    dx, dy = target_pos[0] - ship_pos[0], target_pos[1] - ship_pos[1]
-    dvx, dvy = target_vel[0] - ship_vel[0], target_vel[1] - ship_vel[1]
-
-    a = dvx**2 + dvy**2 - bullet_speed**2
-    b = 2 * (dx*dvx + dy*dvy)
-    c = dx**2 + dy**2
-
-    disc = b*b - 4*a*c
-    if disc < 0 or abs(a) < 1e-6:
-        return target_pos
-    t1 = (-b + math.sqrt(disc)) / (2*a)
-    t2 = (-b - math.sqrt(disc)) / (2*a)
-    t_candidates = [t for t in (t1, t2) if t > 0]
-
-    if not t_candidates:
-        return target_pos
-
-    t = min(t_candidates) 
-    return (target_pos[0] + target_vel[0]*t,
-            target_pos[1] + target_vel[1]*t)
 
 # threat priority calculation for targeting
 """A higher score means a more threatening asteroid,
@@ -62,11 +24,12 @@ def calculate_threat_priority(asteroid, ship_pos, ship_vel):
     
     """(1000 / distance) → closer asteroids = higher priority.
 (max(closing_speed, 0) / 50) → if the asteroid is rushing toward you, add danger. If moving away, ignore it (max(...,0)).
-(5 - size) → smaller asteroids add to priority (because maybe they’re harder to hit or dodge).
+(5 - size) → smaller asteroids add to priority (maybe theyare harder to hit or dodge).
 
 """
 
-    priority = (1000.0 / max(distance, 1)) + max(closing_speed, 0) / 50.0 + (5 - size)
+
+    priority = (1000.0 / distance) + max(closing_speed, 0) / 50.0 + (5 - size)#give priority to smaller asteroids
     return priority
 
 def find_closest_threat(asteroids, ship_pos):
@@ -84,36 +47,40 @@ def find_closest_threat(asteroids, ship_pos):
 
 
 def rear_clearance(ship_pos, heading_deg, asteroids, check_range=200.0, safety=40.0):
-    #vector pointing behind the ship
+    #vector pointing behind the ship, basically get the ship heading +180
     hx = math.cos(math.radians(heading_deg + 180))
     hy = math.sin(math.radians(heading_deg + 180))
     sx, sy = ship_pos
     for a in asteroids:
         ax, ay = a.position
         dx, dy = ax - sx, ay - sy
-        proj = dx*hx + dy*hy
+        
+        proj = dx*hx + dy*hy #dot product to project vector from ship to asteroid onto the heading vector
         if 0 < proj < check_range:
-            #perpendicular distance
-            perp = abs(dx*(-hy) + dy*hx) / max((hx*hx + hy*hy)**0.5, 1e-6)
-            if perp < safety:
-                return False  # blocked
+            #perpendicular distance from point dx dy to a line
+            perp = abs(dx*(-hy) + dy*hx)
+            if perp < safety + getattr(a, "radius", 0.0):
+                return False
+
     return True
 
 
 class hybrid_controller(KesslerController):
-    name = "DefensiveFuzzyTactic"
+    name = "HybridFuzzyController"
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much
         
     def actions(self, ship_state, game_state):
         self.debug_counter += 1
-        
+        """for b in game_state.bullets:
+            print("Bullet speed:", math.hypot(b.vx, b.vy))""" #checking bullet speed
+
         asteroids = getattr(game_state, "asteroids", [])
         if not asteroids:
             return 0.0, 0.0, False, False 
 
         sx, sy = ship_state.position
-        heading = get_heading_degrees(ship_state)
+        heading = ship_state.heading
         svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
 
         closest_asteroid, closest_distance = find_closest_threat(asteroids, (sx, sy))
@@ -127,7 +94,7 @@ class hybrid_controller(KesslerController):
         rel_vel_x, rel_vel_y = avx - svx, avy - svy
         approaching_speed = (rel_vel_x * dx + rel_vel_y * dy) / max(closest_distance, 1)
 
-        # fuzzy vibes
+        # Membership functions
         very_close = triag(closest_distance, 0, 80, 160)
         close = triag(closest_distance, 120, 200, 300)
         medium = triag(closest_distance, 250, 400, 600)
@@ -137,19 +104,20 @@ class hybrid_controller(KesslerController):
         slow_approach = triag(approaching_speed, 10, 50, 100)
         moving_away = triag(approaching_speed, -200, -50, 10)
 
+
+        #Danger is high if very close, or close and approaching fast
         danger_level = max(very_close, min(close, max(fast_approach, slow_approach)))
 
         if self.debug_counter % 30 == 0:
-            print(f"DEBUG: dist={closest_distance:.0f}, approach={approaching_speed:.0f}, danger={danger_level:.2f}")
+            print(f"dist={closest_distance:.0f}, approach={approaching_speed:.0f}, danger={danger_level:.2f}")
 
         if closest_distance < 120 and approaching_speed > 30:
             #panic mode
             #dx, dy: vector from ship to asteroid
             #moving sideways depends on the amount of asteroids
             
-            perp1 = (-dy, dx)
+            perp1 = (-dy, dx)# perpendicular vectors left and right
             perp2 = (dy, -dx)
-            
             
             #all asteroid positions
             asteroid_positions = [a.position for a in asteroids]
@@ -172,21 +140,28 @@ class hybrid_controller(KesslerController):
             thrust = 150.0
 
             if self.debug_counter % 30 == 0:
-                print("MODE: CRITICAL DODGE (aka panic mode)")
+                print("MODE: Panic Mode")
 
         elif danger_level > 0.3:
             if rear_clearance((sx, sy), heading, asteroids):# clear behind, back off
-                approach_angle = math.degrees(math.atan2(dy, dx))
+                approach_angle = math.degrees(math.atan2(dy, dx)) #atan2 gives angle from x-axis to point (x,y)
                 aim_err = wrap180(approach_angle - heading)
-                turn_rate = max(-180.0, min(180.0, aim_err * 3.0))
+                
+                #If aim_err = 10°, then aim_err * 3.0 = 30° turn.
+                #If aim_err = 50°, then aim_err * 3.0 = 150° turn.
+                #max of -180-180 turn rate
+                turn_rate = max(-180.0, min(180.0, aim_err * 3.0)) 
+                
                 thrust = -120.0
                 if self.debug_counter % 30 == 0:
-                    print("MODE: DANGER DRIFT (moonwalking away)")
+                    print("MODE: Backoff (clear rear)")
             else: # blocked behind, dodge sideways
                 perp1 = (-dy, dx)
                 perp2 = (dy, -dx)
                 asteroid_positions = [a.position for a in asteroids]
                 vectors_to_asteroids = [(bx - sx, by - sy) for (bx, by) in asteroid_positions]
+                #Score how many asteroids are on each side
+                """NOTE: Not very good, very far asteroids still count, should only count within a certain range"""
                 score1 = sum(vx * perp1[0] + vy * perp1[1] for (vx, vy) in vectors_to_asteroids)
                 score2 = sum(vx * perp2[0] + vy * perp2[1] for (vx, vy) in vectors_to_asteroids)
                 perp = perp1 if score1 > score2 else perp2
@@ -195,17 +170,15 @@ class hybrid_controller(KesslerController):
                 turn_rate = max(-180.0, min(180.0, dodge_err * 3.0))
                 thrust = 120.0  # push sideways
                 if self.debug_counter % 30 == 0:
-                    print("MODE: BLOCKED REAR → SIDE-STEP")
+                    print("MODE: BLOCKED REAR -> SIDE-STEP")
 
         elif medium > 0.2:
             # pew pew time
             thrust = 80.0
-            best_asteroid = max(asteroids, key=lambda a: calculate_threat_priority(a, (sx,sy), (svx,svy)))
             if best_asteroid:
-                bullet_speed = 800.0  # fast pew
-                ix, iy = intercept_point((sx, sy), (svx, svy), bullet_speed,
-                                        best_asteroid.position, best_asteroid.velocity)
-                dx_i, dy_i = ix - sx, iy - sy
+                
+                #bullet_speed = 800.0
+                ix, iy = intercept_point((sx, sy), (svx, svy), 800.0,best_asteroid.position, getattr(best_asteroid, "velocity", (0.0, 0.0)))    
                 desired_heading = math.degrees(math.atan2(dy_i, dx_i))
                 heading_err = wrap180(desired_heading - heading)
                 turn_rate = max(-180.0, min(180.0, heading_err * 3.0))
@@ -229,16 +202,17 @@ class hybrid_controller(KesslerController):
             ix, iy = intercept_point((sx, sy), (svx, svy), bullet_speed,
                                     best_asteroid.position, best_asteroid.velocity)
             dx_i, dy_i = ix - sx, iy - sy
-            desired_heading = math.degrees(math.atan2(dy_i, dx_i))
+            desired_heading = math.degrees(math.atan2(dy_i, dx_i)) #take the angle to the intercept point and turn into a heading
             heading_err = wrap180(desired_heading - heading)
             target_distance = math.hypot(dx_i, dy_i)
 
             #rv check
             bx, by = best_asteroid.position
-            bvx, bvy = getattr(best_asteroid, "velocity", (0.0, 0.0))
-            rel_vx, rel_vy = bvx - svx, bvy - svy
+            bvx, bvy = getattr(best_asteroid, "velocity", (0.0, 0.0)) #best  asteroid velocity
+            rel_vx, rel_vy = bvx - svx, bvy - svy #sv: ship velocity
             rel_dx, rel_dy = bx - sx, by - sy
-            closing_speed = (rel_vx * rel_dx + rel_vy * rel_dy) / max(target_distance, 1)
+            dist_now = math.hypot(rel_dx, rel_dy) or 1.0
+            closing_speed = (rel_vx * rel_dx + rel_vy * rel_dy) / dist_now
 
             fire =(
                 abs(heading_err) < 20 and

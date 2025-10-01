@@ -1,4 +1,7 @@
-# mouse_keyboard_controller.py
+#Author: Kyle Nguyen
+
+
+
 from kesslergame import KesslerController
 from pynput import keyboard, mouse
 
@@ -61,7 +64,6 @@ class HumanController(KesslerController):
         elif "a" in self.keys or keyboard.Key.right in self.keys:
             turn_rate = turn_max
 
-        #Shoot and drop mine with mouse buttons
         if mouse.Button.left in self.mouse_buttons: 
             fire = True
         if mouse.Button.right in self.mouse_buttons:
