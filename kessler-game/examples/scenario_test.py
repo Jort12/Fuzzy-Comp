@@ -24,19 +24,26 @@ game_settings = {
     'frequency': 30
 }
 
-# Initialize the game
-game = KesslerGame(settings=game_settings)
+while True:
 
-# Run the game with only AggressiveFuzzyController
-pre = time.perf_counter()
-score, perf_data = game.run(
-    scenario=my_test_scenario,
-    controllers=[AggressiveFuzzyController()]
-)
+    # Initialize the game
+    game = KesslerGame(settings=game_settings)
 
-print('Scenario eval time: ' + str(time.perf_counter() - pre))
-print(score.stop_reason)
-print('Asteroids hit: ' + str([team.asteroids_hit for team in score.teams]))
-print('Deaths: ' + str([team.deaths for team in score.teams]))
-print('Accuracy: ' + str([team.accuracy for team in score.teams]))
-print('Mean eval time: ' + str([team.mean_eval_time for team in score.teams]))
+    # Run the game with only AggressiveFuzzyController
+    pre = time.perf_counter()
+    score, perf_data = game.run(
+        scenario=my_test_scenario,
+        controllers=[AggressiveFuzzyController()]
+    )
+
+    if game.player_dead or game.time_over:
+        print("Game ended — restarting!")
+        print('Scenario eval time: ' + str(time.perf_counter() - pre))
+        print(score.stop_reason)
+        print('Asteroids hit: ' + str([team.asteroids_hit for team in score.teams]))
+        print('Deaths: ' + str([team.deaths for team in score.teams]))
+        print('Accuracy: ' + str([team.accuracy for team in score.teams]))
+        print('Mean eval time: ' + str([team.mean_eval_time for team in score.teams]))
+        continue
+    else:
+        break

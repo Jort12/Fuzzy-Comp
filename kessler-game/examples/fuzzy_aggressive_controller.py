@@ -4,6 +4,7 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 from kesslergame.controller import KesslerController
 
+
 def _get(o, names, default=None):
     for n in names:
         if hasattr(o, n):
