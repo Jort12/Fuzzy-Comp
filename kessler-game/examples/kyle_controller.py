@@ -76,6 +76,8 @@ class hybrid_controller(KesslerController):
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much
         
+            
+        
     def actions(self, ship_state, game_state): 
         
         
