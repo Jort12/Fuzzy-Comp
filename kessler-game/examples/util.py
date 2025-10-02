@@ -11,10 +11,26 @@ def triag(x, a, b, c):# slope magic
         return (x - a) / (b - a)  #on the upslope, linear interpolation from a to b
     if b < x < c:
         return (c - x) / (c - b)  #on the downslope, linear interpolation from b to c
+    
+    
+def trap(x, a, b, c, d):# trapezoidal membership function
+    if x <= a or x >= d:# outside the trapezoid
+        return 0.0
+    if a < x < b:
+        return (x - a) / (b - a)  #on the upslope, linear interpolation from a to b
+    if b <= x <= c:
+        return 1.0  #top of the trapezoid
+    if c < x < d:
+        return (d - x) / (d - c)  #on the downslope, linear interpolation from c to d
+
+
+
 
 # makes the numbers wrap around -180 to +180
 def wrap180(d):
     return (d + 180.0) % 360.0 - 180.0
+
+
 
 
 #try to guess where to shoot
