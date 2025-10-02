@@ -18,10 +18,20 @@ class SugenoRule:
         return mu, self.consequents(context)
 
 
-def eval_Sugeno(rules, context): 
+def eval_Sugeno(rules, context):  #Return a value 0-1
     #SUM of weighted outputs(dot product) divided by SUM of weights (dot product)
     outputs = {}
     weights = {}
     for rule in rules:
+        mu, consequents = rule.fire(context)
+        for output_name, output_value in consequents.items():
+            if output_name not in outputs:
+                outputs[output_name] = 0.0
+                weights[output_name] = 0.0
+            
+            outputs[output_name] += mu * output_value
+            weights[output_name] += mu
+            
+    
 
         
