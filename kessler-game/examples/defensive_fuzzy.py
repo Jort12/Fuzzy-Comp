@@ -65,3 +65,36 @@ fire_cmd['no'] = fuzz.trimf(fire_cmd.universe, [0, 0, 1])
 fire_cmd['yes'] = fuzz.trimf(fire_cmd.universe, [0, 1, 1])
 mine_cmd['no'] = fuzz.trimf(mine_cmd.universe, [0, 0, 1])
 mine_cmd['yes'] = fuzz.trimf(mine_cmd.universe, [0, 1, 1])
+
+
+
+
+rules = [] #Define fuzzy rules
+
+#Panic Mode: very close & fast → high danger, max thrust, hard turn
+rules.append(ctrl.Rule(distance['very_close'] & approach['fast'],
+                       (danger['high'], thrust_cmd['high'], turn_cmd['left'] | turn_cmd['right'])))
+
+#Backoff Mode: close + clear rear
+rules.append(ctrl.Rule(distance['close'] & rear_clear['clear'] & approach['fast'],
+                       (danger['medium'], thrust_cmd['reverse'], turn_cmd['straight'])))
+
+#Side-step if blocked rear
+rules.append(ctrl.Rule(distance['close'] & rear_clear['blocked'],
+                       (danger['medium'], thrust_cmd['medium'], turn_cmd['left'] | turn_cmd['right'])))
+
+#Engagement: mid range
+rules.append(ctrl.Rule(distance['medium'] & (approach['slow'] | approach['fast']),
+                       (danger['medium'], thrust_cmd['low'], turn_cmd['straight'], fire_cmd['yes'])))
+
+#Cruising when far & away
+rules.append(ctrl.Rule(distance['far'] & approach['away'],
+                       (danger['low'], thrust_cmd['medium'], turn_cmd['straight'], fire_cmd['no'])))
+
+#Mine dropping: very close + large fast asteroid
+rules.append(ctrl.Rule(distance['very_close'] & approach['fast'],
+                       mine_cmd['yes']))
+
+
+asteroid_ctrl = ctrl.ControlSystem(rules)
+asteroid_sim = ctrl.ControlSystemSimulation(asteroid_ctrl)
