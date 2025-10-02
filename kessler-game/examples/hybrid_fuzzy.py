@@ -15,7 +15,8 @@ calculate relative speed, factor in size and distance. """
 def calculate_threat_priority(asteroid, ship_pos, ship_vel):
     ax, ay = asteroid.position
     dx, dy = ax - ship_pos[0], ay - ship_pos[1]
-    distance = math.hypot(dx, dy)
+    #hypot gives sqrt(dx*dx + dy*dy)
+    distance = math.hypot(dx, dy)#hypot is very very nice
     
     avx, avy = getattr(asteroid, "velocity", (0.0, 0.0))
     closing_speed = ((avx - ship_vel[0]) * dx + (avy - ship_vel[1]) * dy) / max(distance, 1)
@@ -38,7 +39,7 @@ def find_closest_threat(asteroids, ship_pos):
     
     for asteroid in asteroids:
         ax, ay = asteroid.position
-        distance = math.hypot(ax - ship_pos[0], ay - ship_pos[1])#hypot is very very nice
+        distance = math.hypot(ax - ship_pos[0], ay - ship_pos[1])
         if distance < closest_dist:
             closest_dist = distance
             closest_asteroid = asteroid
