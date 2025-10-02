@@ -24,6 +24,8 @@ def eval_Sugeno(rules, context):  #Return a value 0-1
     weights = {}
     for rule in rules:
         mu, consequents = rule.fire(context)
+        if mu<=0: continue
+
         for output_name, output_value in consequents.items():
             if output_name not in outputs:
                 outputs[output_name] = 0.0
@@ -31,6 +33,16 @@ def eval_Sugeno(rules, context):  #Return a value 0-1
             
             outputs[output_name] += mu * output_value
             weights[output_name] += mu
+        
+    result = {}
+    for output_name in outputs:
+        if weights[output_name] == 0:
+            result[output_name] = 0
+        else:
+            result[output_name] = outputs[output_name] / weights[output_name]
+
+    return result
+    
             
     
 
