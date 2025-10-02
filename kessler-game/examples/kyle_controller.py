@@ -7,6 +7,7 @@ import math
 
 """
 PLAN:
+
 Create fuzzy sets for inputs:
 mu_dist: distance to nearest asteroid
 mu_approach: approach speed to nearest asteroid
@@ -17,6 +18,22 @@ mu_clearance: how clear the area is around the ship
 
 mu_heading_err: angle(target or intercept) − current heading,
     angle difference between ship heading and target heading
+
+Create classes for rules:
+SugenoRule: for Sugeno-type rules with numerical outputs
+MamdaniRule: for Mamdani-type rules with fuzzy set outputs
+Create fuzzy sets for outputs:
+mu_thrust: thrust level
+mu_turn_rate: turn rate
+mu_fire: whether to fire or not
+mu_drop_mine: whether to drop a mine or not
+mu_evade: whether to evade or not
+
+Create defuzzification methods:
+sugeno_defuzzify: for Sugeno-type rules
+
+mamdani_defuzzify: for Mamdani-type rules
+
 
 
 """
@@ -68,6 +85,15 @@ def mu_ammo(a): #ammo left
         "full": triag(a, 9, 10, 10)
     }
     
+def mu_mine(m): #mines left
+    return {
+        "none": triag(m, 0, 0, 1),
+        "low": triag(m, 0, 1, 2),
+        "medium": triag(m, 1, 2, 3),
+        "high": triag(m, 2, 3, 4),
+
+    }
+
 
 
 
@@ -76,7 +102,7 @@ class hybrid_controller(KesslerController):
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much
         
-            
+
         
     def actions(self, ship_state, game_state): 
         
