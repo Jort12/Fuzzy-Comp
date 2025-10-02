@@ -1,7 +1,7 @@
 #Author: Kyle Nguyen
 #Description: A full fuzzy logic controller for the Kessler game.
 
-from kesslergame import Controller
+from kesslergame.controller import KesslerController
 from util import wrap180, intercept_point, side_score, triag
 import math
 
@@ -68,3 +68,24 @@ def mu_ammo(a): #ammo left
         "full": triag(a, 9, 10, 10)
     }
     
+
+
+
+class hybrid_controller(KesslerController):
+    name = "Kyle's Fuzzy Controller"
+    def __init__(self):
+        self.debug_counter = 0  # just to not spam too much
+        
+    def actions(self, ship_state, game_state): 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
+
