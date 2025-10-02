@@ -2,7 +2,9 @@
 #Description: A full fuzzy logic controller for the Kessler game.
 
 from kesslergame.controller import KesslerController
-from util import wrap180, intercept_point, side_score, triag
+from util import wrap180, intercept_point, side_score, triag, find_nearest_asteroid, angle_between, distance
+from fuzzy_system import SugenoRule
+
 import math
 
 """
@@ -94,7 +96,32 @@ def mu_mine(m): #mines left
 
     }
 
+def context(ship_state, game_state):
+    # find nearest asteroid
+    asteroids = game_state.asteroids
+    if not asteroids:
+        return None  # no asteroids, nothing to do
+    nearest_asteroid = find_nearest_asteroid(ship_state, game_state)
+    dist = distance(ship_state.position, nearest_asteroid.position)
+    
+    rel_vel = (nearest_asteroid.velocity[0] - ship_state.velocity[0], nearest_asteroid.velocity[1] - ship_state.velocity[1])
+    approach_speed = (rel_vel[0] * (nearest_asteroid.position[0] - ship_state.position[0]) + rel_vel[1] * (nearest_asteroid.position[1] - ship_state.position[1])) / dist if dist != 0 else 0
 
+    ttc = dist / approach_speed if approach_speed > 0 else float('inf')
+
+    intercept = intercept_point(ship_state.position, ship_state.velocity, nearest_asteroid.position, nearest_asteroid.velocity)
+    target_angle = angle_between(ship_state.position, intercept)
+    heading_err = wrap180(target_angle - ship_state.angle)
+
+
+    return {
+        "dist": dist,
+        "approach_speed": approach_speed,
+        "ttc": ttc,
+        "heading_err": heading_err,
+        "ammo": ship_state.bullets_remaining,
+        "mines": ship_state.mines_remaining
+    }
 
 
 class hybrid_controller(KesslerController):
