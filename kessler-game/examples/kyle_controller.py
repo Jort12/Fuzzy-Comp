@@ -96,6 +96,13 @@ def mu_mine(m): #mines left
 
     }
 
+def build_rules():
+    return [
+        #close 
+
+
+    ]
+
 def context(ship_state, game_state):
     # find nearest asteroid
     asteroids = game_state.asteroids

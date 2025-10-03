@@ -9,12 +9,13 @@ from graphics_both import GraphicsBoth
 from hybrid_fuzzy import hybrid_controller
 from human_controller import HumanController
 from fuzzy_aggressive_controller import AggressiveFuzzyController
+from defensive_fuzzy import DefensiveFuzzyController
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
                             num_asteroids=10,
                             ship_states=[
                                 {'position': (400, 400), 'angle': 90, 'lives': 3, 'team': 1, "mines_remaining": 3},
-                                 #{'position': (400, 600), 'angle': 90, 'lives': 3, 'team': 2, "mines_remaining": 3},
+                                 {'position': (400, 600), 'angle': 90, 'lives': 3, 'team': 2, "mines_remaining": 3},
                             ],
                             map_size=(1000, 800),
                             time_limit=120,
@@ -33,5 +34,5 @@ game = KesslerGame(settings=game_settings)  # Use this to visualize the game sce
 
 # Evaluate the game
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=my_test_scenario, controllers=[hybrid_controller()])
+score, perf_data = game.run(scenario=my_test_scenario, controllers=[AggressiveFuzzyController(), DefensiveFuzzyController()])
 
