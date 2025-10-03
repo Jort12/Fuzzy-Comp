@@ -141,51 +141,47 @@ class DefensiveFuzzyController(KesslerController):
 
     def actions(self, ship_state, game_state):
         self.debug_counter += 1
-        asteroid_sim = ctrl.ControlSystemSimulation(asteroid_ctrl)
 
-        # Fuzzy system input
-        asteroid_sim.input['distance'] = distance_val
-        asteroid_sim.input['approach'] = approach_val
-        asteroid_sim.input['rear_clear'] = clear_val
-
-        asteroid_sim.compute()
-
+        # 1) Early exit if no asteroids
         asteroids = getattr(game_state, "asteroids", [])
         if not asteroids:
             return 0.0, 0.0, False, False
 
+        # 2) Compute inputs FIRST
         sx, sy = ship_state.position
         heading = ship_state.heading
         svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
 
-        # Pick closest asteroid
-        closest_asteroid = min(asteroids,
-                               key=lambda a: math.hypot(a.position[0] - sx, a.position[1] - sy))
+        # Closest asteroid
+        closest_asteroid = min(
+            asteroids, key=lambda a: math.hypot(a.position[0] - sx, a.position[1] - sy)
+        )
         ax, ay = closest_asteroid.position
         dx, dy = ax - sx, ay - sy
         distance_val = math.hypot(dx, dy)
 
         avx, avy = getattr(closest_asteroid, "velocity", (0.0, 0.0))
-        rel_vel_x, rel_vel_y = avx - svx, avy - svy
-        approach_val = (rel_vel_x * dx + rel_vel_y * dy) / max(distance_val, 1)
+        rel_vx, rel_vy = avx - svx, avy - svy
+        # approaching speed is projection of relative velocity along line of sight
+        approach_val = (rel_vx * dx + rel_vy * dy) / max(distance_val, 1.0)
 
-        # rear clearance check → 1 if clear, 0 if blocked
+        # Rear clear → crisp into {0,1}
         clear_val = 1 if rear_clear((sx, sy), heading, asteroids) else 0
 
-        # Fuzzy system input
+        # 3) Build a fresh simulation, feed inputs, THEN compute
+        asteroid_sim = ctrl.ControlSystemSimulation(asteroid_ctrl)
         asteroid_sim.input['distance'] = distance_val
-        asteroid_sim.input['approach'] = approach_val
+        asteroid_sim.input['approach']  = approach_val
         asteroid_sim.input['rear_clear'] = clear_val
-
-        # Compute outputs
         asteroid_sim.compute()
 
-        thrust = asteroid_sim.output['thrust']
-        turn_rate = asteroid_sim.output['turn_rate']
-        fire = asteroid_sim.output.get('fire', 0.0) > 0.5
-        drop_mine = asteroid_sim.output.get('drop_mine', 0.0) > 0.5
+        # 4) Safe outputs (avoid KeyError if no rule fired)
+        thrust = float(asteroid_sim.output.get('thrust', 0.0))
+        turn_rate = float(asteroid_sim.output.get('turn_rate', 0.0))
+        fire = bool(asteroid_sim.output.get('fire', 0.0) > 0.5)
+        drop_mine = bool(asteroid_sim.output.get('drop_mine', 0.0) > 0.5)
 
-        # Clamp values to ship ranges
+        # 5) Clamp to ship limits
         if hasattr(ship_state, "thrust_range"):
             lo, hi = ship_state.thrust_range
             thrust = max(lo, min(hi, thrust))
@@ -193,4 +189,4 @@ class DefensiveFuzzyController(KesslerController):
             lo, hi = ship_state.turn_rate_range
             turn_rate = max(lo, min(hi, turn_rate))
 
-        return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
+        return thrust, turn_rate, fire, drop_mine
