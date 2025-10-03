@@ -73,3 +73,30 @@ def side_score(perpendicular, distance):
     if distance < 1.0:
         return 0.0#right on top of us, so shoot it
     return min(1.0, (perpendicular / distance)**2)#the further away it is, the more we care about being centered on it
+
+
+
+def find_nearest_asteroid(ship_state, game_state):# find the nearest  asteroid to the ship
+    asteroids = game_state.asteroids
+    if not asteroids:
+        return None
+
+    nearest_asteroid = min(asteroids, key=lambda a: math.hypot(a.position[0] - ship_state.position[0], a.position[1] - ship_state.position[1]))#min by distance
+    return nearest_asteroid
+
+
+
+def distance(p1, p2):
+    return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+
+def angle_between(v1, v2): #in degrees
+    #returns the smallest angle between two vectors
+    dot = v1[0]*v2[0] + v1[1]*v2[1]
+    mag1 = math.hypot(v1[0], v1[1])
+    mag2 = math.hypot(v2[0], v2[1])
+    if mag1 == 0 or mag2 == 0:
+        return 0.0
+    cos_angle = dot / (mag1 * mag2)
+    cos_angle = max(-1.0, min(1.0, cos_angle))#clamp to avoid numerical issues
+    angle = math.degrees(math.acos(cos_angle))
+    return angle
