@@ -131,7 +131,7 @@ def context(ship_state, game_state):
     }
 
 
-class hybrid_controller(KesslerController):
+class KyleController(KesslerController):
     name = "Kyle's Fuzzy Controller"
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much

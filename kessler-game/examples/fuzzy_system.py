@@ -4,6 +4,26 @@ from kesslergame.controller import KesslerController
 from util import wrap180, intercept_point, side_score
 
 
+"""
+    PLANSS:
+    A rule class that handles taking in the antecedents and consequents
+    
+    A engine that take cares of
+    
+    
+    
+"""
+
+
+def rule_strength(mus, mode="prod"):
+    #mus: list of membership values in [0,1]
+    acc = 1.0 if mode == "prod" else 1.0    
+    if mode == "prod":
+        for m in mus: acc *= m
+        return acc
+    else:  # "min"
+        return min(mus) if mus else 0.0
+
 
 
 class SugenoRule:
@@ -12,12 +32,21 @@ class SugenoRule:
         self.consequents = consequents  #list of (output_name, output_value) tuples
         self.weight = weight  #weight of the rule, default to 1.0
     
-
-
+class SugenoSystem:
+    def __init__(self, rules=None, mode="prod"):
+        self.rules = rules if rules else []
+        self.mode = mode  #"prod" or "min"
+    def add_rule(self,rule:SugenoRule):
+        self.rules.append(rule)
+    def evaluate(self,inputs:dict): #evalutate with crisp inputs, ex:{'dist': 300, 'approach': 1.5, 'ammo': 3}
+        numerator, denominator = 0.0,0.0
+        
+        
 
 class MamdaniRule:
     def __init__(self, antecedents, consequents, weight=1.0):
         self.antecedents = antecedents  #list of (fuzzy_set_name, membership_value) tuples
         self.consequents = consequents  #list of (output_name, fuzzy_set_name) tuples
         self.weight = weight  #weight of the rule, default to 1.0
+        
         
