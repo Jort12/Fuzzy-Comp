@@ -43,8 +43,18 @@ class SugenoSystem:
         #For each rule, calculate its strength and contribute to the output
         for rule in self.rules:
             mus = []
-        ###WIP
+            for (fuzzy_set_name, membership_value) in rule.antecedents:
+                if fuzzy_set_name in inputs:
+                    mu = membership_value(inputs[fuzzy_set_name])
+                    mus.append(mu)
+                else:
+                    mus.append(0.0)  # If input not found, assume membership is 0
+                    
         
+        
+
+
+
 
 
 
