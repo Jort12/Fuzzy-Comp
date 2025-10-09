@@ -160,6 +160,49 @@ class AggressiveFuzzyController(KesslerController):
             ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']),
         ]
 
+
+        #####################################
+        """Reinforcement Learning Portion"""
+        rules_list = rules
+        actions = [
+            ('high', 'hard_right', 'no', 'no'), #Rule:1
+            ('high', 'hard_left', 'no', 'no'), #Rule:2
+            ('high', 'soft_right', 'no', 'no'), #Rule:3
+            ('high', 'hard_right', 'no'), #Rule:4
+            ('high', 'hard_left', 'no'), #Rule:5
+            ('high', 'soft_right', 'no'), #Rule:6
+            'yes', #Rule:6
+            ('medium','soft_right'), #Rule:7
+            ('medium', 'soft_left'), #Rule:8
+            'yes', #Rule:9
+            ('medium', 'soft_right'), #Rule:9
+            ('medium', 'soft_left'), #Rule:10
+            'yes', #Rule:11
+            ('reverse_hard', 'hard_right', 'no', 'no'), #Rule:12
+            ('reverse_hard', 'hard_left',  'no', 'no'), #Rule:13
+            ('reverse_hard', 'soft_right', 'no', 'no'), #Rule:14
+            'medium', #Rule:15
+            'reverse_hard', #Rule:16
+            'soft_right', #Rule:17
+            'reverse_soft', #Rule:18
+            'yes', #Rule:19
+            ('reverse_hard', 'zero', 'no'), #Rule:19
+            ('medium', 'zero', 'yes'), #Rule:20
+            ('medium', 'soft_left'), #Rule:21
+            ('medium', 'soft_right'), #Rule:22
+            ('medium', 'zero', 'yes'), #Rule:23
+            ('medium', 'yes'), #Rule:24
+            ('high', 'zero', 'yes'), #Rule:25
+            ('high', 'soft_left'), #Rule:26
+            ('high', 'soft_right'), #Rule:27
+            'yes', #Rule:28
+            'yes,', #Rule:29
+            'yes', #Rule:30
+            'no' #Rule:31
+        ]
+
+        Q = np.zero((len(rules_list),len(actions)))
+
         self.ctrl_system = ctrl.ControlSystem(rules)
         self._fis_inputs = dict(distance=distance, rel_speed=rel_speed, angle=angle, mine_distance=mine_distance, mine_angle=mine_angle, danger=danger)
         self._fis_outputs = dict(thrust=thrust, turn=turn, fire=fire, mine=mine)
