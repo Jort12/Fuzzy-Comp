@@ -51,10 +51,6 @@ class SugenoSystem:
                     mus.append(0.0)  # If input not found, assume membership is 0
                     
         
-        
-
-
-
 
 
 

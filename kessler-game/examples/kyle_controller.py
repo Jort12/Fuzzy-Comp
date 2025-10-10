@@ -1,4 +1,4 @@
-#Author: Kyle Nguyen
+ #Author: Kyle Nguyen
 #Description: A full fuzzy logic controller for the Kessler game.
 
 from kesslergame.controller import KesslerController
@@ -18,7 +18,7 @@ mu_ammo: amount of ammo left
 mu_mine
 mu_clearance: how clear the area is around the ship
 
-mu_heading_err: angle(target or intercept) − current heading,
+mu_heading_err: angle(target or intercept) - current heading,
     angle difference between ship heading and target heading
 
 Create classes for rules:
