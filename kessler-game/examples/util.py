@@ -71,3 +71,7 @@ def side_score(perpendicular, distance):
     if distance < 1.0:
         return 0.0#right on top of us, so shoot it
     return min(1.0, (perpendicular / distance)**2)#the further away it is, the more we care about being centered on it
+
+
+def distance(p1, p2):
+    return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
