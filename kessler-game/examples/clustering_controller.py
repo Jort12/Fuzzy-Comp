@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from kesslergame.controller import KesslerController
 from util import wrap180, distance
 from clustering import *
-DEBUG_VISUALIZE = True
+DEBUG_VISUALIZE = False
 
 class HDBSCANController(KesslerController):
     name = "HDBSCAN Controller"

@@ -21,7 +21,7 @@ Returns:
     labels: cluster labels for each asteroid
     
 """
-def cluster_asteroids(asteroids, min_cluster_size=3, min_samples=2):
+def cluster_asteroids(asteroids, min_cluster_size=2, min_samples=1):
     if not asteroids:
         return [], np.array([]), np.empty((0, 2))
 

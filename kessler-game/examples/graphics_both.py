@@ -12,9 +12,9 @@ class GraphicsBoth(KesslerGraphics):
         self.ue.start(scenario)
         self.tk.start(scenario)
 
-    def update(self, score, ships, asteroids, bullets):
-        self.ue.update(score, ships, asteroids, bullets)
-        self.tk.update(score, ships, asteroids, bullets)
+    def update(self, score, ships, asteroids, bullets, mines):
+        self.ue.update(score, ships, asteroids, bullets, mines)
+        self.tk.update(score, ships, asteroids, bullets, mines)
 
     def close(self):
         self.ue.close()

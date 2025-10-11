@@ -2,6 +2,8 @@
 # Copyright © 2022 Thales. All Rights Reserved.
 # NOTICE: This file is subject to the license agreement defined in file 'LICENSE', which is part of
 # this source code package.
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 import time
 from kesslergame import Scenario, KesslerGame, GraphicsType
@@ -22,7 +24,8 @@ my_test_scenario = Scenario(name='Test Scenario',
 
 # Define Game Settings
 game_settings = {'perf_tracker': True,
-                 'graphics_type': GraphicsType.Pyplot,
+                 #'graphics_type': GraphicsType.Pyplot,
+                 'graphics_type': GraphicsType.Tkinter,
                  'realtime_multiplier': 1,
                  'graphics_obj': None,
                  'frequency': 60}

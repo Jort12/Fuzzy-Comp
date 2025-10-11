@@ -18,6 +18,27 @@ from ..scenario import Scenario
 from ..team import Team
 from ..settings_dicts import UISettingsDict
 
+
+
+#Improts for clustering and plotting clusters
+from clustering import cluster_asteroids
+import numpy as np
+from scipy.spatial import ConvexHull #for plotting convex hulls around clusters
+import sys, os
+_here = os.path.dirname(__file__)
+
+
+
+from clustering import cluster_asteroids
+import numpy as np
+try:
+    from scipy.spatial import ConvexHull
+    _HAVE_HULL = True
+except Exception:
+    _HAVE_HULL = False
+
+
+
 class GraphicsTK(KesslerGraphics):
     def __init__(self, UI_settings: UISettingsDict | None = None) -> None:
         # UI settings
@@ -49,6 +70,8 @@ class GraphicsTK(KesslerGraphics):
         return [x for x in sorted_list if x != None]
 
     def start(self, scenario: Scenario) -> None:
+        print("GraphicsTK loaded from:", __file__) #DEBUG
+
         self.game_width = round(scenario.map_size[0] * self.scale)
         self.game_height = round(scenario.map_size[1] * self.scale)
         self.max_time = scenario.time_limit
@@ -93,8 +116,11 @@ class GraphicsTK(KesslerGraphics):
         self.ship_sprites = [ImageTk.PhotoImage(img) for img in self.ship_images]
         self.ship_icons = [ImageTk.PhotoImage((Image.open(image)).resize((ship_radius, ship_radius))) for image in self.image_paths]
 
+    
+    
     def update(self, score: Score, ships: list[Ship], asteroids: list[Asteroid], bullets: list[Bullet], mines: list[Mine]) -> None:
         # Delete everything from canvas so we can re-plot
+        print(f"UPDATE: {len(asteroids)} asteroids")
         self.game_canvas.delete("all")
         self._per_frame_images: list[ImageTk.PhotoImage] = []  # Keep PhotoImage references for this frame, to prevent GC
 
@@ -104,6 +130,8 @@ class GraphicsTK(KesslerGraphics):
         self.plot_bullets(bullets)
         self.plot_asteroids(asteroids)
         self.plot_mines(mines)
+        self.plot_clusters(asteroids)#plot clusters of asteroids
+
 
         # Update score box
         self.update_score(score, ships)
@@ -324,3 +352,72 @@ class GraphicsTK(KesslerGraphics):
                     # fill="#fa441b",
                     fill="", outline="white", width=round(10 * self.scale)
                 )
+    def plot_clusters(self, asteroids):
+            # Run clustering
+            _, labels, positions = cluster_asteroids(asteroids)
+            if positions.size == 0:
+                print("Empty positions!")
+                return
+            unique = [lab for lab in np.unique(labels) if lab != -1]
+        
+            palette = ("#33FF57", "#FF33A1", "#33B8FF", "#FFF033", "#FF6633", "#9933FF", "#00FFFF")
+            for idx, lab in enumerate(unique):
+                pts = positions[labels == lab]
+                color = palette[idx % len(palette)]
+                #Convex hull outline (drawn BEFORE centroid so centroid is on top)
+                if _HAVE_HULL and len(pts) >= 3:
+                    try:
+                        hull = ConvexHull(pts)
+                        hull_vertices = hull.vertices.tolist()
+                        if hull_vertices:
+                            flat = []
+                            for i in hull_vertices:
+                                x = pts[i, 0] * self.scale
+                                y = self.game_height - pts[i, 1] * self.scale
+                                flat.extend([x, y])
+                            self.game_canvas.create_polygon(
+                                flat, 
+                                outline=color, 
+                                fill=color,
+                                stipple='gray25',
+                                width=3
+                            )
+                            self.game_canvas.create_polygon(
+                                flat, 
+                                outline=color, 
+                                fill="",
+                                width=4
+                            )
+
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+
+                cx, cy = np.mean(pts, axis=0)
+                cx_s = cx * self.scale
+                cy_s = self.game_height - cy * self.scale
+                marker_size = 10
+                self.game_canvas.create_line(
+                    cx_s - marker_size, cy_s - marker_size,
+                    cx_s + marker_size, cy_s + marker_size,
+                    fill=color, width=4
+                )
+                self.game_canvas.create_line(
+                    cx_s - marker_size, cy_s + marker_size,
+                    cx_s + marker_size, cy_s - marker_size,
+                    fill=color, width=4
+                )
+                self.game_canvas.create_oval(
+                    cx_s - marker_size - 3, cy_s - marker_size - 3,
+                    cx_s + marker_size + 3, cy_s + marker_size + 3,
+                    outline=color, fill="", width=3
+                )
+                
+                self.game_canvas.create_oval(
+                    cx_s - 5, cy_s - 5,
+                    cx_s + 5, cy_s + 5,
+                    outline=color, fill=color, width=2
+                )
+
+    
+    
