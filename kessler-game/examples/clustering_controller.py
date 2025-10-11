@@ -23,7 +23,7 @@ class HDBSCANController(KesslerController):
         clusters, labels, positions = cluster_asteroids(asteroids)
         ship_pos = np.array(ship_state.position)
 
-        plot_clusters(positions, labels, ship_pos)
+        #plot_clusters(positions, labels, ship_pos)
         self.debug_counter += 1
 
         return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
