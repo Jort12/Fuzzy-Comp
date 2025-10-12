@@ -48,7 +48,7 @@ class GraphicsUE(KesslerGraphics):
 
     def update(self, score: Score, ships: list[Ship], asteroids: list[Asteroid], bullets: list[Bullet], mines: list[Mine]) -> None:
         update_parts = ['::frame::']
-
+        print('Sending frame update to graphics engine.')
         for ship in ships:
             ship_part = 's({},{},{},{},{},{});'.format(
                 round(self.map_size[0] - ship.position[0]),
