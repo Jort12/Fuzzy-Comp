@@ -39,6 +39,9 @@ class AggressiveFuzzyController(KesslerController):
         self._norm_dist_scale = normalization_distance_scale
         self._build_fis()
 
+        self.learning_rate = learning_rate
+        self.gamma = gamma 
+
     def _build_fis(self):
         distance      = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "distance")
         rel_speed     = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "rel_speed")
@@ -164,44 +167,48 @@ class AggressiveFuzzyController(KesslerController):
         #####################################
         """Reinforcement Learning Portion"""
         rules_list = rules
-        actions = [
-            ('high', 'hard_right', 'no', 'no'), #Rule:1
-            ('high', 'hard_left', 'no', 'no'), #Rule:2
-            ('high', 'soft_right', 'no', 'no'), #Rule:3
-            ('high', 'hard_right', 'no'), #Rule:4
-            ('high', 'hard_left', 'no'), #Rule:5
-            ('high', 'soft_right', 'no'), #Rule:6
-            'yes', #Rule:6
-            ('medium','soft_right'), #Rule:7
-            ('medium', 'soft_left'), #Rule:8
-            'yes', #Rule:9
-            ('medium', 'soft_right'), #Rule:9
-            ('medium', 'soft_left'), #Rule:10
-            'yes', #Rule:11
-            ('reverse_hard', 'hard_right', 'no', 'no'), #Rule:12
-            ('reverse_hard', 'hard_left',  'no', 'no'), #Rule:13
-            ('reverse_hard', 'soft_right', 'no', 'no'), #Rule:14
-            'medium', #Rule:15
-            'reverse_hard', #Rule:16
-            'soft_right', #Rule:17
-            'reverse_soft', #Rule:18
-            'yes', #Rule:19
-            ('reverse_hard', 'zero', 'no'), #Rule:19
-            ('medium', 'zero', 'yes'), #Rule:20
-            ('medium', 'soft_left'), #Rule:21
-            ('medium', 'soft_right'), #Rule:22
-            ('medium', 'zero', 'yes'), #Rule:23
-            ('medium', 'yes'), #Rule:24
-            ('high', 'zero', 'yes'), #Rule:25
-            ('high', 'soft_left'), #Rule:26
-            ('high', 'soft_right'), #Rule:27
-            'yes', #Rule:28
-            'yes,', #Rule:29
-            'yes', #Rule:30
-            'no' #Rule:31
-        ]
+        self.um_rules = len(rules_list)
 
-        Q = np.zero((len(rules_list),len(actions)))
+        self.actions = [
+            ('high', 'hard_right', 'no', 'no'),   # Rule 1
+            ('high', 'hard_left', 'no', 'no'),    # Rule 2
+            ('high', 'soft_right', 'no', 'no'),   # Rule 3
+            ('high', 'hard_right', 'no'),         # Rule 4
+            ('high', 'hard_left', 'no'),          # Rule 5
+            ('high', 'soft_right', 'no'),         # Rule 6
+            ('yes',),                             # Rule 7
+            ('medium', 'soft_right'),             # Rule 8
+            ('medium', 'soft_left'),              # Rule 9
+            ('yes',),                             # Rule 10
+            ('medium', 'soft_right'),             # Rule 11
+            ('medium', 'soft_left'),              # Rule 12
+            ('yes',),                             # Rule 13
+            ('reverse_hard', 'hard_right', 'no', 'no'),  # Rule 14
+            ('reverse_hard', 'hard_left', 'no', 'no'),   # Rule 15
+            ('reverse_hard', 'soft_right', 'no', 'no'),  # Rule 16
+            ('medium',),                          # Rule 17
+            ('reverse_hard',),                    # Rule 18
+            ('soft_right',),                      # Rule 19
+            ('reverse_soft',),                    # Rule 20
+            ('yes',),                             # Rule 21
+            ('reverse_hard', 'zero', 'no'),       # Rule 22
+            ('medium', 'zero', 'yes'),            # Rule 23
+            ('medium', 'soft_left'),              # Rule 24
+            ('medium', 'soft_right'),             # Rule 25
+            ('medium', 'zero', 'yes'),            # Rule 26
+            ('medium', 'yes'),                    # Rule 27
+            ('high', 'zero', 'yes'),              # Rule 28
+            ('high', 'soft_left'),                # Rule 29
+            ('high', 'soft_right'),               # Rule 30
+            ('yes',),                             # Rule 31
+            ('yes',),                             # Rule 32
+            ('yes',),                             # Rule 33
+            ('no',)                               # Rule 34
+        ]              
+
+        self.rule_weights = np.ones(len(self.actions))
+
+        self.Q = np.zero((len(rules_list),len(self.actions)))
 
         self.ctrl_system = ctrl.ControlSystem(rules)
         self._fis_inputs = dict(distance=distance, rel_speed=rel_speed, angle=angle, mine_distance=mine_distance, mine_angle=mine_angle, danger=danger)
