@@ -21,9 +21,13 @@ from ..scenario import Scenario
 
 
 #imports for plotting clusters
-from clustering import cluster_asteroids
+from .clustering import cluster_asteroids
 import numpy as np
 from scipy.spatial import ConvexHull #for plotting convex hulls around clusters
+import os
+import warnings
+warnings.filterwarnings("ignore", message="Clipping input data")
+from matplotlib.figure import Figure
 
 class GraphicsPLT(KesslerGraphics):
     def __init__(self) -> None:
@@ -38,6 +42,9 @@ class GraphicsPLT(KesslerGraphics):
                        "images/playerShip3_orange.png"]
         self.ship_images = [mpimg.imread(os.path.join(script_dir, image)) for image in self.images]
         self.bullets_line = 0
+        self.ship_images = [np.clip(img, 0, 1) for img in self.ship_images]
+        self.bullets_line = 0
+
 
     def start(self, scenario: Scenario) -> None:
         # Environment data
@@ -54,7 +61,7 @@ class GraphicsPLT(KesslerGraphics):
         self.ax.set_facecolor(color='k')
         plt.tight_layout()
         self.plot_markers(ships, bullets, asteroids)
-
+        self.plot_clusters(asteroids, self.ax)
         # plt.show()
 
     def update(self, score: Score, ships: list[Ship], asteroids: list[Asteroid], bullets: list[Bullet], mines: list[Mine]) -> None:
@@ -67,39 +74,52 @@ class GraphicsPLT(KesslerGraphics):
         plt.ylim([0, self.map_size[1]])
         assert self.fig is not None
         self.fig.canvas.draw()
+        self.plot_clusters(asteroids, self.ax)
         self.fig.canvas.flush_events()
+
+
+
         
-        
-    def plot_clusters(self, asteroids,ax):
+    def plot_clusters(self, asteroids):
+        """
+        Overlay HDBSCAN asteroid clusters directly on the Tkinter canvas.
+        """
+        if not asteroids:
+            return
+
         clusters, labels, positions = cluster_asteroids(asteroids)
+        if len(positions) == 0:
+            return
+
         unique_labels = np.unique(labels)
-        colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels)))
-        for label, color in zip(unique_labels, colors):
-                    mask = labels == label
-                    pts = positions[mask]
+        colors = ["#33FF57", "#FF33A1", "#33B8FF", "#FFF033", "#FF6633", "#9933FF", "#00FFFF"]
 
-                    # Skip noise points
-                    if label == -1:
-                        ax.scatter(pts[:, 0], pts[:, 1],
-                                c='gray', s=20, alpha=0.4, label='Noise')
-                        continue
+        for label in unique_labels:
+            mask = labels == label
+            pts = positions[mask]
 
-                    # Cluster members
-                    ax.scatter(pts[:, 0], pts[:, 1],
-                            c=[color], s=35, alpha=0.7, label=f'C{label}')
+            # skip noise points
+            if label == -1:
+                continue
 
-                    # Centroid
-                    centroid = np.mean(pts, axis=0)
-                    ax.scatter(*centroid, c='yellow', s=150, marker='x',
-                            linewidths=1.8, zorder=10)
+            # pick a color for the cluster
+            color = colors[label % len(colors)]
 
-                    # Convex hull outline
-                    if len(pts) >= 3:
-                        hull = ConvexHull(pts)
-                        hull_idx = np.append(hull.vertices, hull.vertices[0])
-                        ax.plot(pts[hull_idx, 0], pts[hull_idx, 1],
-                                c=color, lw=1.5, alpha=0.6)
-            
+            # centroid
+            centroid = np.mean(pts, axis=0)
+            cx, cy = centroid
+            self.game_canvas.create_oval(cx - 4, cy - 4, cx + 4, cy + 4,
+                                         outline=color, fill="", width=2)
+
+            # convex hull outline
+            if len(pts) >= 3:
+                hull = ConvexHull(pts)
+                hull_pts = [tuple(pts[i]) for i in hull.vertices]
+                flat_coords = [coord for xy in hull_pts for coord in xy]
+                self.game_canvas.create_polygon(flat_coords, outline=color,
+                                                width=1.5, fill="", smooth=True)
+
+
 
     def plot_markers(self, ships: list[Ship], bullets: list[Bullet], asteroids: list[Asteroid]) -> None:
 

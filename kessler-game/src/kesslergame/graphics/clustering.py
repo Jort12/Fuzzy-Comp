@@ -7,6 +7,11 @@ import matplotlib.pyplot as plt
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 from kesslergame import KesslerGame, Scenario, KesslerController
+from sklearn.discriminant_analysis import unique_labels
+import os
+import warnings
+warnings.filterwarnings("ignore", message="Clipping input data")
+from matplotlib.figure import Figure
 
 
 """
@@ -21,7 +26,7 @@ Returns:
     labels: cluster labels for each asteroid
     
 """
-def cluster_asteroids(asteroids, min_cluster_size=2, min_samples=1):
+def cluster_asteroids(asteroids, min_cluster_size=5, min_samples=3):
     if not asteroids:
         return [], np.array([]), np.empty((0, 2))
 
@@ -36,7 +41,7 @@ def cluster_asteroids(asteroids, min_cluster_size=2, min_samples=1):
         pts = positions[labels == label]
         centroid = np.mean(pts, axis=0)
         clusters.append({"centroid": centroid, "size": len(pts)})
-
+        print(f"Cluster {label}: Size {len(pts)}, Centroid {centroid}")
     return clusters, labels, positions
 
 
@@ -44,52 +49,7 @@ def cluster_asteroids(asteroids, min_cluster_size=2, min_samples=1):
 
 _fig = None
 _ax = None
-def plot_clusters(positions, labels, ship_pos=None, map_size=(1000, 800)):
 
-    global _fig, _ax
-
-    if _fig is None: # Initialize plot
-        plt.ion()
-        _fig = plt.figure(figsize=(8, 6))
-        _ax = _fig.add_subplot(111)
-        _fig.show()
-        _fig.canvas.draw()
-    
-    #clear and redraw every frame
-    _ax.clear() 
-    
-    unique_labels = np.unique(labels)
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels))) #use tab10 colormap for distinct colors
-    
-    for label, color in zip(unique_labels, colors):
-        if label == -1:
-            #noise points in black
-            mask = labels == label
-            _ax.scatter(positions[mask, 0], positions[mask, 1], 
-                       c='black', s=30, alpha=0.5, label='Noise')
-        else:
-            mask = labels == label
-            _ax.scatter(positions[mask, 0], positions[mask, 1],
-                       c=[color], s=50, alpha=0.7, label=f'Cluster {label}')
-    
-    # Plot ship position
-    if ship_pos is not None:
-        _ax.scatter(ship_pos[0], ship_pos[1], 
-                   color='red', s=300, marker='*', 
-                   label='Ship', edgecolors='yellow', linewidths=2, zorder=10)
-    
-    _ax.set_title("Asteroid Clusters", fontsize=14, fontweight='bold')
-    _ax.set_xlabel("X Position", fontsize=11)
-    _ax.set_ylabel("Y Position", fontsize=11)
-    _ax.set_xlim(-50, map_size[0] + 50)
-    _ax.set_ylim(-50, map_size[1] + 50)
-    _ax.grid(True, alpha=0.3)
-    _ax.legend(loc='upper right', fontsize=8)
-    
-    #force update
-    _fig.canvas.draw()
-    _fig.canvas.flush_events()
-    plt.pause(0.001)
 
 
 def close_plot():

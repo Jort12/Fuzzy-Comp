@@ -6,6 +6,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from enum import Enum
+import os
+import warnings
+warnings.filterwarnings("ignore", message="Clipping input data")
+from matplotlib.figure import Figure
 
 if TYPE_CHECKING:
     from .graphics_base import KesslerGraphics
