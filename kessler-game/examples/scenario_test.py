@@ -29,10 +29,7 @@ game = KesslerGame(settings=game_settings)
 
 # Run the game with only AggressiveFuzzyController
 pre = time.perf_counter()
-score, perf_data = game.run(
-    scenario=my_test_scenario,
-    controllers=[AggressiveFuzzyController()]
-)
+score, perf_data = game.run(scenario=my_test_scenario, controllers=[AggressiveFuzzyController()])
 
 print('Scenario eval time: ' + str(time.perf_counter() - pre))
 print(score.stop_reason)
