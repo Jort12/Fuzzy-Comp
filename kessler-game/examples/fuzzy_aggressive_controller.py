@@ -34,13 +34,53 @@ def _wrap180(a):
     return (a + 180.0) % 360.0 - 180.0
 
 class AggressiveFuzzyController(KesslerController):
-    def __init__(self, normalization_distance_scale: float = None):
+    def __init__(self, normalization_distance_scale: float = None, learning_rate: float = 0.05, gamma: float = 0.9):
         super().__init__()
         self._norm_dist_scale = normalization_distance_scale
         self._build_fis()
 
         self.learning_rate = learning_rate
         self.gamma = gamma 
+
+        self.rule_weights = np.ones(len(self.actions))
+        self.prev_rule_weights = np.copy(self.rule_weights)
+
+    def compute_reward(self, ship_state, game_state):
+        reward = 0.0
+        
+        #Survival Bonus
+        reward += 0.01
+
+        asteroids = _get(game_state, ['asteroids', 'asteroid_states'], []) or []
+        mines = _get(game_state, ['mines', 'mine_states'], []) or []
+
+        ship_pos = _get_pos(ship_state) or (0.0,0.0)
+        ship_x, ship_y = ship_pos
+
+        for a in asteroids:
+            aster_pos = _get_pos(a)
+            if aster_pos == None:
+                continue
+            if np.hypot(aster_pos[0]-ship_x, aster_pos[1]-ship_y) < 10.0:
+                reward -= 1.0
+
+        for m in mines:
+            mine_pos = _get_pos(m)
+            if mine_pos == None:
+                continue
+            if np.hypot(mine_pos[0]-ship_x, mine_pos[1]-ship_y) < 10.0: 
+                reward -= 1.0
+
+        # Reward for destroying asteroid
+        destroyed_asteroids = _get(game_state, ["destroyed_asteroids"], 0) or 0
+        reward += 0.05 * destroyed_asteroids
+
+        # Normalize reward
+        reward = max(-1.0, min(1.0, reward))
+        return reward
+    
+    def update_wieghts(self, reward):
+        adfasdfs
 
     def _build_fis(self):
         distance      = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "distance")
