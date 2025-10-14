@@ -33,10 +33,10 @@ class SugenoRule:
         self.weight = weight  #weight of the rule, default to 1.0
     
 class SugenoSystem:
-    def __init__(self, rules=None, mode="prod"):
+    def __init__(self, rules=None, mode="prod"): #rules are list of SugenoRule
         self.rules = rules if rules else []
-        self.mode = mode  #"prod" or "min"
-    def add_rule(self,rule:SugenoRule):
+        self.mode = mode  #"prod" or "min", product or minimum for AND operation
+    def add_rule(self,rule:SugenoRule): 
         self.rules.append(rule)
     def evaluate(self,inputs:dict): #evalutate with crisp inputs, ex:{'dist': 300, 'approach': 1.5, 'ammo': 3}
         numerator, denominator = 0.0,0.0
@@ -49,6 +49,13 @@ class SugenoSystem:
                     mus.append(mu)
                 else:
                     mus.append(0.0)  # If input not found, assume membership is 0
+            w = rule_strength(mus, self.mode) * rule.weight
+            #Output: weighted Average:
+            for (output_name, output_value) in rule.consequents:
+                numerator += w * output_value
+                denominator += w
+            
+        return numerator / denominator          
                     
         
 

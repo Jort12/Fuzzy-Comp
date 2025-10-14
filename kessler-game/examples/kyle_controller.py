@@ -3,28 +3,22 @@
 
 from kesslergame.controller import KesslerController
 from util import wrap180, intercept_point, side_score, triag, find_nearest_asteroid, angle_between, distance
-from fuzzy_system import SugenoRule
-
+from fuzzy_system import *
 import math
 
 """
-PLAN:
-
-Create fuzzy sets for inputs:
 mu_dist: distance to nearest asteroid
 mu_approach: approach speed to nearest asteroid
 mu_ttc: time to collision with nearest asteroid
 mu_ammo: amount of ammo left
 mu_mine
 mu_clearance: how clear the area is around the ship
-
-mu_heading_err: angle(target or intercept) - current heading,
+mu_headng_err: angle(target or intercept) - current heading,
     angle difference between ship heading and target heading
 
 Create classes for rules:
 SugenoRule: for Sugeno-type rules with numerical outputs
 MamdaniRule: for Mamdani-type rules with fuzzy set outputs
-Create fuzzy sets for outputs:
 mu_thrust: thrust level
 mu_turn_rate: turn rate
 mu_fire: whether to fire or not
@@ -98,7 +92,18 @@ def mu_mine(m): #mines left
 
 def build_rules():
     return [
-        #close 
+        SugenoRule( #Example of Addinbg a rule
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["very_close"]), # if distance is very close
+                ("approach_speed", lambda v: mu_approach(v)["fast_approaching"]),# and approach speed is fast_approaching
+                ("ttc", lambda t: mu_ttc(t)["imminent"])# and time to collision is imminent
+            ],
+            consequents=[
+                ("thrust", 0.0),  # stop thrusting (danger close)
+                ("turn_rate", 1.0)  # max turn
+            ],
+            weight=1.0#defalt 1.0
+        ),
 
 
     ]
@@ -135,11 +140,21 @@ class KyleController(KesslerController):
     name = "Kyle's Fuzzy Controller"
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much
-        
-
+        self.system = SugenoSystem(rules=build_rules())
+    
         
     def actions(self, ship_state, game_state): 
+        ctx = context(ship_state, game_state)
         
+        thrust = self.system.evaluate(ctx)
+        turn_rate = self.system.evaluate(ctx)
+        fire = (ctx["ammo"] > 0) and (abs(ctx["heading_err"]) < 5) and (ctx["ttc"] < 3)#placeholder for now, actual fuzzy logic later
+        drop_mine = False #placeholder for now, actual fuzzy logic later
+        
+        #clamp to valid ranges
+        thrust = max(ship_state.thrust_range[0], min(ship_state.thrust_range[1], thrust))
+        turn_rate = max(ship_state.turn_rate_range[0], min(ship_state.turn_rate_range[1], turn_rate))
+    
         
         
         
