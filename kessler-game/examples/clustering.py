@@ -21,6 +21,13 @@ Returns:
     labels: cluster labels for each asteroid
     
 """
+
+
+_cluster_scatters = {}
+_ship_scatter = None
+_fig = None
+_ax = None
+
 def cluster_asteroids(asteroids, min_cluster_size=3, min_samples=2):
     if not asteroids:
         return [], np.array([]), np.empty((0, 2))
@@ -41,55 +48,56 @@ def cluster_asteroids(asteroids, min_cluster_size=3, min_samples=2):
 
 
 
-
-_fig = None
-_ax = None
 def plot_clusters(positions, labels, ship_pos=None, map_size=(1000, 800)):
+    global _fig, _ax, _cluster_scatters, _ship_scatter
 
-    global _fig, _ax
-
-    if _fig is None: # Initialize plot
+    # Initialize once
+    if _fig is None:
         plt.ion()
-        _fig = plt.figure(figsize=(8, 6))
-        _ax = _fig.add_subplot(111)
-        _fig.show()
-        _fig.canvas.draw()
-    
-    #clear and redraw every frame
-    _ax.clear() 
-    
+        _fig, _ax = plt.subplots(figsize=(8, 6))
+        _ax.set_xlim(-50, map_size[0] + 50)
+        _ax.set_ylim(-50, map_size[1] + 50)
+        _ax.set_facecolor("k")
+        _ax.grid(True, alpha=0.3)
+        _ax.set_title("Asteroid Clusters", fontsize=14, fontweight="bold")
+        _ax.set_xlabel("X Position")
+        _ax.set_ylabel("Y Position")
+
     unique_labels = np.unique(labels)
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels))) #use tab10 colormap for distinct colors
-    
-    for label, color in zip(unique_labels, colors):
-        if label == -1:
-            #noise points in black
-            mask = labels == label
-            _ax.scatter(positions[mask, 0], positions[mask, 1], 
-                       c='black', s=30, alpha=0.5, label='Noise')
+    cmap = plt.cm.get_cmap('tab20', len(unique_labels))
+
+    # create or update each cluster scatter
+    for i, label in enumerate(unique_labels):
+        mask = labels == label
+        if not np.any(mask):
+            continue
+        pts = positions[mask]
+        color = 'gray' if label == -1 else cmap(i / max(len(unique_labels)-1, 1))
+        size = 10 + len(pts) * 8
+
+        if label not in _cluster_scatters:
+            sc = _ax.scatter(pts[:, 0], pts[:, 1], c=[color], s=size, alpha=0.7, label=f'C{label}')
+            _cluster_scatters[label] = sc
         else:
-            mask = labels == label
-            _ax.scatter(positions[mask, 0], positions[mask, 1],
-                       c=[color], s=50, alpha=0.7, label=f'Cluster {label}')
-    
-    # Plot ship position
+            sc = _cluster_scatters[label]
+            sc.set_offsets(pts)
+            sc.set_sizes(np.full(len(pts), size))
+
+    for old_label in list(_cluster_scatters.keys()):
+        if old_label not in unique_labels:
+            _cluster_scatters[old_label].remove()
+            del _cluster_scatters[old_label]
+
+    if _ship_scatter is None:
+        _ship_scatter = _ax.scatter([], [], c='red', s=300, marker='*',
+                                    edgecolors='yellow', linewidths=2, zorder=10)
     if ship_pos is not None:
-        _ax.scatter(ship_pos[0], ship_pos[1], 
-                   color='red', s=300, marker='*', 
-                   label='Ship', edgecolors='yellow', linewidths=2, zorder=10)
-    
-    _ax.set_title("Asteroid Clusters", fontsize=14, fontweight='bold')
-    _ax.set_xlabel("X Position", fontsize=11)
-    _ax.set_ylabel("Y Position", fontsize=11)
-    _ax.set_xlim(-50, map_size[0] + 50)
-    _ax.set_ylim(-50, map_size[1] + 50)
-    _ax.grid(True, alpha=0.3)
-    _ax.legend(loc='upper right', fontsize=8)
-    
-    #force update
-    _fig.canvas.draw()
+        _ship_scatter.set_offsets([ship_pos])
+
+    _fig.canvas.draw_idle()
     _fig.canvas.flush_events()
-    plt.pause(0.001)
+
+
 
 
 def close_plot():
