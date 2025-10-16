@@ -34,16 +34,18 @@ def _wrap180(a):
     return (a + 180.0) % 360.0 - 180.0
 
 class AggressiveFuzzyController(KesslerController):
-    def __init__(self, normalization_distance_scale: float = None, learning_rate: float = 0.05, gamma: float = 0.9):
+    def __init__(self, normalization_distance_scale: float = None, learning_rate: float = 0.05, gamma: float = 0.9, epsilon: float = 0.1):
         super().__init__()
         self._norm_dist_scale = normalization_distance_scale
         self._build_fis()
 
         self.learning_rate = learning_rate
         self.gamma = gamma 
+        self.epsilon = epsilon
 
-        self.rule_weights = np.ones(len(self.actions))
-        self.prev_rule_weights = np.copy(self.rule_weights)
+        self.Q = np.zero(len(self.actions))
+        self._last_action_idx = None
+
 
     def compute_reward(self, ship_state, game_state):
         reward = 0.0
@@ -79,8 +81,15 @@ class AggressiveFuzzyController(KesslerController):
         reward = max(-1.0, min(1.0, reward))
         return reward
     
-    def update_wieghts(self, reward):
-        adfasdfs
+    def update_wieghts(self, reward: float):
+        if self._last_action_idx == None:
+            return
+        
+        a = self._last_action_idx
+        alpha = self.learning_rate
+        gamma = self.gamma 
+
+        
 
     def _build_fis(self):
         distance      = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "distance")
