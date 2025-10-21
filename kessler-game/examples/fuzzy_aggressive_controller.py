@@ -34,19 +34,20 @@ def _wrap180(a):
     return (a + 180.0) % 360.0 - 180.0
 
 class AggressiveFuzzyController(KesslerController):
-    def __init__(self, normalization_distance_scale: float = None, learning_rate: float = 0.05, gamma: float = 0.9, epsilon: float = 0.1):
+    def __init__(self, normalization_distance_scale: float = None):
         super().__init__()
         self._norm_dist_scale = normalization_distance_scale
         self._build_fis()
-
+        '''
         self.learning_rate = learning_rate
         self.gamma = gamma 
         self.epsilon = epsilon
 
         self.Q = np.zero(len(self.actions))
         self._last_action_idx = None
+        '''
 
-
+    '''
     def compute_reward(self, ship_state, game_state):
         reward = 0.0
         
@@ -88,7 +89,7 @@ class AggressiveFuzzyController(KesslerController):
         a = self._last_action_idx
         alpha = self.learning_rate
         gamma = self.gamma 
-
+    '''
         
 
     def _build_fis(self):
@@ -213,7 +214,7 @@ class AggressiveFuzzyController(KesslerController):
         ]
 
 
-        #####################################
+        ''' 
         """Reinforcement Learning Portion"""
         rules_list = rules
         self.um_rules = len(rules_list)
@@ -258,7 +259,8 @@ class AggressiveFuzzyController(KesslerController):
         self.rule_weights = np.ones(len(self.actions))
 
         self.Q = np.zero((len(rules_list),len(self.actions)))
-
+        '''
+        
         self.ctrl_system = ctrl.ControlSystem(rules)
         self._fis_inputs = dict(distance=distance, rel_speed=rel_speed, angle=angle, mine_distance=mine_distance, mine_angle=mine_angle, danger=danger)
         self._fis_outputs = dict(thrust=thrust, turn=turn, fire=fire, mine=mine)
