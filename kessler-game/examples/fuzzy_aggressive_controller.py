@@ -4,7 +4,9 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 from kesslergame.controller import KesslerController
 
-# Small helpers to read fields
+# ------------------------------------------------------------
+# Utility helpers (robust to sim object variations)
+# ------------------------------------------------------------
 
 def _get(o, names, default=None):
     """Return first present attribute from a list of names (or default)."""
@@ -13,332 +15,391 @@ def _get(o, names, default=None):
             return getattr(o, n)
     return default
 
+
 def _get_pos(o):
-    """Return (x, y) as floats if available; else None."""
-    p = _get(o, ["position", "pos"], None)
-    if isinstance(p, (tuple, list)) and len(p) >= 2:
-        try:
-            return float(p[0]), float(p[1])
-        except:
-            return None
-    return None
+    p = _get(o, ["position", "pos", "p"], None)
+    if p is None:
+        return None
+    if isinstance(p, (list, tuple)):
+        return float(p[0]), float(p[1])
+    try:
+        return float(p.x), float(p.y)
+    except Exception:
+        return None
+
 
 def _get_vel(o):
-    """Return (vx, vy) as floats; defaults to (0,0)."""
-    v = _get(o, ["velocity", "vel"], (0.0, 0.0)) or (0.0, 0.0)
-    try:
+    v = _get(o, ["velocity", "vel", "v"], None)
+    if v is None:
+        return (0.0, 0.0)
+    if isinstance(v, (list, tuple)):
         return float(v[0]), float(v[1])
-    except:
+    try:
+        return float(v.x), float(v.y)
+    except Exception:
         return (0.0, 0.0)
 
+
 def _ang_deg(dx, dy):
-    """Angle (degrees) of vector (dx,dy)."""
     return math.degrees(math.atan2(dy, dx))
 
+
 def _wrap180(a):
-    """Wrap angle to [-180, 180] degrees."""
     return (a + 180.0) % 360.0 - 180.0
 
 
-# Aggressive fuzzy-logic ship controller
+# ------------------------------------------------------------
+# Aggressive, Explainable Fuzzy Controller with TTC + Lead Aim
+# ------------------------------------------------------------
 
 class AggressiveFuzzyController(KesslerController):
-    """Fuzzy controller that chases and shoots, with simple mine avoidance."""
+    """Aggressive fuzzy controller using TTC supervisor, lead-aim firing,
+    angle-rate damping, clutter awareness, and smart mine logic.
+    All decisions are produced by a transparent scikit-fuzzy rule base.
+    """
 
-    def __init__(self, normalization_distance_scale: float = None):
+    # Engine constants (match Kessler defaults reasonably)
+    T_MAX = 230.0      # maps thrust in [-1,1] to engine thrust
+    MAX_TURN = 540.0   # deg/sec mapping for turn output in [-1,1]
+
+    def __init__(self, normalization_distance_scale: float | None = None):
         super().__init__()
-        self._norm_dist_scale = normalization_distance_scale  # scale used to normalize distances
-        self._build_fis()  # build fuzzy inference system
+        self._norm_dist_scale = normalization_distance_scale
 
+        # persistent state for hysteresis / smoothing
+        self._last_turn = 0.0
+        self._last_thrust = 0.0
+        self._lock_on = 0.0  # grows while lead_error stays small
+
+        self._build_fis()
+
+    # --------------------------------------------------------
+    # Build fuzzy inference system
+    # --------------------------------------------------------
     def _build_fis(self):
-        """Define fuzzy inputs/outputs and rules."""
-        # Inputs (Antecedents) normalized to small ranges
-        distance      = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "distance")
-        rel_speed     = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "rel_speed")
-        angle         = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "angle")
-        mine_distance = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "mine_distance")
-        mine_angle    = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "mine_angle")
-        danger        = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "danger")
+        # Inputs (Antecedents) normalized to small, generic ranges
+        distance       = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "distance")
+        ttc            = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "ttc")  # 0=imminent .. 1=later
+        lead_error     = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "lead_error")
+        angle_rate     = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "angle_rate")
+        clutter        = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "clutter")
+        closing        = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "closing")  # -1 receding, +1 approaching
+        mine_distance  = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "mine_distance")
+        mine_rel_speed = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "mine_rel_speed")
 
         # Outputs (Consequents)
-        thrust = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "thrust")  # -1 reverse .. 1 forward (scaled later)
-        turn   = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "turn")    # -1 left .. 1 right (scaled later)
-        fire   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "fire")     # 0..1 (thresholded)
-        mine   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "mine")     # 0..1 (thresholded)
+        thrust = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "thrust")
+        turn   = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "turn")
+        fire   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "fire")
+        drop   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "mine")
 
-        # Membership functions (names -> shapes)
+        # Membership functions
         distance['very_close'] = fuzz.trimf(distance.universe, [0.00, 0.00, 0.10])
-        distance['close']      = fuzz.trimf(distance.universe, [0.08, 0.18, 0.30])
-        distance['sweet']      = fuzz.trimf(distance.universe, [0.25, 0.45, 0.60])
-        distance['far']        = fuzz.trimf(distance.universe, [0.55, 0.80, 1.00])
+        distance['close']      = fuzz.trimf(distance.universe, [0.05, 0.20, 0.35])
+        distance['sweet']      = fuzz.trimf(distance.universe, [0.25, 0.45, 0.65])
+        distance['far']        = fuzz.trimf(distance.universe, [0.55, 1.00, 1.00])
 
-        rel_speed['slow']   = fuzz.trimf(rel_speed.universe, [0.0, 0.0, 0.35])
-        rel_speed['medium'] = fuzz.trimf(rel_speed.universe, [0.2, 0.5, 0.8])
-        rel_speed['fast']   = fuzz.trimf(rel_speed.universe, [0.6, 1.0, 1.0])
+        # TTC normalized such that 0=imminent, 1=later
+        ttc['imminent'] = fuzz.trimf(ttc.universe, [0.00, 0.00, 0.15])
+        ttc['soon']     = fuzz.trimf(ttc.universe, [0.10, 0.30, 0.50])
+        ttc['later']    = fuzz.trimf(ttc.universe, [0.45, 1.00, 1.00])
 
-        angle['left']  = fuzz.trimf(angle.universe, [-1.0, -1.0, -0.10])
-        angle['ahead'] = fuzz.trimf(angle.universe, [-0.03,  0.0,  0.03])
-        angle['right'] = fuzz.trimf(angle.universe, [ 0.10,  1.0,  1.0])
+        # lead_error/angle_rate (negative = left, positive = right)
+        lead_error['left']   = fuzz.trimf(lead_error.universe, [-1.0, -1.0, -0.08])
+        lead_error['small']  = fuzz.trimf(lead_error.universe, [-0.03, 0.0, 0.03])
+        lead_error['right']  = fuzz.trimf(lead_error.universe, [ 0.08, 1.0, 1.0])
+
+        angle_rate['left_fast']  = fuzz.trimf(angle_rate.universe, [-1.0, -1.0, -0.20])
+        angle_rate['steady']     = fuzz.trimf(angle_rate.universe, [-0.05, 0.0, 0.05])
+        angle_rate['right_fast'] = fuzz.trimf(angle_rate.universe, [ 0.20, 1.0, 1.0])
+
+        clutter['low']    = fuzz.trimf(clutter.universe, [0.00, 0.00, 0.35])
+        clutter['medium'] = fuzz.trimf(clutter.universe, [0.25, 0.50, 0.75])
+        clutter['high']   = fuzz.trimf(clutter.universe, [0.65, 1.00, 1.00])
+
+        closing['receding']    = fuzz.trimf(closing.universe, [-1.0, -1.0, -0.10])
+        closing['steady']      = fuzz.trimf(closing.universe, [-0.15, 0.0, 0.15])
+        closing['approaching'] = fuzz.trimf(closing.universe, [ 0.10, 1.0, 1.0])
 
         mine_distance['very_near'] = fuzz.trimf(mine_distance.universe, [0.00, 0.00, 0.16])
-        mine_distance['near']      = fuzz.trimf(mine_distance.universe, [0.12, 0.28, 0.44])
-        mine_distance['mid']       = fuzz.trimf(mine_distance.universe, [0.36, 0.60, 0.84])
-        mine_distance['far']       = fuzz.trimf(mine_distance.universe, [0.76, 1.00, 1.00])
+        mine_distance['near']      = fuzz.trimf(mine_distance.universe, [0.12, 0.30, 0.48])
+        mine_distance['far']       = fuzz.trimf(mine_distance.universe, [0.40, 1.00, 1.00])
 
-        mine_angle['left']  = fuzz.trimf(mine_angle.universe, [-1.0, -1.0, -0.0])
-        mine_angle['ahead'] = fuzz.trimf(mine_angle.universe, [-0.1,  0.0,  0.1])
-        mine_angle['right'] = fuzz.trimf(mine_angle.universe, [ 0.0,  1.0,  1.0])
+        mine_rel_speed['outbound'] = fuzz.trimf(mine_rel_speed.universe, [-1.0, -1.0, -0.10])
+        mine_rel_speed['neutral']  = fuzz.trimf(mine_rel_speed.universe, [-0.20, 0.0, 0.20])
+        mine_rel_speed['inbound']  = fuzz.trimf(mine_rel_speed.universe, [ 0.10, 1.0, 1.0])
 
-        danger['imminent'] = fuzz.trimf(danger.universe, [0.00, 0.00, 0.25])
-        danger['risky']    = fuzz.trimf(danger.universe, [0.20, 0.45, 0.70])
-        danger['safe']     = fuzz.trimf(danger.universe, [0.60, 1.00, 1.00])
+        # Output sets
+        thrust['reverse_hard'] = fuzz.trimf(thrust.universe, [-1.0, -1.0, -0.70])
+        thrust['reverse_soft'] = fuzz.trimf(thrust.universe, [-0.80, -0.40, -0.10])
+        thrust['idle']         = fuzz.trimf(thrust.universe, [-0.10, 0.0, 0.10])
+        thrust['medium']       = fuzz.trimf(thrust.universe, [ 0.10, 0.40, 0.70])
+        thrust['high']         = fuzz.trimf(thrust.universe, [ 0.60, 1.00, 1.00])
 
-        thrust['reverse_hard'] = fuzz.trimf(thrust.universe, [-1.0, -1.0, -0.4])
-        thrust['reverse_soft'] = fuzz.trimf(thrust.universe, [-0.6, -0.3,  0.0])
-        thrust['medium']       = fuzz.trimf(thrust.universe, [ 0.2,  0.5,  0.8])
-        thrust['high']         = fuzz.trimf(thrust.universe, [ 0.6,  1.0,  1.0])
+        turn['hard_left']   = fuzz.trimf(turn.universe,  [-1.0, -1.0, -0.65])
+        turn['soft_left']   = fuzz.trimf(turn.universe,  [-0.60, -0.25, -0.05])
+        turn['zero']        = fuzz.trimf(turn.universe,  [-0.05, 0.0, 0.05])
+        turn['soft_right']  = fuzz.trimf(turn.universe,  [ 0.05, 0.25, 0.60])
+        turn['hard_right']  = fuzz.trimf(turn.universe,  [ 0.65, 1.0, 1.0])
 
-        turn['hard_left']  = fuzz.trimf(turn.universe, [-1.0, -1.0, -0.30])
-        turn['soft_left']  = fuzz.trimf(turn.universe, [-0.8, -0.4,  0.0])
-        turn['zero']       = fuzz.trimf(turn.universe, [-0.05,  0.0,  0.05])
-        turn['soft_right'] = fuzz.trimf(turn.universe, [ 0.0,  0.4,  0.8])
-        turn['hard_right'] = fuzz.trimf(turn.universe, [ 0.30,  1.0,  1.0])
+        fire['no']  = fuzz.trimf(fire.universe, [0.0, 0.0, 0.3])
+        fire['yes'] = fuzz.trimf(fire.universe, [0.7, 1.0, 1.0])
 
-        fire['no']  = fuzz.trimf(fire.universe, [0.0, 0.0, 0.35])
-        fire['yes'] = fuzz.trimf(fire.universe, [0.20, 1.0, 1.0])
+        drop['no']  = fuzz.trimf(drop.universe, [0.0, 0.0, 0.4])
+        drop['yes'] = fuzz.trimf(drop.universe, [0.6, 1.0, 1.0])
 
-        mine['no']  = fuzz.trimf(mine.universe, [0.0, 0.0, 0.35])
-        mine['yes'] = fuzz.trimf(mine.universe, [0.25, 1.0, 1.0])
-
-        # Rules: combine inputs -> outputs (aggressive bias)
+        # -------------------- Rules --------------------
         rules = []
 
-        # Avoid very near mines
+        # ============ EVASION: TTC supervisor ============
+        # If imminent and lead says target is to left -> hard-right + reverse, no fire, no drop
+        antecedent_left  = ttc['imminent'] & lead_error['left']
+        antecedent_right = ttc['imminent'] & lead_error['right']
         rules += [
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['left'],  (thrust['high'],   turn['hard_right'], fire['no'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  fire['no'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], fire['no'], mine['no'])),
+            ctrl.Rule(antecedent_left, thrust['reverse_hard']),
+            ctrl.Rule(antecedent_left, turn['hard_right']),
+            ctrl.Rule(antecedent_left, fire['no']),
+            ctrl.Rule(antecedent_left, drop['no']),
+
+            ctrl.Rule(antecedent_right, thrust['reverse_hard']),
+            ctrl.Rule(antecedent_right, turn['hard_left']),
+            ctrl.Rule(antecedent_right, fire['no']),
+            ctrl.Rule(antecedent_right, drop['no']),
         ]
 
-        # Near mines + basic firing windows
+        # Mines inbound -> brake hard, do not fire or drop
+        antecedent_mine_close = mine_distance['very_near'] & mine_rel_speed['inbound']
+        antecedent_mine_near  = mine_distance['near'] & mine_rel_speed['inbound']
         rules += [
-            ctrl.Rule(mine_distance['near'] & mine_angle['left'],  (thrust['high'],   turn['hard_right'], mine['no'])),
-            ctrl.Rule(mine_distance['near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  mine['no'])),
-            ctrl.Rule(mine_distance['near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], mine['no'])),
-            ctrl.Rule(mine_distance['near'] & angle['ahead'], fire['yes']),
+            ctrl.Rule(antecedent_mine_close, thrust['reverse_hard']),
+            ctrl.Rule(antecedent_mine_close, fire['no']),
+            ctrl.Rule(antecedent_mine_close, drop['no']),
+
+            ctrl.Rule(antecedent_mine_near, thrust['reverse_soft']),
+            ctrl.Rule(antecedent_mine_near, fire['no']),
+            ctrl.Rule(antecedent_mine_near, drop['no']),
         ]
 
-        # Mid-distance mines
+        # ============ STRAFE when clutter high ============
+        antecedent_strafe = clutter['high'] & (ttc['soon'] | ttc['imminent'])
         rules += [
-            ctrl.Rule(mine_distance['mid'] & mine_angle['left'],  (thrust['medium'], turn['soft_right'])),
-            ctrl.Rule(mine_distance['mid'] & mine_angle['right'], (thrust['medium'], turn['soft_left'])),
-            ctrl.Rule(mine_distance['mid'] & angle['ahead'], fire['yes']),
+            ctrl.Rule(antecedent_strafe, thrust['reverse_soft']),
+            ctrl.Rule(antecedent_strafe, fire['no']),
         ]
 
-        # Immediate danger = brake and turn away
+        # ============ PURSUIT throttle by closing sign ============
         rules += [
-            ctrl.Rule(danger['imminent'] & angle['left'],  (thrust['reverse_hard'], turn['hard_right'], fire['no'], mine['no'])),
-            ctrl.Rule(danger['imminent'] & angle['right'], (thrust['reverse_hard'], turn['hard_left'],  fire['no'], mine['no'])),
-            ctrl.Rule(danger['imminent'] & angle['ahead'], (thrust['reverse_hard'], turn['soft_right'], fire['no'], mine['no'])),
-            ctrl.Rule(danger['risky'], thrust['medium']),
+            ctrl.Rule(distance['far'] & closing['receding'] & (ttc['later'] | ttc['soon']), thrust['high']),
+            ctrl.Rule(distance['sweet'] & closing['approaching'] & ttc['later'], thrust['medium']),
+            ctrl.Rule(distance['very_close'] & closing['approaching'], thrust['reverse_soft']),
         ]
 
-        # Close control / approach tuning
+        # ============ LEAD-AIM & steering window ============
         rules += [
-            ctrl.Rule(distance['very_close'], thrust['reverse_hard']),
-            ctrl.Rule(distance['very_close'] & angle['ahead'], turn['soft_right']),
-            ctrl.Rule(distance['close'] & rel_speed['fast'], thrust['reverse_soft']),
+            ctrl.Rule(lead_error['small'] & (ttc['later'] | ttc['soon']) & clutter['low'], turn['zero']),
+            ctrl.Rule(lead_error['small'] & (ttc['later'] | ttc['soon']) & clutter['low'], fire['yes']),
+
+            ctrl.Rule(lead_error['left'],  turn['soft_left']),
+            ctrl.Rule(lead_error['right'], turn['soft_right']),
         ]
 
-        # Fire when target is ahead and not in immediate danger
+        # ============ DAMP overshoot using angle_rate ============
         rules += [
-            ctrl.Rule((angle['ahead']) & (danger['safe'] | danger['risky']) & (mine_distance['far'] | mine_distance['mid'] | mine_distance['near']), fire['yes'])
+            ctrl.Rule(lead_error['left']  & angle_rate['left_fast'],  turn['soft_right']),
+            ctrl.Rule(lead_error['right'] & angle_rate['right_fast'], turn['soft_left']),
         ]
 
-        # Edge case: very close but mines are far — brake in place
-        rules.append(ctrl.Rule(mine_distance['far'] & distance['very_close'], (thrust['reverse_hard'], turn['zero'], fire['no'])))
-
-        # Close distance handling with steering
+        # ============ Smart mine drop: prefer close & safe ============
         rules += [
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['left'],  (thrust['medium'], turn['soft_left'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['right'], (thrust['medium'], turn['soft_right'])),
+            ctrl.Rule(distance['close'] & (ttc['soon'] | ttc['later']) & (clutter['low'] | clutter['medium']) & mine_distance['far'], drop['yes'])
         ]
 
-        # Sweet spot / far distances
-        rules += [
-            ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])),
-            ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & (angle['left'] | angle['right']), (thrust['medium'], fire['yes'])),
-        ]
-
-        rules += [
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['ahead'], (thrust['high'], turn['zero'], fire['yes'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['left'],  (thrust['high'], turn['soft_left'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['right'], (thrust['high'], turn['soft_right'])),
-        ]
-
-        # Fire if far/sweet and closing fast
-        rules.append(ctrl.Rule(mine_distance['far'] & (distance['sweet'] | distance['far']) & rel_speed['fast'] & angle['ahead'], fire['yes']))
-
-        # Mine drop logic (avoid spamming near danger/mines)
-        rules += [
-            ctrl.Rule(mine_distance['far'] & danger['safe'] & (distance['close'] | distance['sweet']) & angle['ahead'], mine['yes']),
-            ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']),
-            ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']),
-        ]
-
-        # Build control system and keep references
         self.ctrl_system = ctrl.ControlSystem(rules)
-        self._fis_inputs = dict(distance=distance, rel_speed=rel_speed, angle=angle,
-                                mine_distance=mine_distance, mine_angle=mine_angle, danger=danger)
-        self._fis_outputs = dict(thrust=thrust, turn=turn, fire=fire, mine=mine)
 
-    # Normalization helper methods
+        # store universes for normalization outside
+        self.universe = {
+            'distance': distance.universe,
+            'ttc': ttc.universe,
+            'lead_error': lead_error.universe,
+            'angle_rate': angle_rate.universe,
+            'clutter': clutter.universe,
+            'closing': closing.universe,
+            'mine_distance': mine_distance.universe,
+            'mine_rel_speed': mine_rel_speed.universe,
+        }
 
-    @staticmethod
-    def _norm_distance(d, map_diag):
-        """Normalize world distance into [0,1] using map diagonal (fallback to 1000)."""
-        if map_diag is None or map_diag <= 0:
-            return max(0.0, min(1.0, d / 1000.0))
-        return max(0.0, min(1.0, d / (map_diag / 2.0)))
-
-    @staticmethod
-    def _norm_rel_speed(v_rel, max_approach=500.0):
-        """Normalize relative approach speed into [0,1]."""
-        v = max(0.0, min(max_approach, v_rel))
-        return v / max_approach
-
-    @staticmethod
-    def _norm_angle_deg_to_unit(a_deg):
-        """Convert degrees to [-1,1] for fuzzy angle input."""
-        return max(-1.0, min(1.0, a_deg / 180.0))
-
-    @staticmethod
-    def _norm_mine_distance(d, scale=320.0):
-        """Normalize mine distance into [0,1] using fixed scale."""
-        return max(0.0, min(1.0, d / scale))
-
-    @staticmethod
-    def _norm_ttc_like(dist_n, rel_speed_n):
-        """Simple danger proxy from (near * fast). Higher = safer."""
-        near = max(0.0, min(1.0, 1.0 - dist_n))
-        fast = max(0.0, min(1.0, rel_speed_n))
-        risk = near * fast
-        return max(0.0, min(1.0, 1.0 - risk))
-
-    # Main control: produce actions
+    # --------------------------------------------------------
+    # Main action function
+    # --------------------------------------------------------
     def actions(self, ship_state, game_state):
-        """Return (thrust, turn_rate, fire?, drop_mine?) for the current frame."""
         sim = ctrl.ControlSystemSimulation(self.ctrl_system)
 
-        # Grab world objects
+        # World snapshots
         asteroids = _get(game_state, ["asteroids", "asteroid_states"], []) or []
+        mines     = _get(game_state, ["mines", "mine_states"], []) or []
         if not asteroids:
             return 0.0, 0.0, False, False
-        mines = _get(game_state, ["mines", "mine_states"], []) or []
 
         # Ship kinematics
         sp = _get_pos(ship_state) or (0.0, 0.0)
         sv = _get_vel(ship_state)
+        heading = _get(ship_state, ["angle", "heading"], 0.0)
+        vx, vy = sv
         sx, sy = sp
-        svx, svy = sv
 
-        # Heading (deg)
-        heading = _get(ship_state, ["heading"], None)
-        if heading is None and hasattr(ship_state, "angle"):
-            try:
-                heading = math.degrees(float(getattr(ship_state, "angle")))
-            except:
-                heading = 0.0
-        if heading is None:
-            heading = 0.0
-
-        # Distance normalization scale 
-        if self._norm_dist_scale is None:
-            ms = _get(game_state, ["map_size"], None)
-            if isinstance(ms, (tuple, list)) and len(ms) >= 2:
-                self._norm_dist_scale = math.hypot(float(ms[0]), float(ms[1]))
-            else:
-                self._norm_dist_scale = 2000.0
-
-        # Pick nearest asteroid
-        best = None
-        best_d = float("inf")
+        # Choose target: nearest asteroid by Euclidean distance
+        best, best_d = None, float("inf")
         for a in asteroids:
             ap = _get_pos(a)
             if ap is None:
                 continue
-            d = math.hypot(ap[0] - sx, ap[1] - sy)
+            d = math.hypot(ap[0]-sx, ap[1]-sy)
             if d < best_d:
-                best_d = d
-                best = a
+                best, best_d = a, d
         if best is None:
             return 0.0, 0.0, False, False
 
-        # Relative geometry & velocity along line of sight
         ax, ay = _get_pos(best)
         avx, avy = _get_vel(best)
+
         dx, dy = ax - sx, ay - sy
         dist = math.hypot(dx, dy)
-        ux, uy = (dx / max(dist, 1e-9), dy / max(dist, 1e-9))
-        rel_v_line = (avx - svx) * ux + (avy - svy) * uy  # approach rate
+        ux, uy = (dx/max(dist, 1e-9), dy/max(dist, 1e-9))
 
-        desired = _ang_deg(dx, dy)                 # angle to target
-        err_deg = _wrap180(desired - heading)      # aim error
+        # line-of-sight approach rate (positive = approaching)
+        rel_v_line = (avx - vx) * ux + (avy - vy) * uy
 
-        # Nearest mine
-        md = float("inf")
-        mine_err = 0.0
-        if isinstance(mines, (list, tuple)):
-            for m in mines:
-                mp = _get_pos(m)
-                if mp is None:
-                    continue
-                ddx, ddy = mp[0] - sx, mp[1] - sy
-                d = math.hypot(ddx, ddy)
-                if d < md:
-                    md = d
-                    mine_err = _wrap180(_ang_deg(ddx, ddy) - heading)
+        # Time-to-collision (clip to 0..TTC_MAX) then invert so 0=imminent, 1=later
+        TTC_MAX = 5.0
+        if rel_v_line > 0.1:
+            ttc_val = min(TTC_MAX, dist / max(1e-6, rel_v_line))
+            ttc_norm = max(0.0, min(1.0, ttc_val / TTC_MAX))
+        else:
+            ttc_norm = 1.0  # not approaching
 
-        # Normalize inputs for fuzzy system
-        dist_n   = self._norm_distance(dist, self._norm_dist_scale)
-        rel_n    = self._norm_rel_speed(max(0.0, rel_v_line))
-        ang_n    = self._norm_angle_deg_to_unit(err_deg)
-        mdis_n   = self._norm_mine_distance(md)
-        mang_n   = self._norm_angle_deg_to_unit(mine_err)
-        danger_n = self._norm_ttc_like(dist_n, rel_n)
+        # Lead aim: estimate intercept bearing
+        bullet_speed = _get(game_state, ["bullet_speed", "projectile_speed", "shot_speed"], None)
+        if bullet_speed is None:
+            bullet_speed = 600.0  # reasonable default for Kessler
+        rx, ry = dx, dy
+        rvx, rvy = avx - vx, avy - vy
+        # Closed-form lead (2D) – solve ||r + v*t|| = s*t
+        # Avoid singularities; use small-step fallback if discriminant < 0.
+        a = rvx*rvx + rvy*rvy - bullet_speed*bullet_speed
+        b = 2.0 * (rx*rvx + ry*rvy)
+        c = rx*rx + ry*ry
+        t_hit = None
+        disc = b*b - 4*a*c
+        if abs(a) < 1e-6:
+            t = -c / max(b, 1e-6)
+            t_hit = t if t > 0 else None
+        elif disc >= 0:
+            sdisc = math.sqrt(disc)
+            t1 = (-b - sdisc) / (2*a)
+            t2 = (-b + sdisc) / (2*a)
+            t_hit = min(t for t in [t1, t2] if t > 0) if any(t>0 for t in [t1, t2]) else None
+        # Predicted aim point
+        if t_hit is None:
+            pred_x, pred_y = ax, ay
+        else:
+            pred_x = ax + avx * t_hit
+            pred_y = ay + avy * t_hit
 
-        # Run fuzzy inference
-        try:
-            sim.input['distance'] = dist_n
-            sim.input['rel_speed'] = rel_n
-            sim.input['angle'] = ang_n
-            sim.input['mine_distance'] = mdis_n
-            sim.input['mine_angle'] = mang_n
-            sim.input['danger'] = danger_n
-            sim.compute()
-        except:
-            # If FIS fails, idle (safe fallback)
-            return 0.0, 0.0, False, False
+        desired = _ang_deg(pred_x - sx, pred_y - sy)
+        err_deg = _wrap180(desired - heading)  # signed degrees
 
-        # Decode fuzzy outputs
-        out_thrust = float(sim.output.get('thrust', 0.5))
-        out_turn   = float(sim.output.get('turn', 0.0))
-        out_fire   = float(sim.output.get('fire', 1.0))
-        out_mine   = float(sim.output.get('mine', 0.0))
+        # Angle rate (deg/s) – derivative of error using ship angular velocity if exposed
+        ang_vel = _get(ship_state, ["angular_velocity", "ang_vel", "turn_rate"], 0.0)
+        # Map to a small normalized range
+        angle_rate_norm = max(-1.0, min(1.0, ang_vel / 360.0))
 
-        T_MAX = 230.0                   # engine's max thrust
-        engine_thrust = max(-1.0, min(1.0, out_thrust)) * T_MAX
+        # Clutter: count asteroids in fwd cone ±30° and near window
+        forward = math.radians(heading)
+        cone = math.radians(30)
+        clutter_count = 0
+        for a in asteroids:
+            ap = _get_pos(a)
+            if ap is None:
+                continue
+            ddx, ddy = ap[0]-sx, ap[1]-sy
+            r = math.hypot(ddx, ddy)
+            if r < 1e-6:
+                continue
+            ang = math.atan2(ddy, ddx)
+            if abs((ang - forward + math.pi) % (2*math.pi) - math.pi) <= cone and r < 400.0:
+                clutter_count += 1
+        # normalize clutter approximately: 0=empty, ≥8=high
+        clutter_norm = max(0.0, min(1.0, clutter_count / 8.0))
 
-        MAX_TURN = 540.0                # engine's max turn rate (deg/s)
-        turn_rate = out_turn * MAX_TURN
+        # Mines: nearest distance & radial speed
+        md = float('inf')
+        mine_rel = 0.0
+        for m in mines:
+            mp = _get_pos(m)
+            if mp is None:
+                continue
+            mvx, mvy = _get_vel(m)
+            ddx, ddy = mp[0]-sx, mp[1]-sy
+            r = math.hypot(ddx, ddy)
+            if r < md:
+                md = r
+                ux_m, uy_m = ddx/max(r,1e-9), ddy/max(r,1e-9)
+                mine_rel = (mvx - vx)*ux_m + (mvy - vy)*uy_m
+        if md == float('inf'):
+            md = 1e9
 
-        fire_bool = (out_fire >= 0.25)  
-        drop_mine = (out_mine >= 0.40)  
+        # Normalizations
+        diag = math.hypot(*(_get(game_state, ["map_size"], (1000, 800))))
+        d_scale = self._norm_dist_scale or diag
+        dist_norm = max(0.0, min(1.0, dist / max(1.0, d_scale)))
 
-        return float(engine_thrust), float(turn_rate), bool(fire_bool), bool(drop_mine)
+        # speed-aware safety bubble for mines
+        speed = math.hypot(vx, vy)
+        mine_scale = 250.0 * (1.0 + 0.004*speed)
+        mine_norm = max(0.0, min(1.0, md / mine_scale))
+
+        lead_norm = max(-1.0, min(1.0, err_deg / 45.0))  # ±45° window
+        closing_norm = max(-1.0, min(1.0, rel_v_line / 400.0))
+        mine_rel_norm = max(-1.0, min(1.0, mine_rel / 300.0))
+
+        # Feed to FIS
+        sim.input['distance'] = dist_norm
+        sim.input['ttc'] = ttc_norm
+        sim.input['lead_error'] = lead_norm
+        sim.input['angle_rate'] = angle_rate_norm
+        sim.input['clutter'] = clutter_norm
+        sim.input['closing'] = closing_norm
+        sim.input['mine_distance'] = mine_norm
+        sim.input['mine_rel_speed'] = mine_rel_norm
+
+        sim.compute()
+
+        thrust_out = float(sim.output['thrust'])
+        turn_out   = float(sim.output['turn'])
+        fire_out   = float(sim.output['fire'])
+        mine_out   = float(sim.output['mine'])
+
+        # Hysteresis for fire: grow lock while aligned; decay otherwise
+        if abs(lead_norm) < 0.08 and ttc_norm > 0.2 and clutter_norm < 0.5:
+            self._lock_on = min(1.0, self._lock_on + 0.15)
+        else:
+            self._lock_on = max(0.0, self._lock_on - 0.25)
+        fire_bool = (fire_out * self._lock_on) > 0.35
+
+        # First-order smoothing on commands (prevents jitter)
+        alpha_turn = 0.4
+        alpha_thrust = 0.35
+        turn_out = (1-alpha_turn) * self._last_turn + alpha_turn * turn_out
+        thrust_out = (1-alpha_thrust) * self._last_thrust + alpha_thrust * thrust_out
+        self._last_turn = turn_out
+        self._last_thrust = thrust_out
+
+        engine_thrust = max(-1.0, min(1.0, thrust_out)) * self.T_MAX
+        turn_rate = max(-1.0, min(1.0, turn_out)) * self.MAX_TURN
+        drop_bool = mine_out >= 0.6 and mine_norm > 0.35  # also require not too close to self
+
+        return float(engine_thrust), float(turn_rate), bool(fire_bool), bool(drop_bool)
 
     @property
     def name(self) -> str:
-        """Display name for UI/scoreboard."""
         return "AggressiveFuzzyController"
