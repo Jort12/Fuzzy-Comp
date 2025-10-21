@@ -5,7 +5,7 @@ from kesslergame.controller import KesslerController
 from util import wrap180, intercept_point, side_score, triag, find_nearest_asteroid, angle_between, distance
 from fuzzy_system import *
 import math
-
+import numpy as np
 """
 mu_dist: distance to nearest asteroid
 mu_approach: approach speed to nearest asteroid
@@ -45,12 +45,13 @@ def mu_dist(d):
 
 def mu_approach(v):
     return {
-        "away": triag(v, -5, -2, 0),
-        "stable": triag(v, -1, 0, 1),
-        "approaching": triag(v, 0, 2, 5),
-        "fast_approaching": triag(v, 3, 6, 10),
-        "very_fast_approaching": triag(v, 8, 12, 20)
+        "away":                   triag(v, -400, -150,   0),
+        "stable":                 triag(v,  -60,   0,   60),
+        "approaching":            triag(v,   40, 160,  320),
+        "fast_approaching":       triag(v,  200, 400,  600),
+        "very_fast_approaching":  triag(v,  500, 800, 1200),
     }
+    
     
 def mu_ttc(t):
     return{
@@ -62,13 +63,13 @@ def mu_ttc(t):
 
 def mu_heading_err(e):
     return {
-        "sharp_left": triag(e, -180, -90, -30),
-        "left": triag(e, -60, -30, 0),
-        "slight_left": triag(e, -20, -5, 0),
-        "straight": triag(e, -5, 0, 5),
-        "slight_right": triag(e, 0, 5, 20),
-        "right": triag(e, 0, 30, 60),
-        "sharp_right": triag(e, 30, 90, 180)
+        "sharp_left":   triag(e, -180, -90,  -40),
+        "left":         triag(e,  -60, -35,   -8),
+        "slight_left":  triag(e,  -20,  -8,    0),
+        "straight":     triag(e,  -10,   0,   10),
+        "slight_right": triag(e,    0,   8,   20),
+        "right":        triag(e,    8,  35,   60),
+        "sharp_right":  triag(e,   40,  90,  180),
     }
     
 def mu_ammo(a): #ammo left
@@ -89,188 +90,227 @@ def mu_mine(m): #mines left
         "high": triag(m, 2, 3, 4),
 
     }
+    
+    
+def mu_threat_density(density):#how many asteroids are nearby
+    return {
+        "clear": triag(density, 0, 0, 1),
+        "low": triag(density, 0, 1, 3),
+        "moderate": triag(density, 2, 4, 6),
+        "dense": triag(density, 5, 7, 10)
+    }
+    
+def mu_escape_angle(angle):#angle between ship heading and best escape direction
+    return {
+        "blocked": triag(angle, 0, 15, 30),
+        "tight": triag(angle, 25, 45, 60),
+        "open": triag(angle, 55, 90, 180)
+    }
 
 def build_rules():
     return [
-        # VERY CLOSE + FAST APPROACHING - EVADE!
+    
+        # EMERGENCY AVOIDANCE RULES - Highest Priority
+        # If collision is imminent and asteroid is to the left, reverse thrust and turn hard right to avoid
         SugenoRule(
             antecedents=[
-                ("dist", lambda d: mu_dist(d)["very_close"]),
-                ("approach_speed", lambda v: mu_approach(v)["fast_approaching"]),
+                ("ttc",       lambda t: mu_ttc(t)["imminent"]),           # Time to collision is very short
+                ("heading_err", lambda e: max(mu_heading_err(e)["left"], mu_heading_err(e)["sharp_left"]))
             ],
-            consequents=[
-                ("thrust", -150.0),  # Back up!
-                ("turn_rate", 120.0)  # Turn hard
-            ],
+            consequents=[("thrust", -150.0), ("turn_rate", +150.0)],    # Reverse + turn right
             weight=1.0
         ),
-        
-        # VERY CLOSE + approaching - back up slowly, turn toward target
+        # If collision is imminent and asteroid is to the right, reverse thrust and turn hard left to avoid
         SugenoRule(
             antecedents=[
-                ("dist", lambda d: mu_dist(d)["very_close"]),
-                ("approach_speed", lambda v: mu_approach(v)["approaching"]),
-                ("heading_err", lambda e: mu_heading_err(e)["slight_left"])
+                ("ttc",       lambda t: mu_ttc(t)["imminent"]),           # Time to collision is very short
+                ("heading_err", lambda e: max(mu_heading_err(e)["right"], mu_heading_err(e)["sharp_right"]))
             ],
-            consequents=[
-                ("thrust", -80.0),
-                ("turn_rate", -60.0)  # Turn left
-            ],
-            weight=1.0
-        ),
-        
-        SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["very_close"]),
-                ("approach_speed", lambda v: mu_approach(v)["approaching"]),
-                ("heading_err", lambda e: mu_heading_err(e)["slight_right"])
-            ],
-            consequents=[
-                ("thrust", -80.0),
-                ("turn_rate", 60.0)  # Turn right
-            ],
-            weight=1.0
-        ),
-        
-        # CLOSE + STRAIGHT - aim and back up
-        SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["close"]),
-                ("heading_err", lambda e: mu_heading_err(e)["straight"])
-            ],
-            consequents=[
-                ("thrust", -50.0),
-                ("turn_rate", 0.0)
-            ],
-            weight=1.0
-        ),
-        
-        # CLOSE + need to turn LEFT
-        SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["close"]),
-                ("heading_err", lambda e: mu_heading_err(e)["left"])
-            ],
-            consequents=[
-                ("thrust", 50.0),
-                ("turn_rate", -90.0)  # Turn left
-            ],
-            weight=1.0
-        ),
-        
-        # CLOSE + need to turn RIGHT
-        SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["close"]),
-                ("heading_err", lambda e: mu_heading_err(e)["right"])
-            ],
-            consequents=[
-                ("thrust", 50.0),
-                ("turn_rate", 90.0)  # Turn right
-            ],
+            consequents=[("thrust", -150.0), ("turn_rate", -150.0)],    # Reverse + turn left
             weight=1.0
         ),
 
-        # MEDIUM distance - moderate approach
+
+
+
+        # CLOSE PROXIMITY AVOIDANCE RULES
+        # If asteroid is very close on the left, reverse and turn sharply right to get away
         SugenoRule(
             antecedents=[
-                ("dist", lambda d: mu_dist(d)["medium"]),
-                ("heading_err", lambda e: mu_heading_err(e)["straight"])
+                ("dist",        lambda d: mu_dist(d)["very_close"]), # Asteroid is very close
+                ("heading_err", lambda e: max(mu_heading_err(e)["left"], mu_heading_err(e)["sharp_left"]))
             ],
-            consequents=[
-                ("thrust", 150.0),
-                ("turn_rate", 0.0)
-            ],
-            weight=1.0
+            consequents=[("thrust", -150.0), ("turn_rate", +180.0)], # Reverse + sharp right turn
+            weight=0.9
         ),
-        
+        # If asteroid is very close on the right, reverse and turn sharply left to get away
         SugenoRule(
             antecedents=[
-                ("dist", lambda d: mu_dist(d)["medium"]),
-                ("heading_err", lambda e: mu_heading_err(e)["slight_left"])
+                ("dist",        lambda d: mu_dist(d)["very_close"]), # Asteroid is very close
+                ("heading_err", lambda e: max(mu_heading_err(e)["right"], mu_heading_err(e)["sharp_right"]))
             ],
-            consequents=[
-                ("thrust", 120.0),
-                ("turn_rate", -45.0)
-            ],
-            weight=1.0
-        ),
-        
-        SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["medium"]),
-                ("heading_err", lambda e: mu_heading_err(e)["slight_right"])
-            ],
-            consequents=[
-                ("thrust", 120.0),
-                ("turn_rate", 45.0)
-            ],
-            weight=1.0
+            consequents=[("thrust", -150.0), ("turn_rate", -180.0)],# Reverse + sharp left turn
+            weight=0.9
         ),
 
-        # FAR - aggressive pursuit
+        # GENERAL TURNING RULES - Turn towards target while moving forward
+        # If target is significantly to the left, thrust forward while turning right to face it
         SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["far"]),
-                ("heading_err", lambda e: mu_heading_err(e)["straight"])
-            ],
-            consequents=[
-                ("thrust", 300.0),
-                ("turn_rate", 0.0)
-            ],
-            weight=1.0
+            antecedents=[("heading_err", lambda e: max(mu_heading_err(e)["left"], mu_heading_err(e)["sharp_left"]))],
+            consequents=[("thrust", 160.0), ("turn_rate", +180.0)],# Forward thrust + right turn
+            weight=0.8
         ),
-        
+        # If target is significantly to the right, thrust forward while turning left to face it
         SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["far"]),
-                ("heading_err", lambda e: mu_heading_err(e)["left"])
-            ],
-            consequents=[
-                ("thrust", 250.0),
-                ("turn_rate", -60.0)
-            ],
-            weight=1.0
+            antecedents=[("heading_err", lambda e: max(mu_heading_err(e)["right"], mu_heading_err(e)["sharp_right"]))],
+            consequents=[("thrust", 160.0), ("turn_rate", -180.0)],# Forward thrust + left turn
+            weight=0.8
         ),
-        
+
+        # MODERATE TURNING RULES - Fine adjustments when roughly aligned
+        # If target is moderately to the left, thrust forward with moderate right turn
         SugenoRule(
-            antecedents=[
-                ("dist", lambda d: mu_dist(d)["far"]),
-                ("heading_err", lambda e: mu_heading_err(e)["right"])
-            ],
-            consequents=[
-                ("thrust", 250.0),
-                ("turn_rate", 60.0)
-            ],
-            weight=1.0
+            antecedents=[("heading_err", lambda e: max(mu_heading_err(e)["slight_left"], mu_heading_err(e)["left"]))],
+            consequents=[("thrust", 220.0), ("turn_rate", +120.0)], # Good thrust + moderate right turn
+            weight=0.7
+        ),
+        # If target is moderately to the right, thrust forward with moderate left turn
+        SugenoRule(
+            antecedents=[("heading_err", lambda e: max(mu_heading_err(e)["slight_right"], mu_heading_err(e)["right"]))],
+            consequents=[("thrust", 220.0), ("turn_rate", -120.0)],# Good thrust + moderate left turn
+            weight=0.7
+        ),
+
+        # STRAIGHT AHEAD RULE - Maximum speed when properly aligned
+        # If heading directly at target, use full thrust and don't turn
+        SugenoRule(
+            antecedents=[("heading_err", lambda e: mu_heading_err(e)["straight"])],
+            consequents=[("thrust", 300.0), ("turn_rate", 0.0)], # Full speed
+            weight=0.8
+        ),
+
+        # DISTANCE-BASED SPEED RULES - Adjust speed based on how far target is
+        # If target is far away, use high speed to get there quickly
+        SugenoRule(
+            antecedents=[("dist", lambda d: mu_dist(d)["far"])],
+            consequents=[("thrust", 320.0), ("turn_rate", 0.0)], # High speed for far targets
+            weight=0.5
+        ),
+        # If target is medium distance, use moderate speed
+        SugenoRule(
+            antecedents=[("dist", lambda d: mu_dist(d)["medium"])],
+            consequents=[("thrust", 260.0), ("turn_rate", 0.0)], # Medium speed for medium distance
+            weight=0.4
+        ),
+
+        # APPROACH SPEED CONTROL - Slow down if approaching too fast
+        # If closing in very fast on target, reduce thrust to avoid overshooting
+        SugenoRule(
+            antecedents=[("approach_speed", lambda v: mu_approach(v)["very_fast_approaching"])],
+            consequents=[("thrust", 120.0), ("turn_rate", 0.0)], # Slow down when approaching too fast
+            weight=0.6
+        ),
+
+        # GENERAL CRUISING RULE - Default moderate speed for medium/far targets
+        # If target is medium or far distance, maintain moderate cruising speed
+        SugenoRule(
+            antecedents=[("dist", lambda d: max(mu_dist(d)["medium"], mu_dist(d)["far"]))],
+            consequents=[("thrust", 240.0), ("turn_rate", 0.0)],         # Moderate cruising speed
+            weight=0.3
         ),
     ]
 
+
+def fire_decision(ctx, ship_state):
+    """
+    Simple firing logic - shoot when:
+    1. We have ammo available
+    2. We're aimed close to the target (heading error < 5 degrees)
+    3. Target will reach us soon (time to collision < 3 seconds)
+    """
+    if ctx["ammo"] > 0 and abs(ctx["heading_err"]) < 5 and ctx["ttc"] < 3:
+        return True
+    return False
+
+
+
 def context(ship_state, game_state):
-    # find nearest asteroid
-    asteroids = game_state.asteroids
-    if not asteroids:
-        return None  # no asteroids, nothing to do
-    nearest_asteroid = find_nearest_asteroid(ship_state, game_state)
-    dist = distance(ship_state.position, nearest_asteroid.position)
+    ctx = {}
     
-    rel_vel = (nearest_asteroid.velocity[0] - ship_state.velocity[0], nearest_asteroid.velocity[1] - ship_state.velocity[1])
-    approach_speed = (rel_vel[0] * (nearest_asteroid.position[0] - ship_state.position[0]) + rel_vel[1] * (nearest_asteroid.position[1] - ship_state.position[1])) / dist if dist != 0 else 0
+    best_target = None
+    best_score = -float("inf")
+    best_heading_err = 0.0
+    best_closing = 0.0
+    best_ttc = float("inf")
 
-    ttc = dist / max(approach_speed, 1e-5)
+    sx, sy = ship_state.position
+    svx, svy = ship_state.velocity
 
-    intercept = intercept_point(ship_state.position, ship_state.velocity, nearest_asteroid.position, nearest_asteroid.velocity)
-    target_angle = angle_between(ship_state.position, intercept)
-    heading_err = wrap180(target_angle - ship_state.heading)
+    for ast in game_state.asteroids:
+        ax, ay = ast.position
+        avx, avy = ast.velocity
+        dx, dy = ax - sx, ay - sy
+        dist = math.hypot(dx, dy)
+        if dist > 800:  # skip far targets
+            continue
 
+        # line-of-sight unit vector
+        ux, uy = (dx / max(dist, 1e-6), dy / max(dist, 1e-6))
+        # approach speed along line of sight (positive if closing)
+        rel_los = (avx - svx) * ux + (avy - svy) * uy
 
+        # intercept and heading error
+        intercept = intercept_point(ship_state.position, ship_state.velocity, ast.position, ast.velocity)
+        angle_to_intercept = angle_between(ship_state.position, intercept)
+        heading_error = abs(wrap180(angle_to_intercept - ship_state.heading))
+
+        # cluster bonus
+        cluster_score = 0.0
+        for other in game_state.asteroids:
+            if other is ast:
+                continue
+            od = distance(ast.position, other.position)
+            if od < 150:
+                cluster_score += (150 - od) / 150.0
+
+        # simple score: prefer near, clustered, small heading_err
+        score = (1000.0 / max(dist, 1.0)) + cluster_score * 100.0 - heading_error * 2.0
+
+        if score > best_score:
+            best_score = score
+            best_target = ast
+            best_heading_err = wrap180(angle_to_intercept - ship_state.heading)
+            best_closing = max(0.0, rel_los)  # only “closing” part
+            best_ttc = (dist / max(best_closing, 1e-3)) if best_closing > 0.0 else float('inf')
+
+    # fallback if nothing qualified
+    if best_target is None:
+        nearest = find_nearest_asteroid(ship_state, game_state)
+        if nearest is None:
+            return None
+        intercept = intercept_point(ship_state.position, ship_state.velocity, nearest.position, nearest.velocity)
+        angle_to_intercept = angle_between(ship_state.position, intercept)
+        best_heading_err = wrap180(angle_to_intercept - ship_state.heading)
+        dist = distance(ship_state.position, nearest.position)
+        best_closing = 0.0
+        best_ttc = float('inf')
+    
+    # Momentum analysis
+    if best_target:
+        target_vec = np.array(best_target.position) - np.array(ship_state.position)
+        ship_vel_normalized = np.array(ship_state.velocity) / max(np.linalg.norm(ship_state.velocity), 1)
+        target_normalized = target_vec / max(np.linalg.norm(target_vec), 1)
+        momentum_alignment = np.dot(ship_vel_normalized, target_normalized)
+    else:
+        momentum_alignment = 0
+    
     return {
-        "dist": dist,
-        "approach_speed": approach_speed,
-        "ttc": ttc,
-        "heading_err": heading_err,
+        "dist": distance(ship_state.position, best_target.position) if best_target else dist,
+        "approach_speed": best_closing,            # consistent and bounded
+        "ttc": best_ttc,                           # now available for firing logic
+        "heading_err": best_heading_err,
         "ammo": ship_state.bullets_remaining,
-        "mines": ship_state.mines_remaining
+        "mines": ship_state.mines_remaining,
     }
 
 
@@ -284,13 +324,19 @@ class KyleController(KesslerController):
     def actions(self, ship_state, game_state): 
         ctx = context(ship_state, game_state)
         
+        # Get thrust and turn rate from fuzzy system
         outputs = self.system.evaluate(ctx)
         thrust = outputs.get("thrust", 0.0)
         turn_rate = outputs.get("turn_rate", 0.0)
         
-        
-        fire = (ctx["ammo"] > 0) and (abs(ctx["heading_err"]) < 5) and (ctx["ttc"] < 3)#placeholder for now, actual fuzzy logic later
-        drop_mine = False #placeholder for now, actual fuzzy logic later
+        # Decide when to fire: aim well + have ammo + target is close enough
+        fire = (
+            ship_state.can_fire and              # Ship is ready to fire
+            ctx["ammo"] != 0 and                 # Have bullets remaining
+            abs(ctx["heading_err"]) < 6 and      # Aimed close enough to target
+            ctx["ttc"] < 2.5                     # Target is close in time
+        )
+        drop_mine = False  # Not implemented yet - placeholder for future mine logic
         
         #clamp to valid ranges
         thrust = max(ship_state.thrust_range[0], min(ship_state.thrust_range[1], thrust))
