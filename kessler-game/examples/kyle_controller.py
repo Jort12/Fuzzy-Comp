@@ -92,20 +92,158 @@ def mu_mine(m): #mines left
 
 def build_rules():
     return [
-        SugenoRule( #Example of Addinbg a rule
+        # VERY CLOSE + FAST APPROACHING - EVADE!
+        SugenoRule(
             antecedents=[
-                ("dist", lambda d: mu_dist(d)["very_close"]), # if distance is very close
-                ("approach_speed", lambda v: mu_approach(v)["fast_approaching"]),# and approach speed is fast_approaching
-                ("ttc", lambda t: mu_ttc(t)["imminent"])# and time to collision is imminent
+                ("dist", lambda d: mu_dist(d)["very_close"]),
+                ("approach_speed", lambda v: mu_approach(v)["fast_approaching"]),
             ],
             consequents=[
-                ("thrust", 0.0),  # stop thrusting (danger close)
-                ("turn_rate", 1.0)  # max turn
+                ("thrust", -150.0),  # Back up!
+                ("turn_rate", 120.0)  # Turn hard
             ],
-            weight=1.0#defalt 1.0
+            weight=1.0
+        ),
+        
+        # VERY CLOSE + approaching - back up slowly, turn toward target
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["very_close"]),
+                ("approach_speed", lambda v: mu_approach(v)["approaching"]),
+                ("heading_err", lambda e: mu_heading_err(e)["slight_left"])
+            ],
+            consequents=[
+                ("thrust", -80.0),
+                ("turn_rate", -60.0)  # Turn left
+            ],
+            weight=1.0
+        ),
+        
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["very_close"]),
+                ("approach_speed", lambda v: mu_approach(v)["approaching"]),
+                ("heading_err", lambda e: mu_heading_err(e)["slight_right"])
+            ],
+            consequents=[
+                ("thrust", -80.0),
+                ("turn_rate", 60.0)  # Turn right
+            ],
+            weight=1.0
+        ),
+        
+        # CLOSE + STRAIGHT - aim and back up
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["close"]),
+                ("heading_err", lambda e: mu_heading_err(e)["straight"])
+            ],
+            consequents=[
+                ("thrust", -50.0),
+                ("turn_rate", 0.0)
+            ],
+            weight=1.0
+        ),
+        
+        # CLOSE + need to turn LEFT
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["close"]),
+                ("heading_err", lambda e: mu_heading_err(e)["left"])
+            ],
+            consequents=[
+                ("thrust", 50.0),
+                ("turn_rate", -90.0)  # Turn left
+            ],
+            weight=1.0
+        ),
+        
+        # CLOSE + need to turn RIGHT
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["close"]),
+                ("heading_err", lambda e: mu_heading_err(e)["right"])
+            ],
+            consequents=[
+                ("thrust", 50.0),
+                ("turn_rate", 90.0)  # Turn right
+            ],
+            weight=1.0
         ),
 
+        # MEDIUM distance - moderate approach
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["medium"]),
+                ("heading_err", lambda e: mu_heading_err(e)["straight"])
+            ],
+            consequents=[
+                ("thrust", 150.0),
+                ("turn_rate", 0.0)
+            ],
+            weight=1.0
+        ),
+        
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["medium"]),
+                ("heading_err", lambda e: mu_heading_err(e)["slight_left"])
+            ],
+            consequents=[
+                ("thrust", 120.0),
+                ("turn_rate", -45.0)
+            ],
+            weight=1.0
+        ),
+        
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["medium"]),
+                ("heading_err", lambda e: mu_heading_err(e)["slight_right"])
+            ],
+            consequents=[
+                ("thrust", 120.0),
+                ("turn_rate", 45.0)
+            ],
+            weight=1.0
+        ),
 
+        # FAR - aggressive pursuit
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["far"]),
+                ("heading_err", lambda e: mu_heading_err(e)["straight"])
+            ],
+            consequents=[
+                ("thrust", 300.0),
+                ("turn_rate", 0.0)
+            ],
+            weight=1.0
+        ),
+        
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["far"]),
+                ("heading_err", lambda e: mu_heading_err(e)["left"])
+            ],
+            consequents=[
+                ("thrust", 250.0),
+                ("turn_rate", -60.0)
+            ],
+            weight=1.0
+        ),
+        
+        SugenoRule(
+            antecedents=[
+                ("dist", lambda d: mu_dist(d)["far"]),
+                ("heading_err", lambda e: mu_heading_err(e)["right"])
+            ],
+            consequents=[
+                ("thrust", 250.0),
+                ("turn_rate", 60.0)
+            ],
+            weight=1.0
+        ),
     ]
 
 def context(ship_state, game_state):
@@ -119,11 +257,11 @@ def context(ship_state, game_state):
     rel_vel = (nearest_asteroid.velocity[0] - ship_state.velocity[0], nearest_asteroid.velocity[1] - ship_state.velocity[1])
     approach_speed = (rel_vel[0] * (nearest_asteroid.position[0] - ship_state.position[0]) + rel_vel[1] * (nearest_asteroid.position[1] - ship_state.position[1])) / dist if dist != 0 else 0
 
-    ttc = dist / approach_speed if approach_speed > 0 else float('inf')
+    ttc = dist / max(approach_speed, 1e-5)
 
     intercept = intercept_point(ship_state.position, ship_state.velocity, nearest_asteroid.position, nearest_asteroid.velocity)
     target_angle = angle_between(ship_state.position, intercept)
-    heading_err = wrap180(target_angle - ship_state.angle)
+    heading_err = wrap180(target_angle - ship_state.heading)
 
 
     return {
@@ -146,8 +284,11 @@ class KyleController(KesslerController):
     def actions(self, ship_state, game_state): 
         ctx = context(ship_state, game_state)
         
-        thrust = self.system.evaluate(ctx)
-        turn_rate = self.system.evaluate(ctx)
+        outputs = self.system.evaluate(ctx)
+        thrust = outputs.get("thrust", 0.0)
+        turn_rate = outputs.get("turn_rate", 0.0)
+        
+        
         fire = (ctx["ammo"] > 0) and (abs(ctx["heading_err"]) < 5) and (ctx["ttc"] < 3)#placeholder for now, actual fuzzy logic later
         drop_mine = False #placeholder for now, actual fuzzy logic later
         

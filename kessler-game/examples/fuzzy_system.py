@@ -39,23 +39,33 @@ class SugenoSystem:
     def add_rule(self,rule:SugenoRule): 
         self.rules.append(rule)
     def evaluate(self,inputs:dict): #evalutate with crisp inputs, ex:{'dist': 300, 'approach': 1.5, 'ammo': 3}
-        numerator, denominator = 0.0,0.0
+        results = {} #output_name: [(numerator, denominator)]
         #For each rule, calculate its strength and contribute to the output
         for rule in self.rules:
             mus = []
-            for (fuzzy_set_name, membership_value) in rule.antecedents:
-                if fuzzy_set_name in inputs:
-                    mu = membership_value(inputs[fuzzy_set_name])
-                    mus.append(mu)
-                else:
-                    mus.append(0.0)  # If input not found, assume membership is 0
+            for (fuzzy_set_name, membership_func) in rule.antecedents:
+                        if fuzzy_set_name in inputs:
+                            mu = membership_func(inputs[fuzzy_set_name])
+                            mus.append(mu)
+                        else:
+                            mus.append(0.0)  # If input not found, assume membership is 0
+                            
+                            
             w = rule_strength(mus, self.mode) * rule.weight
             #Output: weighted Average:
-            for (output_name, output_value) in rule.consequents:
-                numerator += w * output_value
-                denominator += w
             
-        return numerator / denominator          
+            for (output_name, output_value) in rule.consequents:
+                
+                if output_name not in results:
+                    results[output_name] = [0.0, 0.0]
+                results[output_name][0] += w * output_value  # numerator
+                results[output_name][1] += w # denominator
+        outputs = {}
+        for name, (num, den) in results.items():
+            outputs[name] = num / den if den != 0 else 0.0
+
+        return outputs
+        
                     
         
 
