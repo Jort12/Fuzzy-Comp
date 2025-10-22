@@ -38,36 +38,49 @@ class SugenoSystem:
         self.mode = mode  #"prod" or "min", product or minimum for AND operation
     def add_rule(self,rule:SugenoRule): 
         self.rules.append(rule)
-    def evaluate(self,inputs:dict): #evalutate with crisp inputs, ex:{'dist': 300, 'approach': 1.5, 'ammo': 3}
-        results = {} #output_name: [(numerator, denominator)]
-        #For each rule, calculate its strength and contribute to the output
+    def evaluate(self, inputs: dict):  
+        results = {}#{output_name: [numerator, denominator]}
+
         for rule in self.rules:
+            #rule strength
             mus = []
             for (fuzzy_set_name, membership_func) in rule.antecedents:
-                        if fuzzy_set_name in inputs:
-                            mu = membership_func(inputs[fuzzy_set_name])
-                            mus.append(mu)
-                        else:
-                            mus.append(0.0)  # If input not found, assume membership is 0
-                            
-                            
+                if fuzzy_set_name in inputs:
+                    mu = membership_func(inputs[fuzzy_set_name])
+                    mus.append(mu)
+                else:
+                    mus.append(0.0)
             w = rule_strength(mus, self.mode) * rule.weight
-            #Output: weighted Average:
-            
-            for (output_name, output_value) in rule.consequents:
-                
+
+            #handle consequents (support dicts and lists)
+            if isinstance(rule.consequents, dict):
+                consequents_iter = rule.consequents.items()
+            else:
+                consequents_iter = rule.consequents
+
+            for output_name, output_value in consequents_iter:
+                # first order: function of crisp inputs
+                if callable(output_value):
+                    y_i = float(output_value(inputs))
+                else:
+                    y_i = float(output_value)
+
                 if output_name not in results:
                     results[output_name] = [0.0, 0.0]
-                results[output_name][0] += w * output_value  # numerator
-                results[output_name][1] += w # denominator
+                results[output_name][0] += w * y_i #numerator
+                results[output_name][1] += w #denominator
+            # --------------------------------------------------
+
+        # 3. Defuzzify (weighted average)
         outputs = {}
         for name, (num, den) in results.items():
             outputs[name] = num / den if den != 0 else 0.0
 
         return outputs
-        
-                    
-        
+
+            
+                        
+            
 
 
 

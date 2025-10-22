@@ -5,7 +5,11 @@ import matplotlib.pyplot as plt
 from kesslergame.controller import KesslerController
 from util import wrap180, distance
 from clustering import *
-DEBUG_VISUALIZE = True
+DEBUG_VISUALIZE = False
+import os
+import warnings
+warnings.filterwarnings("ignore", message="Clipping input data")
+from matplotlib.figure import Figure
 
 class HDBSCANController(KesslerController):
     name = "HDBSCAN Controller"
@@ -27,3 +31,4 @@ class HDBSCANController(KesslerController):
         self.debug_counter += 1
 
         return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
+        
