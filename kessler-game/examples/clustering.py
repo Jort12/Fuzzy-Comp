@@ -4,10 +4,12 @@ Plans: Using clustering to create a path finding system
 import numpy as np
 import hdbscan
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 from kesslergame import KesslerGame, Scenario, KesslerController
-
+from sklearn.cluster import cluster_optics_xi
+from scipy.spatial import ConvexHull
 
 """
 Cluster Asteroids using HDBSCAN
@@ -27,7 +29,7 @@ _cluster_scatters = {}
 _ship_scatter = None
 _fig = None
 _ax = None
-
+hullPatches = {}
 def cluster_asteroids(asteroids, min_cluster_size=3, min_samples=2):
     if not asteroids:
         return [], np.array([]), np.empty((0, 2))
@@ -48,7 +50,7 @@ def cluster_asteroids(asteroids, min_cluster_size=3, min_samples=2):
 
 
 
-def plot_clusters(positions, labels, ship_pos=None, map_size=(1000, 800)):
+def plot_clusters(positions, labels, ship_pos=None, map_size=(1000, 800), clusters=None):
     global _fig, _ax, _cluster_scatters, _ship_scatter
 
     # Initialize once
@@ -93,9 +95,51 @@ def plot_clusters(positions, labels, ship_pos=None, map_size=(1000, 800)):
                                     edgecolors='yellow', linewidths=2, zorder=10)
     if ship_pos is not None:
         _ship_scatter.set_offsets([ship_pos])
-
+    
     _fig.canvas.draw_idle()
     _fig.canvas.flush_events()
+    if clusters is not None and len(clusters) > 0:
+        drawhulls(clusters, positions, labels)
+
+
+def drawhulls(clusters, positions, labels):
+    global _ax, hullPatches
+    if _ax is None:
+        return
+
+    # Clear previous hulls
+    for path in hull_patches.values():
+        path.remove()
+    hull_patches = {}
+
+    # Draw new hulls for each valid cluster
+    for cluster_label in set(labels):
+        if cluster_label == -1:
+            continue  # skip noise
+        mask = labels == cluster_label
+        cluster_pts = positions[mask]
+
+        if len(cluster_pts) >= 3:
+            hull = ConvexHull(cluster_pts)
+            hull_points = cluster_pts[hull.vertices]
+            polygon = patches.Polygon(hull_points, closed=True, fill=False,
+                                      edgecolor='cyan', linewidth=2, alpha=0.6)
+            _ax.add_patch(polygon)
+            hull_patches[cluster_label] = polygon
+        elif len(cluster_pts) == 2:
+            line = plt.Line2D([cluster_pts[0,0], cluster_pts[1,0]],
+                              [cluster_pts[0,1], cluster_pts[1,1]],
+                              color='cyan', linewidth=2, linestyle='--', alpha=0.7)
+            _ax.add_line(line)
+            hull_patches[cluster_label] = line
+        elif len(cluster_pts) == 1:
+            circle = patches.Circle(cluster_pts[0], radius=20,
+                                    fill=False, edgecolor='cyan',
+                                    linewidth=2, linestyle='--', alpha=0.7)
+            _ax.add_patch(circle)
+            hull_patches[cluster_label] = circle
+
+
 
 
 
