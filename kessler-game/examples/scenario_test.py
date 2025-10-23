@@ -68,7 +68,7 @@ def main():
         for j in range(1):
             row = run_game()
             df.loc[len(df)] = row
-            print(f"Rule set {i}, experiment {j} complete")
+            print(f"Rule set {i+1}, experiment {j+1} complete")
 
 
 

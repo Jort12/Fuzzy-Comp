@@ -52,14 +52,21 @@ def insert_gen_code(code: str):
     file_path = r"C:\Users\Orteg\OneDrive\Pictures\Documents\GitHub\Fuzzy-Comp\kessler-game\examples\fuzzy_aggressive_controller.py"
 
     # Read file
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except:
+        print("Didnt read the file")
+
 
     # Modify content
-    pattern = r"(?<=# BEGIN GENERATED CODE\n)(.*?)(?=\n# END GENERATED CODE)"
+    pattern = r"(?<=# BEGIN GENERATED CODE\s)(.*?)(?=\s# END GENERATED CODE)"
     new_content = re.sub(pattern, code, content, flags=re.DOTALL)
 
     # Write back
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(new_content)
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+    except:
+        print("couldnt write to filed")
 
