@@ -5,12 +5,8 @@
 
 import time
 from kesslergame import Scenario, KesslerGame, GraphicsType
-from graphics_both import GraphicsBoth
 from hybrid_fuzzy import hybrid_controller
-from human_controller import HumanController
-from fuzzy_aggressive_controller import AggressiveFuzzyController
-from defensive_fuzzy import DefensiveFuzzyController
-from kyle_controller import KyleController
+
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
                             num_asteroids=10,

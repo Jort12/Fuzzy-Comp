@@ -5,6 +5,7 @@
 import math
 from kesslergame.controller import KesslerController
 from util import wrap180, triag, intercept_point
+from data_log import Logger, FEATURES
 
 
 
@@ -66,15 +67,48 @@ def rear_clearance(ship_pos, heading_deg, asteroids, check_range=200.0, safety=4
     return True
 
 
+
 class hybrid_controller(KesslerController):
     name = "HybridFuzzyController"
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much
-        
+        self.maneuver_logger = Logger("kessler-game/neural_fuzzy/data/maneuver.csv", FEATURES, ["thrust", "turn_rate"])
+        self.combat_logger   = Logger("kessler-game/neural_fuzzy/data/combat.csv", FEATURES, ["fire", "drop_mine"])
+
+    def context(self, ship_state, game_state):
+        sx, sy = ship_state.position
+        heading = ship_state.heading
+        asteroids = getattr(game_state, "asteroids", [])
+        if not asteroids:
+            return {}
+
+        closest, dist = find_closest_threat(asteroids, (sx, sy))
+        ax, ay = closest.position
+        avx, avy = getattr(closest, "velocity", (0.0, 0.0))
+        svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
+        rel_vx, rel_vy = avx - svx, avy - svy
+        approach_speed = (rel_vx * (ax - sx) + rel_vy * (ay - sy)) / max(dist, 1)
+
+        ttc = dist / max(abs(approach_speed), 1e-6)
+        heading_err = wrap180(math.degrees(math.atan2(ay - sy, ax - sx)) - heading)
+        density = len(asteroids) / 10.0
+
+        return {
+            "dist": dist,
+            "ttc": ttc,
+            "heading_err": heading_err,
+            "approach_speed": approach_speed,
+            "ammo": getattr(ship_state, "ammo", 0),
+            "mines": getattr(ship_state, "mines", 0),
+            "threat_density": density,
+            "threat_angle": math.degrees(math.atan2(ay - sy, ax - sx))
+        }
+
     def actions(self, ship_state, game_state):
         self.debug_counter += 1
         """for b in game_state.bullets:
             print("Bullet speed:", math.hypot(b.vx, b.vy))""" #checking bullet speed
+        ctx = self.context(ship_state, game_state)
 
         asteroids = getattr(game_state, "asteroids", [])
         if not asteroids:
@@ -232,5 +266,21 @@ class hybrid_controller(KesslerController):
         if hasattr(ship_state, "turn_rate_range"):
             lo, hi = ship_state.turn_rate_range
             turn_rate = max(lo, min(hi, turn_rate))
+
+
+        # Log data
+        try:
+            # Clamping so the dataset stays valid
+            thrust_c    = max(0.0, min(1.0, float(thrust)))       # normalize to [0,1]
+            turn_rate_c = max(-1.0, min(1.0, float(turn_rate)))   # normalize to [-1,1]
+            fire_c      = 1.0 if fire else 0.0
+            mine_c      = 1.0 if drop_mine else 0.0
+
+            self.maneuver_logger.log(ctx, (thrust_c, turn_rate_c))
+            self.combat_logger.log(ctx, (fire_c, mine_c))
+
+        except Exception as e:
+            if self.debug_counter % 120 == 0:
+                print(f"[Logger warning] {e}")
 
         return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)

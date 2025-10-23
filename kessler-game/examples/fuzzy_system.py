@@ -4,15 +4,6 @@ from kesslergame.controller import KesslerController
 from util import wrap180, intercept_point, side_score
 
 
-"""
-    PLANSS:
-    A rule class that handles taking in the antecedents and consequents
-    
-    A engine that take cares of
-    
-    
-    
-"""
 
 
 def rule_strength(mus, mode="prod"):
@@ -69,9 +60,8 @@ class SugenoSystem:
                     results[output_name] = [0.0, 0.0]
                 results[output_name][0] += w * y_i #numerator
                 results[output_name][1] += w #denominator
-            # --------------------------------------------------
 
-        # 3. Defuzzify (weighted average)
+        #Defuzzify (weighted average)
         outputs = {}
         for name, (num, den) in results.items():
             outputs[name] = num / den if den != 0 else 0.0
