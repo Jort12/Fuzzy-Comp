@@ -148,6 +148,7 @@ class AggressiveFuzzyController(KesslerController):
         mine['no']  = fuzz.trimf(mine.universe, [0.0, 0.0, 0.35])
         mine['yes'] = fuzz.trimf(mine.universe, [0.25, 1.0, 1.0])
 
+        # BEGIN GENERATED CODE
         rules = []
 
         rules += [
@@ -212,6 +213,7 @@ class AggressiveFuzzyController(KesslerController):
             ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']),
             ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']),
         ]
+        #END GENERATED CODE
 
 
         ''' 
