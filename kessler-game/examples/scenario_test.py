@@ -35,5 +35,5 @@ game = KesslerGame(settings=game_settings)  # Use this to visualize the game sce
 
 # Evaluate the game
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=my_test_scenario, controllers=[KyleController()])
+score, perf_data = game.run(scenario=my_test_scenario, controllers=[hybrid_controller()])
 
