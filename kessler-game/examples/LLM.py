@@ -51,19 +51,15 @@ def gen_rule_set() -> str:
 def insert_gen_code(code: str):
     file_path = r"C:\Users\Orteg\OneDrive\Pictures\Documents\GitHub\Fuzzy-Comp\kessler-game\examples\fuzzy_aggressive_controller.py"
 
-    # Create a temporary file
-    with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tmp_file:
-        # Read original file
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
+    # Read file
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
 
-        # Replace the generated code section
-        pattern = r"(?<=# BEGIN GENERATED CODE\n)(.*?)(?=\n# END GENERATED CODE)"
-        new_content = re.sub(pattern, code, content, flags=re.DOTALL)
+    # Modify content
+    pattern = r"(?<=# BEGIN GENERATED CODE\n)(.*?)(?=\n# END GENERATED CODE)"
+    new_content = re.sub(pattern, code, content, flags=re.DOTALL)
 
-        # Write modified content to temporary file
-        tmp_file.write(new_content)
-
-    # Atomically replace original file with the updated temporary file
-    shutil.move(tmp_file.name, file_path)
+    # Write back
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(new_content)
 
