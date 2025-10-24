@@ -1,4 +1,3 @@
-from attr import Out
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -106,4 +105,4 @@ class SugenoNet(nn.Module):
         mf_outputs = [mf(x[:, i]) for i, mf in enumerate(self.mf_layers)]#get MF outputs for each input
         rule_strengths = self.rule_layer(mf_outputs)#get rule strengths
         y = self.sugeno_layer(rule_strengths, x)#get final output
-        return y
+        return y.unsqueeze(1)  #(batch_size, 1)

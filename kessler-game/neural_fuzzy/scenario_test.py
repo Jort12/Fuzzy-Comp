@@ -6,7 +6,7 @@
 import time
 from kesslergame import Scenario, KesslerGame, GraphicsType
 from hybrid_fuzzy import hybrid_controller
-
+from nf_controller import NFController
 # Define game scenario
 my_test_scenario = Scenario(name='Test Scenario',
                             num_asteroids=10,
@@ -31,5 +31,5 @@ game = KesslerGame(settings=game_settings)  # Use this to visualize the game sce
 
 # Evaluate the game
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=my_test_scenario, controllers=[hybrid_controller()])
+score, perf_data = game.run(scenario=my_test_scenario, controllers=[NFController()])
 
