@@ -40,28 +40,28 @@ class NFPolicy:
         return y
 
     def act_maneuver(self, x_list):
-        if "thrust" in self.models and "turn_rate" in self.models:
-            thrust = self._run_model("thrust", x_list, post="sigmoid")
-            turn   = self._run_model("turn_rate", x_list, post="tanh")
+        has_t = "thrust" in self.models
+        has_r = "turn_rate" in self.models
+        if has_t or has_r:
+            thrust = self._run_model("thrust", x_list, post="sigmoid") if has_t else 0.0
+            turn   = self._run_model("turn_rate", x_list, post="tanh") if has_r else 0.0
             return float(thrust), float(turn)
-
         if "main" in self.models:
             thrust = self._run_model("main", x_list, post="sigmoid")
             return float(thrust), 0.0
-
         raise RuntimeError("No maneuver heads available in model.")
 
     def act_combat(self, x_list, thresh=0.5):
-        if "fire" in self.models and "drop_mine" in self.models:
-            fire_logit = self._run_model("fire", x_list)
-            mine_logit = self._run_model("drop_mine", x_list)
-            fire_p = 1 / (1 + np.exp(-fire_logit))
-            mine_p = 1 / (1 + np.exp(-mine_logit))
-            return (fire_p >= thresh), (mine_p >= thresh)
-
+        has_f = "fire" in self.models
+        has_m = "drop_mine" in self.models
+        if has_f or has_m:
+            def sig(key): 
+                logit = self._run_model(key, x_list)
+                return 1 / (1 + np.exp(-logit))
+            fire = sig("fire") >= thresh if has_f else False
+            mine = sig("drop_mine") >= thresh if has_m else False
+            return bool(fire), bool(mine)
         if "main" in self.models:
-            logit = self._run_model("main", x_list)
-            p = 1 / (1 + np.exp(-logit))
+            p = 1 / (1 + np.exp(-self._run_model("main", x_list)))
             return (p >= thresh), False
-
         raise RuntimeError("No combat heads available in model.")
