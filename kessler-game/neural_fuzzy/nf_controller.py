@@ -30,10 +30,10 @@ class NFController:
         else:
             print("Combat model not found. Combat outputs will be disabled.")
 
-        self.feature_names = [
-            "dist", "ttc", "heading_err", "approach_speed",
-            "ammo", "mines", "threat_density", "threat_angle"
-        ]
+        self.feature_names = self.maneuver_nf.feature_cols or [
+            "dist","ttc","heading_err","approach_speed",
+            "ammo","mines","threat_density","threat_angle"
+    ]
 
     def actions(self, ship_state, game_state):
         # Build features in the same way you did for logging/training
@@ -83,7 +83,12 @@ class NFController:
         ttc = dist / (abs(approach_speed) + 1e-6)
 
         # heading error wrapped to [-pi, pi]
-        heading = getattr(ship_state, "heading", 0.0)
+        heading = getattr(ship_state, "heading", None)
+        if heading is None:
+            heading_deg = float(getattr(ship_state, "angle", 0.0))
+            heading = math.radians(heading_deg)
+
+        # threat_angle already in radians from atan2
         heading_err = threat_angle - heading
         while heading_err > math.pi:  heading_err -= 2*math.pi
         while heading_err < -math.pi: heading_err += 2*math.pi

@@ -6,20 +6,18 @@ from sugeno_nn import SugenoNet
 class NFPolicy:
     def __init__(self, model_path: str):
         bundle = torch.load(model_path, map_location="cpu")
-        if not (isinstance(bundle, dict) and "heads" in bundle):
-            raise RuntimeError("Model must be saved in bundle format with 'heads'.")
-
         self.models = {}
+        self.feature_cols = None
         for name, info in bundle["heads"].items():
-            num_inputs = int(info["num_inputs"])
-            num_mfs    = int(info["num_mfs"])
-            model = SugenoNet(num_inputs=num_inputs, num_mfs=num_mfs, num_outputs=1)
-            model.load_state_dict(info["state_dict"])
-            model.eval()
+            model = SugenoNet(num_inputs=int(info["num_inputs"]),
+                              num_mfs=int(info["num_mfs"]),
+                              num_outputs=1)
+            model.load_state_dict(info["state_dict"]); model.eval()
             self.models[name] = (model, info.get("mu"), info.get("sd"))
+            self.feature_cols = self.feature_cols or info.get("feature_cols")
 
 
-    def _prep(self, x_list, mu, sd):
+    def prep(self, x_list, mu, sd):
         x = np.array(x_list, dtype=np.float32)
         if mu is not None and sd is not None:
             mu = np.array(mu, dtype=np.float32)
@@ -28,7 +26,7 @@ class NFPolicy:
             x = (x - mu) / sd
         return torch.tensor(x, dtype=torch.float32).unsqueeze(0)
 
-    def _run_model(self, key, x_list, post=None):
+    def run_model(self, key, x_list, post=None):
         model, mu, sd = self.models[key]
         xb = self._prep(x_list, mu, sd)
         with torch.no_grad():

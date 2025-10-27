@@ -16,24 +16,29 @@ Sugeno Layer: tweak the sigma and the center values
 """
 class GaussianMF(nn.Module):
     
-    def __init__(self,input_name, num_mfs,sigmas):
-        super().__init__()# No parameters to initialize
-        self.input_name = input_name #which input this MF layer is for
-        self.num_mfs = num_mfs#number of membership functions
-        self.sigmas = torch.tensor(sigmas) #list of sigmas for each MF, example: [0.3, 0.5, 0.7], so how wide each MF is
-        self.log_sigmas = nn.Parameter(torch.log(self.sigmas)) #log sigmas to be learned
-        self.centers = nn.Parameter(torch.randn(num_mfs))#centers of the MFs to be learned
-    
-    def forward(self,x):
-        memberships = []
-        for i in range(self.num_mfs):
-            c = self.centers[i]
-            s = self.sigmas[i]
-            mu = torch.exp(-0.5 * ((x - c) / s) ** 2)
-            memberships.append(mu)
-        memberships = torch.stack(memberships, dim=1)
+    def __init__(self, input_name, num_mfs, sigmas=None):
+        super().__init__()
+        self.input_name = input_name
+        self.num_mfs = num_mfs
 
-        return memberships
+        # size-safe init
+        if sigmas is None:
+            sigma_init = torch.full((num_mfs,), 0.5)
+        else:
+            sigma_init = torch.tensor(sigmas, dtype=torch.float32)
+            if sigma_init.numel() != num_mfs:
+                sigma_init = torch.full((num_mfs,), float(sigma_init.mean()))
+
+        self.log_sigmas = nn.Parameter(sigma_init.log())
+        self.centers    = nn.Parameter(torch.linspace(-1.5, 1.5, steps=num_mfs))
+
+    def forward(self, x): 
+        x = x.unsqueeze(1)
+        c = self.centers.unsqueeze(0) 
+        s = self.log_sigmas.exp().unsqueeze(0) 
+        mu = torch.exp(-0.5 * ((x - c) / s) ** 2)
+        return mu 
+
 
 
 class RuleLayer(nn.Module):
@@ -94,10 +99,11 @@ class SugenoLayer(nn.Module):
 class SugenoNet(nn.Module):
     def __init__(self, num_inputs, num_mfs, num_outputs):
         super().__init__()
+        
         #module lists for MF layers
-        self.mf_layers = nn.ModuleList([
-            GaussianMF(f"input_{i}", num_mfs, [0.3, 0.5, 0.7]) for i in range(num_inputs)
-        ])
+        self.mf_layers = nn.ModuleList([GaussianMF(f"input_{i}", num_mfs) for i in range(num_inputs)])
+        
+        
         self.rule_layer = RuleLayer(num_inputs, num_mfs)#number of rules = num_mfs^num_inputs
         self.sugeno_layer = SugenoLayer(num_rules=num_mfs ** num_inputs, num_inputs=num_inputs)
 
