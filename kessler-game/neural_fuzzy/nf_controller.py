@@ -6,7 +6,7 @@ from nf_infer import NFPolicy
 class NFController:
     """
     Neuro-Fuzzy Controller for Kessler Game.
-    Uses trained maneuver (required) and combat (optional) models
+    Uses trained maneuver and combatmodels
     return thrust, turn_rate, fire, and drop_mine.
     """
     name = "NFController"
@@ -17,18 +17,15 @@ class NFController:
         maneuver_path = os.path.join(model_dir, "maneuver.pt")
         combat_path   = os.path.join(model_dir, "combat.pt")
 
-        # Load maneuver (required)
+        # Load maneuver
         self.maneuver_nf = NFPolicy(maneuver_path)
 
-        # Load combat (optional)
+        # Load combat
         self.combat_nf = None
         if os.path.exists(combat_path):
-            try:
-                self.combat_nf = NFPolicy(combat_path)
-            except Exception as e:
-                print(f"Could not load combat model: {e}. Combat will be disabled.")
+            self.combat_nf = NFPolicy(combat_path)
         else:
-            print("Combat model not found. Combat outputs will be disabled.")
+            print("Combat model not found. Combat disabled.")
 
         self.feature_names = self.maneuver_nf.feature_cols or [
             "dist","ttc","heading_err","approach_speed",
@@ -36,16 +33,16 @@ class NFController:
     ]
 
     def actions(self, ship_state, game_state):
-        # Build features in the same way you did for logging/training
+        #Build features, same as training
         ctx = self.compute_context(ship_state, game_state)
 
-        # Order the inputs to match training
+        #Organize inputs in correct order
         x_list = [float(ctx[k]) for k in self.feature_names]
 
-        # Maneuver (always)
+        #Maneuver
         thrust, turn_rate = self.maneuver_nf.act_maneuver(x_list)
 
-        # Combat (if model available)
+        #Combat
         if self.combat_nf is not None:
             fire, drop_mine = self.combat_nf.act_combat(x_list, thresh=0.5)
         else:
@@ -61,7 +58,7 @@ class NFController:
         svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
 
         # Closest asteroid
-        if asteroids:
+        if asteroids:# any asteroids present
             closest = min(asteroids, key=lambda a: (a.position[0]-sx)**2 + (a.position[1]-sy)**2)
             ax, ay = closest.position
             avx, avy = getattr(closest, "velocity", (0.0, 0.0))
@@ -79,14 +76,14 @@ class NFController:
         else:
             dist, approach_speed, threat_angle = 0.0, 0.0, 0.0
 
-        # time-to-collision (guard divide)
-        ttc = dist / (abs(approach_speed) + 1e-6)
+        # time-to-collision
+        ttc = dist / (abs(approach_speed) + 1e-6)# avoid div by zero
 
-        # heading error wrapped to [-pi, pi]
-        heading = getattr(ship_state, "heading", None)
+        # heading error wrapped to [-pi, pi] 
+        heading = getattr(ship_state, "heading", None)# in radians
         if heading is None:
-            heading_deg = float(getattr(ship_state, "angle", 0.0))
-            heading = math.radians(heading_deg)
+            heading_deg = float(getattr(ship_state, "angle", 0.0))# in degrees
+            heading = math.radians(heading_deg)# convert to radians
 
         # threat_angle already in radians from atan2
         heading_err = threat_angle - heading
@@ -99,11 +96,11 @@ class NFController:
 
         return {
             "dist": dist,
-            "ttc": ttc,
+            "ttc": ttc, # time to collision
             "heading_err": heading_err,
-            "approach_speed": approach_speed,
-            "ammo": ammo,
-            "mines": mines,
-            "threat_density": density,
+            "approach_speed": approach_speed,#in units per second
+            "ammo": ammo,#ammo left
+            "mines": mines,#mines left
+            "threat_density": density,# asteroids per 10 units
             "threat_angle": threat_angle
         }

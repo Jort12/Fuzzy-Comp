@@ -28,7 +28,7 @@ class NFPolicy:
 
     def run_model(self, key, x_list, post=None):
         model, mu, sd = self.models[key]
-        xb = self._prep(x_list, mu, sd)
+        xb = self.prep(x_list, mu, sd)
         with torch.no_grad():
             y = model(xb).squeeze().item()
         if post == "sigmoid":  # [0,1]
@@ -41,11 +41,11 @@ class NFPolicy:
         has_t = "thrust" in self.models
         has_r = "turn_rate" in self.models
         if has_t or has_r:
-            thrust = self._run_model("thrust", x_list, post="sigmoid") if has_t else 0.0
+            thrust = self.run_model("thrust", x_list, post="sigmoid") if has_t else 0.0
             turn   = self._run_model("turn_rate", x_list, post="tanh") if has_r else 0.0
             return float(thrust), float(turn)
         if "main" in self.models:
-            thrust = self._run_model("main", x_list, post="sigmoid")
+            thrust = self.run_model("main", x_list, post="sigmoid")
             return float(thrust), 0.0
         raise RuntimeError("No maneuver heads available in model.")
 
@@ -54,12 +54,12 @@ class NFPolicy:
         has_m = "drop_mine" in self.models
         if has_f or has_m:
             def sig(key): 
-                logit = self._run_model(key, x_list)
+                logit = self.run_model(key, x_list)
                 return 1 / (1 + np.exp(-logit))
             fire = sig("fire") >= thresh if has_f else False
             mine = sig("drop_mine") >= thresh if has_m else False
             return bool(fire), bool(mine)
         if "main" in self.models:
-            p = 1 / (1 + np.exp(-self._run_model("main", x_list)))
+            p = 1 / (1 + np.exp(-self.run_model("main", x_list)))
             return (p >= thresh), False
         raise RuntimeError("No combat heads available in model.")

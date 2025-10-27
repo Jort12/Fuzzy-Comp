@@ -72,7 +72,7 @@ class hybrid_controller(KesslerController):
     name = "HybridFuzzyController"
     def __init__(self):
         self.debug_counter = 0  # just to not spam too much
-        self.maneuver_logger = Logger("kessler-game/neural_fuzzy/data/maneuver.csv", FEATURES, ["thrust", "turn_rate"])
+        self.maneuver_logger = Logger("kessler-game/neural_fuzzy/data/maneuver.csv", FEATURES, ["thrust", "turn_rate"])#log data
         self.combat_logger   = Logger("kessler-game/neural_fuzzy/data/combat.csv", FEATURES, ["fire", "drop_mine"])
 
     def context(self, ship_state, game_state):

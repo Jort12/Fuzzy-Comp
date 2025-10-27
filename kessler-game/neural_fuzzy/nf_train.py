@@ -7,10 +7,19 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 import argparse,os,json
 
 from sugeno_nn import GaussianMF, SugenoNet,RuleLayer
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
+"""
+Train a Neuro-Fuzzy Sugeno model for maneuvering or combat.
+Saves the trained model as a bundle for later inference.
 
+    
+    
+    
+    
+"""
 arguments = argparse.ArgumentParser()
 arguments.add_argument("--task", choices=["maneuver", "combat"], required=True,
                 help="Choose which fuzzy model to train (maneuver or combat)")
@@ -95,21 +104,29 @@ for epoch in range(1, args.epochs + 1):
     avg_train = total_train / n_train
 
     # Validation
-    model.eval()
-    total_val = 0.0
-    with torch.no_grad():
-        for xb, yb in val_loader:
-            pred = model(xb).squeeze(1)
-            loss = loss_fn(pred, yb[:, 0])
-            total_val += loss.item() * xb.size(0)
+    model.eval() #evaluation mode, tells pytorch to disable dropout, batchnorm, etc
+    total_val = 0.0 
+    with torch.no_grad():#turns off gradient computation for efficiency
+        for xb, yb in val_loader: #xb: inputs, yb: targets
+            pred = model(xb).squeeze(1)#model prediction, remove extra dimmesion
+            loss = loss_fn(pred, yb[:, 0])#loss_fn return errors between pred and target
+            total_val += loss.item() * xb.size(0)#sum up loss over the batch, loss.item() gets the scalar value of the loss tensor, multiply by batch size to get total loss for the batch
     avg_val = total_val / n_val
 
     print(f"[{epoch:03d}] Train={avg_train:.6f}  Val={avg_val:.6f}")
 
+    """
+        Save the trained model as a bundle for later inference.
+        The bundle contains:
+        - model state_dict
+        - feature columns  
+        - input normalization parameters (mu, sd)
+        - model hyperparameters (num_inputs, num_mfs)
+        Needs to save CPU weights so the bundle loads anywhere, incase want to run on cpu for inference.
+        
+    """
     if avg_val < best_val_loss:
-        best_val_loss = avg_val  # <-- don't forget this!
-
-        #save CPU weights so the bundle loads anywhere
+        best_val_loss = avg_val
         state = {k: v.detach().cpu() for k, v in model.state_dict().items()}
 
         out_name = output_cols[0]  # 'thrust' for maneuver, 'fire' for combat (since we are training y[:,0])

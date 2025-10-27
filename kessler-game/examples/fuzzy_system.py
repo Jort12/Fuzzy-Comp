@@ -4,8 +4,21 @@ from kesslergame.controller import KesslerController
 from util import wrap180, intercept_point, side_score
 
 
+"""_summary_
+Returns the rule strength based on the given membership values and mode.
+_args_   : mus: list of membership values in [0,1]      
+            mode: "prod" for product, "min" for minimum
+_returns_: rule strength as a float
 
-
+Sugeno FIS:
+1. Each input is fuzzified using membership functions (e.g., Gaussian).
+2. Each rule combines input memberships (via AND) to compute a rule strength (firing strength).
+3. Each rule outputs a linear function (or constant) of the inputs.
+4. The system combines all rule outputs into a final crisp value:
+       y = Σ(w_i * f_i(x)) / Σ(w_i)
+    where w_i = rule_strength_i x rule_weight_i
+"""
+    
 def rule_strength(mus, mode="prod"):
     #mus: list of membership values in [0,1]
     acc = 1.0 if mode == "prod" else 1.0    
@@ -16,7 +29,12 @@ def rule_strength(mus, mode="prod"):
         return min(mus) if mus else 0.0
 
 
+#Sugeno fuzzy system
+"""
+    Sugeno Rule handels individual rules for the Sugeno fuzzy system
+    SugenoSystem handles the collection of rules and evaluation
 
+"""
 class SugenoRule:
     def __init__(self, antecedents, consequents, weight=1.0):
         self.antecedents = antecedents  #list of (fuzzy_set_name, membership_value) tuples
