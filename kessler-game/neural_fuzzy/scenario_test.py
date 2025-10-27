@@ -3,6 +3,15 @@
 # NOTICE: This file is subject to the license agreement defined in file 'LICENSE', which is part of
 # this source code package.
 
+
+"""HOW TO RUN
+training: python kessler-game/neural_fuzzy/nf_train.py --task maneuver
+        combat: python kessler-game/neural_fuzzy/nf_train.py --task combat
+        optional args: --num_mfs 3 --lr 0.001 --batch_size 32 --val_frac 0.1 --epochs 100
+inference: python kessler-game/neural_fuzzy/scenario_test.py
+        
+    
+"""
 import time
 from kesslergame import Scenario, KesslerGame, GraphicsType
 from hybrid_fuzzy import hybrid_controller
