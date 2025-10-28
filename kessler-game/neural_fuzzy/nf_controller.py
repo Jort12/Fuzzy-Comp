@@ -1,7 +1,10 @@
 # kessler-game/neural_fuzzy/nf_controller.py
 import os
 import math
+
+from networkx import turan_graph
 from nf_infer import NFPolicy
+import torch
 
 class NFController:
     """
@@ -11,6 +14,7 @@ class NFController:
     """
     name = "NFController"
     def __init__(self):
+        self.input_buffer = []
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
         model_dir = os.path.join(base_dir, "models")
@@ -35,16 +39,17 @@ class NFController:
     def actions(self, ship_state, game_state):
         #Build features, same as training
         ctx = self.compute_context(ship_state, game_state)
+        if self.input_buffer is None:
+            device = self.maneuver_nf.device
+            self.input_buffer = torch.zeros((1,len(self.feature_names)), device=device)
+        for i,k in enumerate(self.feature_names):
+            self.input_buffer[0,i] = float(ctx[k])
+        thrust, turn_rate = self.maneuver_nf.act_maneuver_tensor(self.input_buffer)
 
-        #Organize inputs in correct order
-        x_list = [float(ctx[k]) for k in self.feature_names]
-
-        #Maneuver
-        thrust, turn_rate = self.maneuver_nf.act_maneuver(x_list)
 
         #Combat
         if self.combat_nf is not None:
-            fire, drop_mine = self.combat_nf.act_combat(x_list, thresh=0.5)
+            fire, drop_mine = self.combat_nf.act_combat_tensor(self.input_buffer,thresh=0.5)
         else:
             fire, drop_mine = False, False
         """ DEBUG"""

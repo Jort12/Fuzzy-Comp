@@ -99,13 +99,16 @@ class SugenoLayer(nn.Module):
 class SugenoNet(nn.Module):
     def __init__(self, num_inputs, num_mfs, num_outputs):
         super().__init__()
-        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         #module lists for MF layers
         self.mf_layers = nn.ModuleList([GaussianMF(f"input_{i}", num_mfs) for i in range(num_inputs)])
         
         
         self.rule_layer = RuleLayer(num_inputs, num_mfs)#number of rules = num_mfs^num_inputs
         self.sugeno_layer = SugenoLayer(num_rules=num_mfs ** num_inputs, num_inputs=num_inputs)
+        self.to(self.device)
+        print(f"device: {self.device}")
+
 
     def forward(self, x):
         mf_outputs = [mf(x[:, i]) for i, mf in enumerate(self.mf_layers)]#get MF outputs for each input

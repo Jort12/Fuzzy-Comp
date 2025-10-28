@@ -95,6 +95,8 @@ for epoch in range(1, args.epochs + 1):
     model.train()
     total_train = 0.0
     for xb, yb in train_loader:
+        yb = yb.to(model.device)
+        xb = xb.to(model.device)
         pred = model(xb).squeeze(1)
         loss = loss_fn(pred, yb[:, 0])  # train only first output; extend later
         opt.zero_grad()
@@ -108,6 +110,8 @@ for epoch in range(1, args.epochs + 1):
     total_val = 0.0 
     with torch.no_grad():#turns off gradient computation for efficiency
         for xb, yb in val_loader: #xb: inputs, yb: targets
+            yb = yb.to(model.device)
+            xb = xb.to(model.device)
             pred = model(xb).squeeze(1)#model prediction, remove extra dimmesion
             loss = loss_fn(pred, yb[:, 0])#loss_fn return errors between pred and target
             total_val += loss.item() * xb.size(0)#sum up loss over the batch, loss.item() gets the scalar value of the loss tensor, multiply by batch size to get total loss for the batch
@@ -147,4 +151,4 @@ for epoch in range(1, args.epochs + 1):
         print(f"Saved model bundle to {args.model_out} (val={avg_val:.6f})")
 
 
-print(f"\n Training complete! Best validation loss: {best_val_loss:.6f}")
+print(f"\n Training complete. Best validation loss: {best_val_loss:.6f}")
