@@ -1,3 +1,4 @@
+import textwrap
 from openai import OpenAI
 import re
 from dotenv import load_dotenv
@@ -36,6 +37,8 @@ def gen_rule_set() -> str:
             ctrl.Rule(mine_distance['very_near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  fire['no'], mine['no'])),
             ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], fire['no'], mine['no'])),
         ]
+
+        Also just generate python code only.
     """
     
     response = client.responses.create(
@@ -43,30 +46,66 @@ def gen_rule_set() -> str:
         input=prompt
     )
 
-    with open("results.txt", "a", encoding="utf-8") as f:
-        f.write(response.output[0].content[0].text + "\n")
+    full_text = response.output[0].content[0].text
+    match = re.search(r"```python\s*(.*?)```", full_text, re.DOTALL)
 
-    return response.output[0].content[0].text
+    if match:
+        code_only = match.group(1).strip()
+    else:
+        code_only = ""
+
+    with open("results.txt", "a", encoding="utf-8") as f:
+        f.write(code_only + "\n")
+
+    return code_only
 
 def insert_gen_code(code: str):
-    file_path = r"C:\Users\Orteg\OneDrive\Pictures\Documents\GitHub\Fuzzy-Comp\kessler-game\examples\fuzzy_aggressive_controller.py"
+    file_path = (
+        r"C:\Users\Orteg\OneDrive\Pictures\Documents\GitHub\Fuzzy-Comp"
+        r"\kessler-game\examples\fuzzy_aggressive_controller.py"
+    )
+    starter_marker = "#BEGIN GENERATED CODE"
+    end_marker = "#END GENERATED CODE"
 
-    # Read file
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-    except:
-        print("Didnt read the file")
+    # Normalize generated code indentation
+    clean_code = textwrap.dedent(code).strip("\n")
 
+    # Read entire file
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
 
-    # Modify content
-    pattern = r"(?<=# BEGIN GENERATED CODE\s)(.*?)(?=\s# END GENERATED CODE)"
-    new_content = re.sub(pattern, code, content, flags=re.DOTALL)
+    # Find markers
+    start = content.find(starter_marker)
+    end = content.find(end_marker)
 
-    # Write back
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(new_content)
-    except:
-        print("couldnt write to filed")
+    if start == -1 or end == -1:
+        raise ValueError("Generated code markers not found")
 
+    # Locate indent based on following line
+    start_line_end = content.find("\n", start) + 1
+    next_line_end = content.find("\n", start_line_end)
+    if next_line_end == -1:
+        next_line_end = len(content)
+
+    next_line = content[start_line_end:next_line_end]
+    indent_str = next_line[:len(next_line) - len(next_line.lstrip())]
+
+    # Apply indentation to new code
+    indented_code = "\n".join(
+        indent_str + line if line.strip() else line
+        for line in clean_code.splitlines()
+    )
+
+    # Apply indentation to end marker too
+    indented_end_marker = indent_str + end_marker
+
+    # Rebuild file content
+    updated = (
+        content[:start_line_end]
+        + indented_code + "\n"
+        + indented_end_marker
+        + content[end + len(end_marker):]
+    )
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(updated)

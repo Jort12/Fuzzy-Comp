@@ -148,70 +148,40 @@ class AggressiveFuzzyController(KesslerController):
         mine['no']  = fuzz.trimf(mine.universe, [0.0, 0.0, 0.35])
         mine['yes'] = fuzz.trimf(mine.universe, [0.25, 1.0, 1.0])
 
-        # BEGIN GENERATED CODE
+        #BEGIN GENERATED CODE
         rules = []
 
         rules += [
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['left'],  (thrust['high'],   turn['hard_right'], fire['no'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  fire['no'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], fire['no'], mine['no'])),
-        ]
+            # Attack when close and ahead
+            ctrl.Rule(distance['very_close'] & angle['ahead'] & rel_speed['fast'], (thrust['high'], turn['zero'], fire['yes'], mine['no'])),
+            ctrl.Rule(distance['close'] & angle['ahead'] & rel_speed['medium'], (thrust['high'], turn['zero'], fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'], mine['no'])),
 
-        rules += [
-            ctrl.Rule(mine_distance['near'] & mine_angle['left'],  (thrust['high'],   turn['hard_right'], mine['no'])),
-            ctrl.Rule(mine_distance['near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  mine['no'])),
-            ctrl.Rule(mine_distance['near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], mine['no'])),
-            ctrl.Rule(mine_distance['near'] & angle['ahead'], fire['yes']),
-        ]
+            # Aggressively pursue target to left or right
+            ctrl.Rule(distance['close'] & angle['left'], (thrust['high'], turn['soft_left'], fire['yes'], mine['no'])),
+            ctrl.Rule(distance['close'] & angle['right'], (thrust['high'], turn['soft_right'], fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet'] & angle['left'], (thrust['medium'], turn['soft_left'], fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet'] & angle['right'], (thrust['medium'], turn['soft_right'], fire['yes'], mine['no'])),
 
-        rules += [
-            ctrl.Rule(mine_distance['mid'] & mine_angle['left'],  (thrust['medium'], turn['soft_right'])),
-            ctrl.Rule(mine_distance['mid'] & mine_angle['right'], (thrust['medium'], turn['soft_left'])),
-            ctrl.Rule(mine_distance['mid'] & angle['ahead'], fire['yes']),
-        ]
+            # Always attack when safe
+            ctrl.Rule(danger['safe'] & distance['close'], (thrust['high'], turn['zero'], fire['yes'], mine['no'])),
+            ctrl.Rule(danger['safe'] & distance['sweet'], (thrust['medium'], turn['zero'], fire['yes'], mine['no'])),
 
-        rules += [
-            ctrl.Rule(danger['imminent'] & angle['left'],  (thrust['reverse_hard'], turn['hard_right'], fire['no'], mine['no'])),
-            ctrl.Rule(danger['imminent'] & angle['right'], (thrust['reverse_hard'], turn['hard_left'],  fire['no'], mine['no'])),
-            ctrl.Rule(danger['imminent'] & angle['ahead'], (thrust['reverse_hard'], turn['soft_right'], fire['no'], mine['no'])),
-            ctrl.Rule(danger['risky'], thrust['medium']),
-        ]
+            # Place mine when ahead and target is very close
+            ctrl.Rule(distance['very_close'] & angle['ahead'] & danger['safe'], (thrust['medium'], turn['zero'], fire['yes'], mine['yes'])),
 
-        rules += [
-            ctrl.Rule(distance['very_close'], thrust['reverse_hard']),
-            ctrl.Rule(distance['very_close'] & angle['ahead'], turn['soft_right']),
-            ctrl.Rule(distance['close'] & rel_speed['fast'], thrust['reverse_soft']),
-        ]
+            # Get aggressive even in risky situations if close
+            ctrl.Rule(danger['risky'] & distance['very_close'], (thrust['medium'], turn['zero'], fire['yes'], mine['no'])),
+            ctrl.Rule(danger['imminent'] & mine_distance['very_near'] & mine_angle['ahead'], (thrust['reverse_hard'], turn['soft_right'], fire['no'], mine['no'])),
 
-        rules += [
-            ctrl.Rule((angle['ahead']) & (danger['safe'] | danger['risky']) & (mine_distance['far'] | mine_distance['mid'] | mine_distance['near']), fire['yes'])
-        ]
+            # Avoid mines only at imminent threat, otherwise keep attacking
+            ctrl.Rule(mine_distance['very_near'] & mine_angle['left'], (thrust['high'], turn['hard_right'], fire['no'], mine['no'])),
+            ctrl.Rule(mine_distance['very_near'] & mine_angle['right'], (thrust['high'], turn['hard_left'], fire['no'], mine['no'])),
+            ctrl.Rule(mine_distance['near'] & angle['ahead'], (thrust['medium'], turn['soft_right'], fire['yes'], mine['no'])),
 
-        rules.append(ctrl.Rule(mine_distance['far'] & distance['very_close'], (thrust['reverse_hard'], turn['zero'], fire['no'])))
-
-        rules += [
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['left'],  (thrust['medium'], turn['soft_left'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['right'], (thrust['medium'], turn['soft_right'])),
-        ]
-
-        rules += [
-            ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])),
-            ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & (angle['left'] | angle['right']), (thrust['medium'], fire['yes'])),
-        ]
-
-        rules += [
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['ahead'], (thrust['high'], turn['zero'], fire['yes'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['left'],  (thrust['high'], turn['soft_left'])),
-            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['right'], (thrust['high'], turn['soft_right'])),
-        ]
-
-        rules.append(ctrl.Rule(mine_distance['far'] & (distance['sweet'] | distance['far']) & rel_speed['fast'] & angle['ahead'], fire['yes']))
-
-        rules += [
-            ctrl.Rule(mine_distance['far'] & danger['safe'] & (distance['close'] | distance['sweet']) & angle['ahead'], mine['yes']),
-            ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']),
-            ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']),
+            # Pursue target when far, with aggression
+            ctrl.Rule(distance['far'] & rel_speed['fast'], (thrust['high'], turn['zero'], fire['no'], mine['no'])),
+            ctrl.Rule(distance['far'] & rel_speed['medium'], (thrust['high'], turn['zero'], fire['no'], mine['no'])),
         ]
         #END GENERATED CODE
 
