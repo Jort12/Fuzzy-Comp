@@ -142,6 +142,7 @@ class hybrid_controller(KesslerController):
 
         #Danger is high if very close, or close and approaching fast
         danger_level = max(very_close, min(close, max(fast_approach, slow_approach)))
+        best_asteroid = max(asteroids, key=lambda a: calculate_threat_priority(a, (sx,sy), (svx,svy)))
 
         if self.debug_counter % 30 == 0:
             print(f"dist={closest_distance:.0f}, approach={approaching_speed:.0f}, danger={danger_level:.2f}")
@@ -214,6 +215,8 @@ class hybrid_controller(KesslerController):
                 
                 #bullet_speed = 800.0
                 ix, iy = intercept_point((sx, sy), (svx, svy),best_asteroid.position, getattr(best_asteroid, "velocity", (0.0, 0.0)))    
+                dx_i, dy_i = ix - sx, iy - sy
+
                 desired_heading = math.degrees(math.atan2(dy_i, dx_i))
                 heading_err = wrap180(desired_heading - heading)
                 turn_rate = max(-180.0, min(180.0, heading_err * 3.0))
@@ -232,7 +235,6 @@ class hybrid_controller(KesslerController):
                 print("MODE: FAR APPROACH (cruisin')")
 
         if closest_distance > 100:
-            best_asteroid = max(asteroids, key=lambda a: calculate_threat_priority(a, (sx,sy), (svx,svy)))
             ix, iy = intercept_point((sx, sy), (svx, svy),
                                     best_asteroid.position, best_asteroid.velocity)
             dx_i, dy_i = ix - sx, iy - sy
