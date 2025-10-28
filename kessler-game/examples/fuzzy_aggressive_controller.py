@@ -6,6 +6,8 @@ from kesslergame.controller import KesslerController
 
 # Small helpers to read fields
 
+
+
 def _get(o, names, default=None):
     """Return first present attribute from a list of names (or default)."""
     for n in names:
@@ -230,6 +232,8 @@ class AggressiveFuzzyController(KesslerController):
     def actions(self, ship_state, game_state):
         """Return (thrust, turn_rate, fire?, drop_mine?) for the current frame."""
         sim = ctrl.ControlSystemSimulation(self.ctrl_system)
+
+        
 
         # Grab world objects
         asteroids = _get(game_state, ["asteroids", "asteroid_states"], []) or []

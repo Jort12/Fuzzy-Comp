@@ -4,11 +4,12 @@ from kesslergame import KesslerGame, GraphicsType
 from fuzzy_aggressive_controller import AggressiveFuzzyController
 import scenarios as sc  # <-- new
 
-SCENARIO = sc.donut_ring()
-# SCENARIO = sc.belt_orbit()
-# SCENARIO = sc.spiral_swarm()
-# SCENARIO = sc.dense_debris_field()
-# SCENARIO = sc.sniper_practice()
+#SCENARIO = sc.donut_ring()
+SCENARIO = sc.vertical_wall_left()
+#SCENARIO = sc.stock_scenario()
+#SCENARIO = sc.spiral_swarm()
+#SCENARIO = sc.sniper_practice()
+
 
 game_settings = {
     'perf_tracker': True,
