@@ -22,6 +22,7 @@ class GaussianMF(nn.Module):
         self.num_mfs = num_mfs
 
         # size-safe init
+        #Make sure that sigmas has correct size, else init to 0.5
         if sigmas is None:
             sigma_init = torch.full((num_mfs,), 0.5)
         else:
