@@ -14,7 +14,7 @@ class NFController:
     """
     name = "NFController"
     def __init__(self):
-        self.input_buffer = []
+        self.input_buffer = None
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
         model_dir = os.path.join(base_dir, "models")
