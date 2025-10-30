@@ -11,9 +11,6 @@ api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key) 
 
 def gen_rule_set() -> str:
-
-    print("im here in gen_rule_set\n")
-
     prompt = """
         Create a ruleset that the agent has an aggressive play style.
         Return only valid Python code for the ruleset, do NOT include explanations.

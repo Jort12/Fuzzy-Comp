@@ -1,0 +1,2 @@
+ eval_time         stop_reason asteroids_hit deaths              accuracy       mean_eval_time
+     3.556 StopReason.no_ships          [12]    [3] [0.34615384615384615] [0.2833185128270438]

@@ -61,14 +61,17 @@ def main():
 
     columns = ["eval_time", "stop_reason", "asteroids_hit", "deaths", "accuracy", "mean_eval_time"]
     df = pd.DataFrame(columns=columns)
-    for i in range(5):
+    for i in range(7):
         if i > 0:
             code = gen_rule_set()
             insert_gen_code(code)
-        for j in range(1):
+        for j in range(20):
             row = run_game()
             df.loc[len(df)] = row
             print(f"Rule set {i+1}, experiment {j+1} complete")
+
+        df.to_csv(f'Ruleset_{i}.csv')
+
 
 
 
