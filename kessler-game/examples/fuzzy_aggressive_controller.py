@@ -4,14 +4,16 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 from kesslergame.controller import KesslerController
 
-
+# Small helpers to read fields
 def _get(o, names, default=None):
+    """Return first present attribute from a list of names (or default)."""
     for n in names:
         if hasattr(o, n):
             return getattr(o, n)
     return default
 
 def _get_pos(o):
+    """Return (x, y) as floats if available; else None."""
     p = _get(o, ["position", "pos"], None)
     if isinstance(p, (tuple, list)) and len(p) >= 2:
         try:
@@ -21,6 +23,7 @@ def _get_pos(o):
     return None
 
 def _get_vel(o):
+    """Return (vx, vy) as floats; defaults to (0,0)."""
     v = _get(o, ["velocity", "vel"], (0.0, 0.0)) or (0.0, 0.0)
     try:
         return float(v[0]), float(v[1])
@@ -28,71 +31,27 @@ def _get_vel(o):
         return (0.0, 0.0)
 
 def _ang_deg(dx, dy):
+    """Angle (degrees) of vector (dx,dy)."""
     return math.degrees(math.atan2(dy, dx))
 
 def _wrap180(a):
+    """Wrap angle to [-180, 180] degrees."""
     return (a + 180.0) % 360.0 - 180.0
 
+
+# Aggressive fuzzy-logic ship controller
+
 class AggressiveFuzzyController(KesslerController):
+    """Fuzzy controller that chases and shoots, with simple mine avoidance."""
+
     def __init__(self, normalization_distance_scale: float = None):
         super().__init__()
-        self._norm_dist_scale = normalization_distance_scale
-        self._build_fis()
-        '''
-        self.learning_rate = learning_rate
-        self.gamma = gamma 
-        self.epsilon = epsilon
-
-        self.Q = np.zero(len(self.actions))
-        self._last_action_idx = None
-        '''
-
-    '''
-    def compute_reward(self, ship_state, game_state):
-        reward = 0.0
-        
-        #Survival Bonus
-        reward += 0.01
-
-        asteroids = _get(game_state, ['asteroids', 'asteroid_states'], []) or []
-        mines = _get(game_state, ['mines', 'mine_states'], []) or []
-
-        ship_pos = _get_pos(ship_state) or (0.0,0.0)
-        ship_x, ship_y = ship_pos
-
-        for a in asteroids:
-            aster_pos = _get_pos(a)
-            if aster_pos == None:
-                continue
-            if np.hypot(aster_pos[0]-ship_x, aster_pos[1]-ship_y) < 10.0:
-                reward -= 1.0
-
-        for m in mines:
-            mine_pos = _get_pos(m)
-            if mine_pos == None:
-                continue
-            if np.hypot(mine_pos[0]-ship_x, mine_pos[1]-ship_y) < 10.0: 
-                reward -= 1.0
-
-        # Reward for destroying asteroid
-        destroyed_asteroids = _get(game_state, ["destroyed_asteroids"], 0) or 0
-        reward += 0.05 * destroyed_asteroids
-
-        # Normalize reward
-        reward = max(-1.0, min(1.0, reward))
-        return reward
-    
-    def update_wieghts(self, reward: float):
-        if self._last_action_idx == None:
-            return
-        
-        a = self._last_action_idx
-        alpha = self.learning_rate
-        gamma = self.gamma 
-    '''
-        
+        self._norm_dist_scale = normalization_distance_scale  # scale used to normalize distances
+        self._build_fis()  # build fuzzy inference system
 
     def _build_fis(self):
+        """Define fuzzy inputs/outputs and rules."""
+        # Inputs (Antecedents) normalized to small ranges
         distance      = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "distance")
         rel_speed     = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "rel_speed")
         angle         = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "angle")
@@ -100,11 +59,13 @@ class AggressiveFuzzyController(KesslerController):
         mine_angle    = ctrl.Antecedent(np.linspace(-1.0, 1.0, 101), "mine_angle")
         danger        = ctrl.Antecedent(np.linspace(0.0, 1.0, 101), "danger")
 
-        thrust = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "thrust")
-        turn   = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "turn")
-        fire   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "fire")
-        mine   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "mine")
+        # Outputs (Consequents)
+        thrust = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "thrust")  # -1 reverse .. 1 forward (scaled later)
+        turn   = ctrl.Consequent(np.linspace(-1.0, 1.0, 101), "turn")    # -1 left .. 1 right (scaled later)
+        fire   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "fire")     # 0..1 (thresholded)
+        mine   = ctrl.Consequent(np.linspace(0.0, 1.0, 101), "mine")     # 0..1 (thresholded)
 
+        # Membership functions (names -> shapes)
         distance['very_close'] = fuzz.trimf(distance.universe, [0.00, 0.00, 0.10])
         distance['close']      = fuzz.trimf(distance.universe, [0.08, 0.18, 0.30])
         distance['sweet']      = fuzz.trimf(distance.universe, [0.25, 0.45, 0.60])
@@ -177,94 +138,65 @@ class AggressiveFuzzyController(KesslerController):
             ctrl.Rule(distance['close'] & angle['right'],                   (thrust['high'],    turn['soft_right'], fire['yes'], mine['no'])),
         ]
         #END GENERATED CODE
-
-        ''' 
-        """Reinforcement Learning Portion"""
-        rules_list = rules
-        self.um_rules = len(rules_list)
-
-        self.actions = [
-            ('high', 'hard_right', 'no', 'no'),   # Rule 1
-            ('high', 'hard_left', 'no', 'no'),    # Rule 2
-            ('high', 'soft_right', 'no', 'no'),   # Rule 3
-            ('high', 'hard_right', 'no'),         # Rule 4
-            ('high', 'hard_left', 'no'),          # Rule 5
-            ('high', 'soft_right', 'no'),         # Rule 6
-            ('yes',),                             # Rule 7
-            ('medium', 'soft_right'),             # Rule 8
-            ('medium', 'soft_left'),              # Rule 9
-            ('yes',),                             # Rule 10
-            ('medium', 'soft_right'),             # Rule 11
-            ('medium', 'soft_left'),              # Rule 12
-            ('yes',),                             # Rule 13
-            ('reverse_hard', 'hard_right', 'no', 'no'),  # Rule 14
-            ('reverse_hard', 'hard_left', 'no', 'no'),   # Rule 15
-            ('reverse_hard', 'soft_right', 'no', 'no'),  # Rule 16
-            ('medium',),                          # Rule 17
-            ('reverse_hard',),                    # Rule 18
-            ('soft_right',),                      # Rule 19
-            ('reverse_soft',),                    # Rule 20
-            ('yes',),                             # Rule 21
-            ('reverse_hard', 'zero', 'no'),       # Rule 22
-            ('medium', 'zero', 'yes'),            # Rule 23
-            ('medium', 'soft_left'),              # Rule 24
-            ('medium', 'soft_right'),             # Rule 25
-            ('medium', 'zero', 'yes'),            # Rule 26
-            ('medium', 'yes'),                    # Rule 27
-            ('high', 'zero', 'yes'),              # Rule 28
-            ('high', 'soft_left'),                # Rule 29
-            ('high', 'soft_right'),               # Rule 30
-            ('yes',),                             # Rule 31
-            ('yes',),                             # Rule 32
-            ('yes',),                             # Rule 33
-            ('no',)                               # Rule 34
-        ]              
-
-        self.rule_weights = np.ones(len(self.actions))
-
-        self.Q = np.zero((len(rules_list),len(self.actions)))
-        '''
         
         self.ctrl_system = ctrl.ControlSystem(rules)
-        self._fis_inputs = dict(distance=distance, rel_speed=rel_speed, angle=angle, mine_distance=mine_distance, mine_angle=mine_angle, danger=danger)
+        self._fis_inputs = dict(distance=distance, rel_speed=rel_speed, angle=angle,
+                                mine_distance=mine_distance, mine_angle=mine_angle, danger=danger)
         self._fis_outputs = dict(thrust=thrust, turn=turn, fire=fire, mine=mine)
+
+    # Normalization helper methods
 
     @staticmethod
     def _norm_distance(d, map_diag):
+        """Normalize world distance into [0,1] using map diagonal (fallback to 1000)."""
         if map_diag is None or map_diag <= 0:
             return max(0.0, min(1.0, d / 1000.0))
         return max(0.0, min(1.0, d / (map_diag / 2.0)))
 
     @staticmethod
     def _norm_rel_speed(v_rel, max_approach=500.0):
+        """Normalize relative approach speed into [0,1]."""
         v = max(0.0, min(max_approach, v_rel))
         return v / max_approach
 
     @staticmethod
     def _norm_angle_deg_to_unit(a_deg):
+        """Convert degrees to [-1,1] for fuzzy angle input."""
         return max(-1.0, min(1.0, a_deg / 180.0))
 
     @staticmethod
     def _norm_mine_distance(d, scale=320.0):
+        """Normalize mine distance into [0,1] using fixed scale."""
         return max(0.0, min(1.0, d / scale))
 
     @staticmethod
     def _norm_ttc_like(dist_n, rel_speed_n):
+        """Simple danger proxy from (near * fast). Higher = safer."""
         near = max(0.0, min(1.0, 1.0 - dist_n))
         fast = max(0.0, min(1.0, rel_speed_n))
         risk = near * fast
         return max(0.0, min(1.0, 1.0 - risk))
 
+    # Main control: produce actions
     def actions(self, ship_state, game_state):
+        """Return (thrust, turn_rate, fire?, drop_mine?) for the current frame."""
         sim = ctrl.ControlSystemSimulation(self.ctrl_system)
+
+        
+
+        # Grab world objects
         asteroids = _get(game_state, ["asteroids", "asteroid_states"], []) or []
         if not asteroids:
             return 0.0, 0.0, False, False
         mines = _get(game_state, ["mines", "mine_states"], []) or []
+
+        # Ship kinematics
         sp = _get_pos(ship_state) or (0.0, 0.0)
         sv = _get_vel(ship_state)
         sx, sy = sp
         svx, svy = sv
+
+        # Heading (deg)
         heading = _get(ship_state, ["heading"], None)
         if heading is None and hasattr(ship_state, "angle"):
             try:
@@ -273,12 +205,16 @@ class AggressiveFuzzyController(KesslerController):
                 heading = 0.0
         if heading is None:
             heading = 0.0
+
+        # Distance normalization scale 
         if self._norm_dist_scale is None:
             ms = _get(game_state, ["map_size"], None)
             if isinstance(ms, (tuple, list)) and len(ms) >= 2:
                 self._norm_dist_scale = math.hypot(float(ms[0]), float(ms[1]))
             else:
                 self._norm_dist_scale = 2000.0
+
+        # Pick nearest asteroid
         best = None
         best_d = float("inf")
         for a in asteroids:
@@ -291,14 +227,19 @@ class AggressiveFuzzyController(KesslerController):
                 best = a
         if best is None:
             return 0.0, 0.0, False, False
+
+        # Relative geometry & velocity along line of sight
         ax, ay = _get_pos(best)
         avx, avy = _get_vel(best)
         dx, dy = ax - sx, ay - sy
         dist = math.hypot(dx, dy)
         ux, uy = (dx / max(dist, 1e-9), dy / max(dist, 1e-9))
-        rel_v_line = (avx - svx) * ux + (avy - svy) * uy
-        desired = _ang_deg(dx, dy)
-        err_deg = _wrap180(desired - heading)
+        rel_v_line = (avx - svx) * ux + (avy - svy) * uy  # approach rate
+
+        desired = _ang_deg(dx, dy)                 # angle to target
+        err_deg = _wrap180(desired - heading)      # aim error
+
+        # Nearest mine
         md = float("inf")
         mine_err = 0.0
         if isinstance(mines, (list, tuple)):
@@ -311,12 +252,16 @@ class AggressiveFuzzyController(KesslerController):
                 if d < md:
                     md = d
                     mine_err = _wrap180(_ang_deg(ddx, ddy) - heading)
+
+        # Normalize inputs for fuzzy system
         dist_n   = self._norm_distance(dist, self._norm_dist_scale)
         rel_n    = self._norm_rel_speed(max(0.0, rel_v_line))
         ang_n    = self._norm_angle_deg_to_unit(err_deg)
         mdis_n   = self._norm_mine_distance(md)
         mang_n   = self._norm_angle_deg_to_unit(mine_err)
         danger_n = self._norm_ttc_like(dist_n, rel_n)
+
+        # Run fuzzy inference
         try:
             sim.input['distance'] = dist_n
             sim.input['rel_speed'] = rel_n
@@ -326,19 +271,27 @@ class AggressiveFuzzyController(KesslerController):
             sim.input['danger'] = danger_n
             sim.compute()
         except:
+            # If FIS fails, idle (safe fallback)
             return 0.0, 0.0, False, False
+
+        # Decode fuzzy outputs
         out_thrust = float(sim.output.get('thrust', 0.5))
         out_turn   = float(sim.output.get('turn', 0.0))
         out_fire   = float(sim.output.get('fire', 1.0))
         out_mine   = float(sim.output.get('mine', 0.0))
-        T_MAX = 230.0
+
+        T_MAX = 230.0                   # engine's max thrust
         engine_thrust = max(-1.0, min(1.0, out_thrust)) * T_MAX
-        MAX_TURN = 540.0
+
+        MAX_TURN = 540.0                # engine's max turn rate (deg/s)
         turn_rate = out_turn * MAX_TURN
-        fire_bool = (out_fire >= 0.25)
-        drop_mine = (out_mine >= 0.40)
+
+        fire_bool = (out_fire >= 0.25)  
+        drop_mine = (out_mine >= 0.40)  
+
         return float(engine_thrust), float(turn_rate), bool(fire_bool), bool(drop_mine)
 
     @property
     def name(self) -> str:
+        """Display name for UI/scoreboard."""
         return "AggressiveFuzzyController"
