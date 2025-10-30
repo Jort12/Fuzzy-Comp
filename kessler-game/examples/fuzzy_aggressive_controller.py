@@ -185,7 +185,6 @@ class AggressiveFuzzyController(KesslerController):
         ]
         #END GENERATED CODE
 
-
         ''' 
         """Reinforcement Learning Portion"""
         rules_list = rules
