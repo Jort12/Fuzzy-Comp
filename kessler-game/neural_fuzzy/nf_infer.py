@@ -42,23 +42,23 @@ class NFPolicy:
         return y
 
     def act_maneuver_tensor(self, xb):
-        """Same as act_maneuver, but accepts a prebuilt tensor on correct device."""
         has_t = "thrust" in self.models
         has_r = "turn_rate" in self.models
         with torch.no_grad():
+            thrust, turn = 0.0, 0.0
+
             if has_t:
                 y_t = self.models["thrust"][0](xb).squeeze().item()
-                thrust = 1.0 / (1.0 + np.exp(-y_t))  # sigmoid
-            else:
-                thrust = 0.0
+                thrust = 1.0 / (1.0 + np.exp(-y_t))
+                thrust = thrust * 300.0  # 🔹 double the max range
+                thrust = max(50.0, min(thrust, 300.0))  # ensures min push
 
             if has_r:
                 y_r = self.models["turn_rate"][0](xb).squeeze().item()
-                e2y = np.exp(2 * y_r)
-                turn = (e2y - 1) / (e2y + 1)  # tanh
-            else:
-                turn = 0.0
+                turn = np.tanh(y_r) * 180.0  # 🔹 map back to ±180°
+
         return float(thrust), float(turn)
+
 
 
     def act_combat_tensor(self, xb, thresh=0.5):
@@ -68,13 +68,15 @@ class NFPolicy:
         with torch.no_grad():
             if has_f:
                 logit_f = self.models["fire"][0](xb).squeeze().item()
-                fire = (1 / (1 + np.exp(-logit_f))) >= thresh
+                fire = (1 / (1 + np.exp(-logit_f))) >= max(0.8, thresh)
+
             else:
                 fire = False
 
             if has_m:
                 logit_m = self.models["drop_mine"][0](xb).squeeze().item()
-                mine = (1 / (1 + np.exp(-logit_m))) >= thresh
+                mine = (1 / (1 + np.exp(-logit_m))) >= max(0.8, thresh)
+
             else:
                 mine = False
         return bool(fire), bool(mine)

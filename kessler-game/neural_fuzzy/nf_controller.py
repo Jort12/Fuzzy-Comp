@@ -5,7 +5,7 @@ import math
 from networkx import turan_graph
 from nf_infer import NFPolicy
 import torch
-
+from data_log import Logger, FEATURES, TARGET
 class NFController:
     """
     Neuro-Fuzzy Controller for Kessler Game.
@@ -21,6 +21,8 @@ class NFController:
         maneuver_path = os.path.join(model_dir, "maneuver.pt")
         combat_path   = os.path.join(model_dir, "combat.pt")
 
+        log_path = os.path.join(base_dir, "data", "model_out.csv")
+        self.logger = Logger(log_path, FEATURES, TARGET)
         # Load maneuver
         self.maneuver_nf = NFPolicy(maneuver_path)
 
@@ -49,11 +51,13 @@ class NFController:
 
         #Combat
         if self.combat_nf is not None:
-            fire, drop_mine = self.combat_nf.act_combat_tensor(self.input_buffer,thresh=0.5)
+            fire, drop_mine = self.combat_nf.act_combat_tensor(self.input_buffer,thresh=0.5 )
         else:
             fire, drop_mine = False, False
         """ DEBUG"""
         # print(f"[NF] thrust={thrust:.3f}, turn={turn_rate:.3f}, fire={fire}, mine={drop_mine}")
+        # Log features and outputs
+        self.logger.log(ctx, [thrust, turn_rate])
 
         return thrust, turn_rate, fire, drop_mine
 

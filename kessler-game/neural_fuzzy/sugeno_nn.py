@@ -42,30 +42,29 @@ class GaussianMF(nn.Module):
 
 
 
-class RuleLayer(nn.Module):
-    def __init__ (self, num_input, num_mfs):
-        super().__init__()
-        self.num_input = num_input
-        self.num_mfs = num_mfs
-        self.num_rules = num_mfs ** num_input #total number of rules
 
-        #Rule combinations -- itertools.product: creates a cartesian product of input MFs
-        self.rule_indices = list(itertools.product(range(num_mfs), repeat=num_input)) #all possible combinations of MFs for the inputs
-    
+class RuleLayer(nn.Module):#vectorized rule layer
+    def __init__(self, num_input, num_mfs):
+            super().__init__()
+            self.num_input = num_input
+            self.num_mfs = num_mfs
+            self.num_rules = num_mfs ** num_input
+            # Keep as buffer so it moves with model.to(device)
+            self.register_buffer('rule_indices', 
+                torch.tensor(list(itertools.product(range(num_mfs), repeat=num_input))))
+
+
     def forward(self, mf_outputs):
-        #mf_outputs: list of tensors, one per input, each of shape (batch_size, num_mfs)
+        # mf_outputs: list of (B, num_mfs)
         batch_size = mf_outputs[0].shape[0]
-        rule_strengths = []
+        mf_stack = torch.stack(mf_outputs, dim=1)  # (B, num_input, num_mfs)
+        # Gather memberships for all rule combinations in one go
+        gathered = torch.stack([
+            mf_stack[:, i, self.rule_indices[:, i]] for i in range(self.num_input)
+        ], dim=-1)  # (B, num_rules, num_input)
+        rule_strengths = gathered.prod(dim=-1)  # (B, num_rules)
+        return rule_strengths
 
-        for i in self.rule_indices:
-            weight = torch.ones(batch_size, device=mf_outputs[0].device)
-            
-            for j, input_name in enumerate(i):
-                weight*= mf_outputs[j][:, input_name] #get the membership degree for the j-th input and the corresponding MF index
-
-            rule_strengths.append(weight)
-
-        return torch.stack(rule_strengths, dim=1) #(batch_size, num_rules)
     
 
 class SugenoLayer(nn.Module):
