@@ -18,8 +18,8 @@ class NFPolicy:
             model.load_state_dict(info["state_dict"]); model.eval()
             self.models[name] = (model, info.get("mu"), info.get("sd"))
             self.feature_cols = self.feature_cols or info.get("feature_cols")
-        print("[NFPolicy] loading:", model_path)
-        print("[NFPolicy] heads:", list(bundle["heads"].keys()))
+        #print("[NFPolicy] loading:", model_path)
+        #print("[NFPolicy] heads:", list(bundle["heads"].keys()))
 
 
 
@@ -60,9 +60,11 @@ class NFPolicy:
                 xb_norm = (xb - mu_t) / sd_t
             else:
                 xb_norm = xb
+            y_t = model(xb_norm).squeeze().item()
+            thrust_norm = np.tanh(y_t)
+            thrust = thrust_norm * 150.0
+            thrust = max(-150.0, min(150.0, thrust))
 
-            thrust_norm = model(xb_norm).squeeze().item()
-            thrust_norm = max(-1.0, min(1.0, float(thrust_norm)))
 
             # boost + floor
             GAIN = 1.5
@@ -92,9 +94,10 @@ class NFPolicy:
                     xb_norm = xb
 
                 y_r = model(xb_norm).squeeze().item()
+
                 print("[MANEUVER RAW] y_r:", y_r)
 
-                turn_norm = max(-1.0, min(1.0, float(y_r)))
+                turn_norm = np.tanh(y_r)
                 turn = turn_norm * 180.0
 
         return float(thrust), float(turn)
