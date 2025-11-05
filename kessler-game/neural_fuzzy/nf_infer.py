@@ -18,6 +18,9 @@ class NFPolicy:
             model.load_state_dict(info["state_dict"]); model.eval()
             self.models[name] = (model, info.get("mu"), info.get("sd"))
             self.feature_cols = self.feature_cols or info.get("feature_cols")
+        print("[NFPolicy] loading:", model_path)
+        print("[NFPolicy] heads:", list(bundle["heads"].keys()))
+
 
 
     def prep(self, x_list, mu, sd):
@@ -47,36 +50,93 @@ class NFPolicy:
         with torch.no_grad():
             thrust, turn = 0.0, 0.0
 
-            if has_t:
-                y_t = self.models["thrust"][0](xb).squeeze().item()
-                thrust = 1.0 / (1.0 + np.exp(-y_t))
-                thrust = thrust * 300.0  # 🔹 double the max range
-                thrust = max(50.0, min(thrust, 300.0))  # ensures min push
+            #THRUST
+        if has_t:
+            model, mu, sd = self.models["thrust"]
+            if mu is not None and sd is not None:
+                mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
+                sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
+                sd_t[sd_t <= 1e-6] = 1.0
+                xb_norm = (xb - mu_t) / sd_t
+            else:
+                xb_norm = xb
 
+            thrust_norm = model(xb_norm).squeeze().item()
+            thrust_norm = max(-1.0, min(1.0, float(thrust_norm)))
+
+            # boost + floor
+            GAIN = 1.5
+            MIN_FWD = 0.4
+            MIN_BACK = 0.4
+
+            thrust_norm *= GAIN
+            thrust_norm = max(-1.0, min(1.0, thrust_norm))
+
+            if 0.0 < thrust_norm < MIN_FWD:
+                thrust_norm = MIN_FWD
+            elif -MIN_BACK < thrust_norm < 0.0:
+                thrust_norm = -MIN_BACK
+
+            thrust = thrust_norm * 150.0
+
+
+            #TURN
             if has_r:
-                y_r = self.models["turn_rate"][0](xb).squeeze().item()
-                turn = np.tanh(y_r) * 180.0  # 🔹 map back to ±180°
+                model, mu, sd = self.models["turn_rate"]
+                if mu is not None and sd is not None:
+                    mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
+                    sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
+                    sd_t[sd_t < 1e-6] = 1.0
+                    xb_norm = (xb - mu_t) / sd_t
+                else:
+                    xb_norm = xb
+
+                y_r = model(xb_norm).squeeze().item()
+                print("[MANEUVER RAW] y_r:", y_r)
+
+                turn_norm = max(-1.0, min(1.0, float(y_r)))
+                turn = turn_norm * 180.0
 
         return float(thrust), float(turn)
 
 
-
     def act_combat_tensor(self, xb, thresh=0.5):
-        """Same as act_combat, but accepts a prebuilt tensor on correct device."""
         has_f = "fire" in self.models
         has_m = "drop_mine" in self.models
         with torch.no_grad():
+            # FIRE
             if has_f:
-                logit_f = self.models["fire"][0](xb).squeeze().item()
-                fire = (1 / (1 + np.exp(-logit_f))) >= max(0.8, thresh)
-
+                model, mu, sd = self.models["fire"]
+    
+                if mu is not None and sd is not None:
+                    mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
+                    sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
+                    sd_t[sd_t < 1e-6] = 1.0
+                    xb_norm = (xb - mu_t) / sd_t
+                else:
+                    xb_norm = xb
+                
+                logit_f = model(xb_norm).squeeze().item()
+                fire = (1 / (1 + np.exp(-logit_f))) >= thresh
             else:
                 fire = False
 
+            # MINE
             if has_m:
-                logit_m = self.models["drop_mine"][0](xb).squeeze().item()
-                mine = (1 / (1 + np.exp(-logit_m))) >= max(0.8, thresh)
-
+                model, mu, sd = self.models["drop_mine"]
+                
+                # Normalize input
+                if mu is not None and sd is not None:
+                    mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
+                    sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
+                    sd_t[sd_t < 1e-6] = 1.0
+                    xb_norm = (xb - mu_t) / sd_t
+                else:
+                    xb_norm = xb
+                
+                logit_m = model(xb_norm).squeeze().item()
+                mine = (1 / (1 + np.exp(-logit_m))) >= thresh
             else:
                 mine = False
+                
         return bool(fire), bool(mine)

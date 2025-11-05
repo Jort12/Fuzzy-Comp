@@ -272,8 +272,8 @@ class hybrid_controller(KesslerController):
 
         # Log data
         try:
-            thrust_c    = max(0.0, min(1.0, float(thrust) / 150.0))  # normalize 0–150 to 0–1
-            turn_rate_c = max(-1.0, min(1.0, float(turn_rate) / 180.0))  # normalize 180 to -1–1
+            thrust_c = max(-1.0, min(1.0, float(thrust) / 150.0))  # normalize –150 to 150  –1 to 1
+            turn_rate_c = max(-1.0, min(1.0, float(turn_rate) / 180.0))  # normalize –180 to 180  –1 to 1  
 
             fire_c      = 1.0 if fire else 0.0
             mine_c      = 1.0 if drop_mine else 0.0

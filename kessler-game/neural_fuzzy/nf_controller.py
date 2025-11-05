@@ -1,4 +1,5 @@
 # kessler-game/neural_fuzzy/nf_controller.py
+from concurrent.futures import thread
 import os
 import math
 
@@ -58,6 +59,7 @@ class NFController:
         # print(f"[NF] thrust={thrust:.3f}, turn={turn_rate:.3f}, fire={fire}, mine={drop_mine}")
         # Log features and outputs
         self.logger.log(ctx, [thrust, turn_rate])
+        print(f"[NF DEBUG] thrust={thrust:.1f}, turn={turn_rate:.1f}, fire={fire}, mine={drop_mine}")
 
         return thrust, turn_rate, fire, drop_mine
 
@@ -86,8 +88,11 @@ class NFController:
             dist, approach_speed, threat_angle = 0.0, 0.0, 0.0
 
         # time-to-collision
-        ttc = dist / (abs(approach_speed) + 1e-6)# avoid div by zero
-
+        if abs(approach_speed) > 0.01:  # Only calculate if actually approaching
+            ttc = dist / abs(approach_speed)
+            ttc = min(ttc, 500.0)  # Cap at reasonable maximum
+        else:
+            ttc = 500.0  
         # heading error wrapped to [-pi, pi] 
         heading = getattr(ship_state, "heading", None)# in radians
         if heading is None:
@@ -98,6 +103,9 @@ class NFController:
         heading_err = threat_angle - heading
         while heading_err > math.pi:  heading_err -= 2*math.pi
         while heading_err < -math.pi: heading_err += 2*math.pi
+
+        heading_err = math.degrees(heading_err)
+        threat_angle_deg = math.degrees(threat_angle)
 
         ammo  = float(getattr(ship_state, "ammo", 0))
         mines = float(getattr(ship_state, "mines_remaining", getattr(ship_state, "mines", 0)))
@@ -111,5 +119,5 @@ class NFController:
             "ammo": ammo,#ammo left
             "mines": mines,#mines left
             "threat_density": density,# asteroids per 10 units
-            "threat_angle": threat_angle
+            "threat_angle": threat_angle_deg
         }

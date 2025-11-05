@@ -24,9 +24,9 @@ arguments.add_argument("--task", choices=["maneuver", "combat"], required=True,
                 help="Choose which fuzzy model to train (maneuver or combat)")
 arguments.add_argument("--num_mfs", type=int, default=2,
                 help="Number of membership functions (use 2 for speed!)")
-arguments.add_argument("--epochs", type=int, default=50)
-arguments.add_argument("--batch_size", type=int, default=256)
-arguments.add_argument("--lr", type=float, default=3e-3)
+arguments.add_argument("--epochs", type=int, default=200)
+arguments.add_argument("--batch_size", type=int, default=64)
+arguments.add_argument("--lr", type=float, default=0.01)
 arguments.add_argument("--val_frac", type=float, default=0.1)
 args = arguments.parse_args()
 
