@@ -2,13 +2,24 @@
 import time
 import pandas as pd
 from kesslergame import Scenario, KesslerGame, GraphicsType
-#from graphics_both import GraphicsBoth
-#from hybrid_fuzzy import hybrid_controller
-#from human_controller import HumanController
+from graphics_both import GraphicsBoth
+from andrew_test import AndrewTactic   # <-- Added import
+
+from hybrid_fuzzy import hybrid_controller
+from human_controller import HumanController
 from fuzzy_aggressive_controller import AggressiveFuzzyController
-#from defensive_fuzzy import DefensiveFuzzyController
-from LLM import gen_rule_set, insert_gen_code
+from defensive_fuzzy import DefensiveFuzzyController
 # Define game scenario
+my_test_scenario = Scenario(name='Test Scenario',
+                            num_asteroids=10,
+                            ship_states=[
+                                #{'position': (400, 400), 'angle': 90, 'lives': 3, 'team': 1, "mines_remaining": 3},
+                                 {'position': (400, 600), 'angle': 90, 'lives': 3, 'team': 2, "mines_remaining": 3},
+                            ],
+                            map_size=(1000, 800),
+                            time_limit=120,
+                            ammo_limit_multiplier=0,
+                            stop_if_no_ammo=False)
 
 def run_game():
     my_test_scenario = Scenario(name='Test Scenario',
@@ -102,11 +113,6 @@ game_settings = {
 
 game = KesslerGame(settings=game_settings)
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=SCENARIO, controllers=[AggressiveFuzzyController()])
-print('Scenario eval time:', time.perf_counter() - pre)
-print(score.stop_reason)
-print('Asteroids hit:', [team.asteroids_hit for team in score.teams])
-print('Deaths:', [team.deaths for team in score.teams])
-print('Accuracy:', [team.accuracy for team in score.teams])
-print('Mean eval time:', [team.mean_eval_time for team in score.teams])
+score, perf_data = game.run(scenario=my_test_scenario, controllers=[DefensiveFuzzyController()])
+
 '''
