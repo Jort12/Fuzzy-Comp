@@ -12,16 +12,19 @@ client = OpenAI(api_key=api_key)
 
 def gen_rule_set() -> str:
     prompt = """
-        Create a ruleset that the agent has an aggressive play style.
+        Create a ruleset that the an ai agent has an aggressive play style.
         Return only valid Python code for the ruleset, do NOT include explanations.
-        Here is a list of what each choice contains:
+        Here is a list of Antecedents and Consequents:
 
+        These are your Antecedents
         distance = 'very_close', 'close', 'sweet', 'far'
         rel_speed = 'slow', 'medium', 'fast'
         angle = 'left', 'ahead', 'fast'
         mine_distance = 'very_near', 'near', 'mid', 'far'
         mine_angle = 'left', 'ahead', 'fast'
         danger = 'imminent', 'risky', 'safe'
+
+        These are your Consequents
         thrust = 'reverse_hard', 'reverse_soft', 'medium', 'high'
         turn = 'hard_left', 'soft_left', 'zero', 'soft_right', 'hard_right'
         fire = 'no', 'yes'
@@ -35,7 +38,10 @@ def gen_rule_set() -> str:
             ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], fire['no'], mine['no'])),
         ]
 
-        Also just generate python code only.
+        For refernce the current ruleset contains 32 different rules, it doesn't necessarily need to be 32 but the range of rules should 
+        be 20 - 45 rules.
+
+        GENERATE PYTHON CODE ONLY and Thank you.
     """
     
     response = client.responses.create(
