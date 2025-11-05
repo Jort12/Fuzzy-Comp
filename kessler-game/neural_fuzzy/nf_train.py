@@ -104,7 +104,7 @@ for output_idx, output_name in enumerate(output_cols):
             yb = yb.to(model.device)
             xb = xb.to(model.device)
             pred = model(xb).squeeze(1)
-            loss = loss_fn(pred, yb[:, output_idx])  # Train this specific output
+            loss = loss_fn(pred, yb[:, output_idx])
             opt.zero_grad()
             loss.backward()
             opt.step()

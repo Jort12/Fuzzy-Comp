@@ -75,15 +75,15 @@ class hybrid_controller(KesslerController):
         self.maneuver_logger = Logger("kessler-game/neural_fuzzy/data/maneuver.csv", FEATURES, ["thrust", "turn_rate"])#log data
         self.combat_logger   = Logger("kessler-game/neural_fuzzy/data/combat.csv", FEATURES, ["fire", "drop_mine"])
 
-    def context(self, ship_state, game_state):
+    def context(self, ship_state, game_state):#returns a dictionary of context features
         sx, sy = ship_state.position
         heading = ship_state.heading
         asteroids = getattr(game_state, "asteroids", [])
         if not asteroids:
             return {}
 
-        closest, dist = find_closest_threat(asteroids, (sx, sy))
-        ax, ay = closest.position
+        closest, dist = find_closest_threat(asteroids, (sx, sy)) # find closest asteroid
+        ax, ay = closest.position 
         avx, avy = getattr(closest, "velocity", (0.0, 0.0))
         svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
         rel_vx, rel_vy = avx - svx, avy - svy
