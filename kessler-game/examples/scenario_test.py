@@ -2,7 +2,7 @@
 import time
 from kesslergame import KesslerGame, GraphicsType
 from fuzzy_aggressive_controller import AggressiveFuzzyController
-import scenarios as sc  # <-- new
+import scenarios as sc  
 
 #SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
@@ -12,7 +12,8 @@ import scenarios as sc  # <-- new
 #SCENARIO = sc.crossing_lanes()
 #SCENARIO = sc.asteroid_rain()
 #SCENARIO = sc.giants_with_kamikaze()
-SCENARIO = sc.donut_ring_closing()
+#SCENARIO = sc.donut_ring_closing()
+SCENARIO = sc.rotating_cross()
 
 
 

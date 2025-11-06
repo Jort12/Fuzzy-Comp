@@ -152,7 +152,7 @@ def crossing_lanes(map_size=(1200, 900), *,
 
     W, H = map_size
     cx, cy = W * 0.5, H * 0.5
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (cx, cy), 'angle': 0, 'lives': 9, 'team': 1, 'mines_remaining': 3}
 
     ast_states = []
 
@@ -292,9 +292,9 @@ def giants_with_kamikaze(map_size=(1200, 900), *,
         stop_if_no_ammo=False
     )
 
-# ------------------------------------------------------------
-# Stationary aim range in a large arena (concentric rings + top row)
-# ------------------------------------------------------------
+# --------------------------------------
+# Stationary aim range in a large arena 
+# ---------------------------------------
 def sniper_practice(map_size=(2000, 1400), *,
                     time_limit=120,
                     near_ring=(8, 0.25, 2),
@@ -438,6 +438,80 @@ def donut_ring_closing(map_size=(1200, 900), *,
         asteroid_states=ast_states,
         ship_states=[ship],
         time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+# ----------------------------------------------------------------
+# Rotating Cross is a 4 lines shaped as a cross rotating clockwise
+# ----------------------------------------------------------------
+def rotating_cross(map_size=(1400, 1000), *,
+                            arm_density=26,
+                            omega_deg_per_s=8.0, 
+                            clockwise=True,
+                            tip_speed_scale=0.08,
+                            size_cycle=(3,2,2,1),
+                            time_limit=55):
+    W, H = map_size
+    cx, cy = W * 0.5, H * 0.5
+
+    # Player far left
+    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
+
+    ast_states = []
+
+    # Angular speed in radians/sec; sign controls direction
+    omega = math.radians(omega_deg_per_s) * (-1.0 if clockwise else 1.0)
+
+    # Compute maximum extents from center to each edge along cardinal directions
+    r_right = W - cx     # center to right edge along +X
+    r_left  = cx         # center to left edge  along -X
+    r_up    = cy         # center to top edge   along -Y
+    r_down  = H - cy     # center to bottom edge along +Y
+
+    # Lines defined by base angle and max radius to edge in that direction
+    arms = [
+        (0.0,              r_right),  # right
+        (math.pi,          r_left),   # left
+        (math.pi / 2.0,    r_down),   # down (screen y+)
+        (3.0 * math.pi/2., r_up),     # up   (screen y-)
+    ]
+
+    # Build each arm from center (r=0) to the specific edge radius
+    for phi, r_max in arms:
+        for i in range(arm_density + 1):
+            t = i / max(1, arm_density)
+            r = t * r_max
+
+            # Position along the line
+            x = cx + r * math.cos(phi)
+            y = cy + r * math.sin(phi)
+
+            # Tangent direction = line angle ± 90°
+            heading = phi + (math.pi / 2.0) * (-1.0 if clockwise else 1.0)
+            heading_deg = float(math.degrees(heading))
+
+            # Tangential speed so all radis share the same angular rate
+            v = abs(omega) * r
+
+            # For the outermost tip at the edge, slow speed to keep it attached
+            if i == arm_density:
+                v *= float(tip_speed_scale)
+
+            ast_states.append({
+                'position': (x, y),
+                'size': int(size_cycle[i % len(size_cycle)]),
+                'angle': heading_deg,
+                'speed': float(v)
+            })
+
+    return Scenario(
+        name=f"Cross (Rotating Look, {'CW' if clockwise else 'CCW'})",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit, 
         ammo_limit_multiplier=0,
         stop_if_no_ammo=False
     )
