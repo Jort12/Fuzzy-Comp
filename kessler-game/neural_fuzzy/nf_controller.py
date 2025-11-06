@@ -59,7 +59,7 @@ class NFController:
         # print(f"[NF] thrust={thrust:.3f}, turn={turn_rate:.3f}, fire={fire}, mine={drop_mine}")
         # Log features and outputs
         self.logger.log(ctx, [thrust, turn_rate])
-        print(f"[NF DEBUG] thrust={thrust:.1f}, turn={turn_rate:.1f}, fire={fire}, mine={drop_mine}")
+        #print(f"[NF DEBUG] thrust={thrust:.1f}, turn={turn_rate:.1f}, fire={fire}, mine={drop_mine}")
 
         return thrust, turn_rate, fire, drop_mine
 

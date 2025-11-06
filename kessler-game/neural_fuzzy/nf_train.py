@@ -20,10 +20,8 @@ Saves the trained models as a bundle for later inference.
 
 # CLI stuff
 arguments = argparse.ArgumentParser()
-arguments.add_argument("--task", choices=["maneuver", "combat"], required=True,
-                help="Choose which fuzzy model to train (maneuver or combat)")
-arguments.add_argument("--num_mfs", type=int, default=2,
-                help="Number of membership functions (use 2 for speed!)")
+arguments.add_argument("--task", choices=["maneuver", "combat"], required=True)
+arguments.add_argument("--num_mfs", type=int, default=2)
 arguments.add_argument("--epochs", type=int, default=200)
 arguments.add_argument("--batch_size", type=int, default=64)
 arguments.add_argument("--lr", type=float, default=0.01)
