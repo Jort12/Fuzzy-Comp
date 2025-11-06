@@ -16,29 +16,35 @@ import time
 from kesslergame import Scenario, KesslerGame, GraphicsType
 from hybrid_fuzzy import hybrid_controller
 from nf_controller import NFController
-# Define game scenario
-my_test_scenario = Scenario(name='Test Scenario',
-                            num_asteroids=10,
-                            ship_states=[
-                                #{'position': (400, 400), 'angle': 90, 'lives': 3, 'team': 1, "mines_remaining": 3},
-                                 {'position': (400, 600), 'angle': 90, 'lives': 5, 'team': 2, "mines_remaining": 20},
-                            ],
-                            map_size=(1000, 800),
-                            time_limit=150,
-                            ammo_limit_multiplier=0,
-                            stop_if_no_ammo=False)
+import scenarios as sc
+from human_controller import HumanController
+#SCENARIO = sc.donut_ring()
+#SCENARIO = sc.vertical_wall_left()
+#SCENARIO = sc.stock_scenario()
+#SCENARIO = sc.spiral_arms()
+#SCENARIO = sc.sniper_practice()
+#SCENARIO = sc.crossing_lanes()
+#SCENARIO = sc.asteroid_rain()
+#SCENARIO = sc.giants_with_kamikaze()
+#SCENARIO = sc.donut_ring_closing()
+SCENARIO = sc.four_corner()
 
-# Define Game Settings
-game_settings = {'perf_tracker': True,
-                 'graphics_type': GraphicsType.Tkinter,
-                 'realtime_multiplier': 1,
-                 'graphics_obj': None,
-                 'frequency': 60}
 
-game = KesslerGame(settings=game_settings)  # Use this to visualize the game scenario
-# game = TrainerEnvironment(settings=game_settings)  # Use this for max-speed, no-graphics simulation
 
-# Evaluate the game
+game_settings = {
+    'perf_tracker': True,
+    'graphics_type': GraphicsType.Tkinter,
+    'realtime_multiplier': 1,
+    'graphics_obj': None,
+    'frequency': 30
+}
+
+game = KesslerGame(settings=game_settings)
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=my_test_scenario, controllers=[hybrid_controller()])
-
+score, perf_data = game.run(scenario=SCENARIO, controllers=[HumanController()])
+print('Scenario eval time:', time.perf_counter() - pre)
+print(score.stop_reason)
+print('Asteroids hit:', [team.asteroids_hit for team in score.teams])
+print('Deaths:', [team.deaths for team in score.teams])
+print('Accuracy:', [team.accuracy for team in score.teams])
+print('Mean eval time:', [team.mean_eval_time for team in score.teams])

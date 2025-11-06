@@ -83,22 +83,25 @@ class NFPolicy:
 
 
             #TURN
-            if has_r:
-                model, mu, sd = self.models["turn_rate"]
-                if mu is not None and sd is not None:
-                    mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
-                    sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
-                    sd_t[sd_t < 1e-6] = 1.0
-                    xb_norm = (xb - mu_t) / sd_t
-                else:
-                    xb_norm = xb
+        if has_r:
+            model, mu, sd = self.models["turn_rate"]
+            if mu is not None and sd is not None:
+                mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
+                sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
+                sd_t[sd_t <= 1e-6] = 1.0
+                xb_norm = (xb - mu_t) / sd_t
+            else:
+                xb_norm = xb
 
-                y_r = model(xb_norm).squeeze().item()
+            y_r = model(xb_norm).squeeze().item()
 
-                print("[MANEUVER RAW] y_r:", y_r)
+            # Gain + clamp BEFORE tanh so small outputs still turn
+            TURN_GAIN = 2.0          # try 2.0–3.0
+            y_r = max(-3.0, min(3.0, y_r * TURN_GAIN))
 
-                turn_norm = np.tanh(y_r)
-                turn = turn_norm * 180.0
+            turn_norm = np.tanh(y_r) # [-1, 1]
+            turn = -turn_norm * 180.0 # [-180, 180]
+
 
         return float(thrust), float(turn)
 

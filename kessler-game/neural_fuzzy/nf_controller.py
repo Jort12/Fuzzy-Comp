@@ -2,7 +2,7 @@
 from concurrent.futures import thread
 import os
 import math
-
+from util import wrap180
 from networkx import turan_graph
 from nf_infer import NFPolicy
 import torch
@@ -56,7 +56,6 @@ class NFController:
         else:
             fire, drop_mine = False, False
         """ DEBUG"""
-        # print(f"[NF] thrust={thrust:.3f}, turn={turn_rate:.3f}, fire={fire}, mine={drop_mine}")
         # Log features and outputs
         self.logger.log(ctx, [thrust, turn_rate])
         #print(f"[NF DEBUG] thrust={thrust:.1f}, turn={turn_rate:.1f}, fire={fire}, mine={drop_mine}")
@@ -73,7 +72,18 @@ class NFController:
             closest = min(asteroids, key=lambda a: (a.position[0]-sx)**2 + (a.position[1]-sy)**2)
             ax, ay = closest.position
             avx, avy = getattr(closest, "velocity", (0.0, 0.0))
-            dx, dy = ax - sx, ay - sy
+            MAP_W = getattr(game_state, "map_size", (1000, 800))[0]
+            MAP_H = getattr(game_state, "map_size", (1000, 800))[1]
+
+            dx = ax - sx
+            dy = ay - sy
+
+            # --- wrap-around correction (shortest path) ---
+            if abs(dx) > MAP_W / 2:
+                dx -= math.copysign(MAP_W, dx)
+            if abs(dy) > MAP_H / 2:
+                dy -= math.copysign(MAP_H, dy)
+
             dist = math.hypot(dx, dy)
 
             # relative approach speed (positive when closing)
