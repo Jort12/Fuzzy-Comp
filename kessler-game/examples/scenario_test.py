@@ -4,11 +4,16 @@ from kesslergame import KesslerGame, GraphicsType
 from fuzzy_aggressive_controller import AggressiveFuzzyController
 import scenarios as sc  # <-- new
 
-SCENARIO = sc.donut_ring()
+#SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
 #SCENARIO = sc.stock_scenario()
-#SCENARIO = sc.spiral_swarm()
+#SCENARIO = sc.spiral_arms()
 #SCENARIO = sc.sniper_practice()
+#SCENARIO = sc.crossing_lanes()
+#SCENARIO = sc.asteroid_rain()
+#SCENARIO = sc.giants_with_kamikaze()
+SCENARIO = sc.donut_ring_closing()
+
 
 
 game_settings = {
