@@ -112,30 +112,60 @@ class AggressiveFuzzyController(KesslerController):
         #BEGIN GENERATED CODE
         rules = []
         rules += [
-            # Engage aggressively when in optimal firing range (sweet, close) or ahead
-            ctrl.Rule(distance['sweet'] & angle['ahead'] & danger['safe'],   (thrust['high'],    turn['zero'],       fire['yes'], mine['yes'])),
-            ctrl.Rule(distance['close'] & angle['ahead'],                   (thrust['high'],    turn['zero'],       fire['yes'], mine['yes'])),
-            ctrl.Rule(distance['very_close'] & angle['ahead'] & danger['safe'], (thrust['medium'], turn['zero'], fire['yes'], mine['no'])),
-            ctrl.Rule(distance['very_close'] & angle['left'],               (thrust['high'],    turn['soft_left'],  fire['yes'], mine['no'])),
-            ctrl.Rule(distance['very_close'] & angle['right'],              (thrust['high'],    turn['soft_right'], fire['yes'], mine['no'])),
-            # Chase enemy at medium to far range, aggressively close the gap
-            ctrl.Rule(distance['far'] & rel_speed['slow'],                  (thrust['high'],    turn['zero'],       fire['no'],  mine['yes'])),
-            ctrl.Rule(distance['far'] & rel_speed['medium'],                (thrust['high'],    turn['zero'],       fire['no'],  mine['no'])),
-            ctrl.Rule(distance['far'] & angle['left'],                      (thrust['high'],    turn['hard_left'],  fire['no'],  mine['no'])),
-            ctrl.Rule(distance['far'] & angle['right'],                     (thrust['high'],    turn['hard_right'], fire['no'],  mine['no'])),
-            # Aggressively detour for mines
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['left'],      (thrust['high'],    turn['hard_right'], fire['yes'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['right'],     (thrust['high'],    turn['hard_left'],  fire['yes'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'],     (thrust['medium'],  turn['soft_right'], fire['no'],  mine['no'])),
-            # Prioritize offensive play despite moderate danger
-            ctrl.Rule(distance['sweet'] & danger['risky'],                  (thrust['medium'],  turn['zero'],       fire['yes'], mine['yes'])),
-            ctrl.Rule(distance['close'] & danger['risky'],                  (thrust['medium'],  turn['zero'],       fire['yes'], mine['no'])),
-            # When danger is imminent, still try to attack but evade
-            ctrl.Rule(danger['imminent'] & angle['ahead'],                  (thrust['high'],    turn['soft_right'], fire['yes'], mine['no'])),
-            ctrl.Rule(danger['imminent'] & mine_distance['near'],           (thrust['high'],    turn['soft_left'],  fire['no'],  mine['no'])),
-            # Default offensive move
-            ctrl.Rule(distance['close'] & angle['left'],                    (thrust['high'],    turn['soft_left'],  fire['yes'], mine['no'])),
-            ctrl.Rule(distance['close'] & angle['right'],                   (thrust['high'],    turn['soft_right'], fire['yes'], mine['no'])),
+            # Engage when close & angle is ahead
+            ctrl.Rule(distance['very_close'] & angle['ahead'] & danger['risky'],        (thrust['high'],   turn['zero'],      fire['yes'], mine['yes'])),
+            ctrl.Rule(distance['close']      & angle['ahead'] & danger['risky'],        (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet']      & angle['ahead'] & danger['safe'],         (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+            ctrl.Rule(distance['very_close'] & angle['left']  & danger['risky'],        (thrust['high'],   turn['soft_right'],fire['yes'], mine['yes'])),
+            ctrl.Rule(distance['very_close'] & angle['right'] & danger['risky'],        (thrust['high'],   turn['soft_left'], fire['yes'], mine['yes'])),
+
+            # Use fire-the-moment opportunity presents itself
+            ctrl.Rule(distance['sweet']      & rel_speed['slow']    & angle['ahead'],   (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet']      & rel_speed['medium']  & angle['ahead'],   (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+            ctrl.Rule(distance['close']      & rel_speed['fast']    & angle['ahead'],   (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+
+            # Max thrust if target very close
+            ctrl.Rule(distance['very_close'] & danger['safe'],                                  (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+
+            # Maintain pressure when far but in safe zone
+            ctrl.Rule(distance['far']        & rel_speed['fast']    & angle['ahead'],   (thrust['high'],   turn['zero'],      fire['no'],  mine['no'])),
+            ctrl.Rule(distance['far']        & rel_speed['medium']  & angle['ahead'],   (thrust['high'],   turn['zero'],      fire['no'],  mine['no'])),
+            ctrl.Rule(distance['far']        & rel_speed['slow']    & angle['ahead'],   (thrust['high'],   turn['zero'],      fire['no'],  mine['no'])),
+
+            # Turn and thrust towards the opponent aggressively
+            ctrl.Rule(distance['close']      & angle['left'],                           (thrust['high'],   turn['soft_right'],fire['yes'], mine['no'])),
+            ctrl.Rule(distance['close']      & angle['right'],                          (thrust['high'],   turn['soft_left'], fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet']      & angle['left'],                           (thrust['high'],   turn['soft_right'],fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet']      & angle['right'],                          (thrust['high'],   turn['soft_left'], fire['yes'], mine['no'])),
+
+            # Fire on approach regardless of danger if not imminent
+            ctrl.Rule(distance['close']      & rel_speed['medium']  & danger['risky'],  (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet']      & rel_speed['medium']  & danger['safe'],   (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+            ctrl.Rule(distance['sweet']      & rel_speed['fast']    & danger['safe'],   (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+
+            # Deploy mines aggressively when risky or imminent
+            ctrl.Rule(mine_distance['mid']   & mine_angle['ahead']  & danger['risky'],  (thrust['high'],   turn['zero'],      fire['no'],  mine['yes'])),
+            ctrl.Rule(mine_distance['near']  & mine_angle['ahead']  & danger['risky'],  (thrust['high'],   turn['zero'],      fire['no'],  mine['yes'])),
+            ctrl.Rule(mine_distance['near']  & mine_angle['left']   & danger['risky'],  (thrust['high'],   turn['hard_right'],fire['no'],  mine['yes'])),
+            ctrl.Rule(mine_distance['near']  & mine_angle['right']  & danger['risky'],  (thrust['high'],   turn['hard_left'], fire['no'],  mine['yes'])),
+            ctrl.Rule(mine_distance['mid']   & mine_angle['right'],                      (thrust['high'],   turn['soft_left'], fire['no'],  mine['yes'])),
+            ctrl.Rule(mine_distance['mid']   & mine_angle['left'],                       (thrust['high'],   turn['soft_right'],fire['no'],  mine['yes'])),
+
+            # Evade mines only if imminent (otherwise, keep up pressure)
+            ctrl.Rule(mine_distance['very_near'] & danger['imminent'],                  (thrust['reverse_hard'], turn['hard_right'], fire['no'],  mine['no'])),
+            ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'] & danger['imminent'], (thrust['reverse_hard'], turn['soft_left'], fire['no'],  mine['no'])),
+            ctrl.Rule(mine_distance['very_near'] & mine_angle['right'],                 (thrust['high'],   turn['hard_left'], fire['no'],  mine['no'])),
+            ctrl.Rule(mine_distance['very_near'] & mine_angle['left'],                  (thrust['high'],   turn['hard_right'],fire['no'],  mine['no'])),
+
+            # If all else, default to aggressive
+            ctrl.Rule((distance['close'] | distance['sweet']) & danger['safe'],         (thrust['high'],   turn['zero'],      fire['yes'], mine['no'])),
+            ctrl.Rule((distance['close'] | distance['sweet']) & angle['left'],          (thrust['high'],   turn['soft_right'],fire['yes'], mine['no'])),
+            ctrl.Rule((distance['close'] | distance['sweet']) & angle['right'],         (thrust['high'],   turn['soft_left'], fire['yes'], mine['no'])),
+
+            # Hunting when opponent is far and not dangerous
+            ctrl.Rule(distance['far']        & angle['left'] & danger['safe'],          (thrust['high'],   turn['soft_right'],fire['no'],  mine['no'])),
+            ctrl.Rule(distance['far']        & angle['right'] & danger['safe'],         (thrust['high'],   turn['soft_left'], fire['no'],  mine['no'])),
+            ctrl.Rule(distance['far']        & angle['ahead'] & danger['safe'],         (thrust['high'],   turn['zero'],      fire['no'],  mine['no']))
         ]
         #END GENERATED CODE
         

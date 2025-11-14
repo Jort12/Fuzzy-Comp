@@ -63,7 +63,7 @@ def main():
         if i > 0:
             code = gen_rule_set()
             insert_gen_code(code)
-        for j in range(20):
+        for j in range(1):
             row = run_game()
             df.loc[len(df)] = row
             print(f"Rule set {i+1}, experiment {j+1} complete")
