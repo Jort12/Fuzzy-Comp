@@ -515,3 +515,79 @@ def rotating_cross(map_size=(1400, 1000), *,
         ammo_limit_multiplier=0,
         stop_if_no_ammo=False
     )
+
+
+def moving_maze_right(map_size=(2000, 1400), *,
+                      rows=11,                 # number of horizontal bands of rocks
+                      cols=22,                 # density along X
+                      margin=90,               # empty buffer around the edges before placing rocks
+                      speed=140.0,             # all asteroids move to the right
+                      size_cycle=(2, 2, 3),    # repeating sizes to make walls feel chunky
+                      waves=2.5,               # how many sinusoidal wiggles of the corridor across the map
+                      amplitude_ratio=0.28,    # corridor vertical swing as a fraction of min(W,H)
+                      corridor_width_ratio=0.18, # thickness of the safe path
+                      time_limit=95):
+    """
+    'Asteroid Maze' with a snaking safe path. All rocks slide right together, so the corridor
+    remains open (it's a moving tunnel). Start the ship inside the corridor near the left.
+
+    Tweak:
+    - rows/cols: overall density
+    - speed: rightward drift of entire maze
+    - waves, amplitude_ratio: shape of the snake path
+    - corridor_width_ratio: difficulty (smaller = tighter)
+    - size_cycle: mix rock sizes for visual walls
+    """
+    W, H = map_size
+    cx, cy = W * 0.5, H * 0.5
+
+    # Ship starts near left edge inside the corridor, pointing right
+    ship = {'position': (W * 0.10, H * 0.50), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+
+    # Corridor geometry (sinusoidal centerline across X)
+    A = min(W, H) * amplitude_ratio
+    corridor_half = (min(W, H) * corridor_width_ratio) * 0.5
+
+    def corridor_center_y(x):
+        # sine that completes `waves` wiggles from left to right
+        return H * 0.5 + A * math.sin(2.0 * math.pi * waves * (x / max(1.0, W)))
+
+    # Build a grid of candidate asteroid positions, skip any that fall inside the corridor
+    usable_w = W - 2 * margin
+    usable_h = H - 2 * margin
+    dx = usable_w / max(1, cols - 1)
+    dy = usable_h / max(1, rows - 1)
+
+    ast_states = []
+    idx = 0
+    for r in range(rows):
+        y = margin + r * dy
+        for c in range(cols):
+            x = margin + c * dx
+
+            # Keep a gap where the safe corridor runs
+            y_c = corridor_center_y(x)
+            if abs(y - y_c) <= corridor_half:
+                continue  # leave space for the tunnel
+
+            # Stagger every other row a bit for a tighter maze feel
+            x_spawn = x + (dx * 0.35 if (r % 2 == 1) else 0.0)
+
+            ast_states.append({
+                'position': (x_spawn, y),
+                'size': int(size_cycle[idx % len(size_cycle)]),
+                'angle': 0.0,           # move to the right
+                'speed': float(speed)
+            })
+            idx += 1
+
+    return Scenario(
+        name="Moving Maze (Rightward Tunnel)",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )

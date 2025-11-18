@@ -13,7 +13,8 @@ import scenarios as sc
 #SCENARIO = sc.asteroid_rain()
 #SCENARIO = sc.giants_with_kamikaze()
 #SCENARIO = sc.donut_ring_closing()
-SCENARIO = sc.rotating_cross()
+#SCENARIO = sc.rotating_cross()
+SCENARIO =  sc.moving_maze_right()
 
 
 
