@@ -1,4 +1,5 @@
 import stat
+from turtle import distance
 import numpy as np
 
 class FuzzyCritic:
@@ -36,5 +37,51 @@ class FuzzyActorCriticAgent:
         self.critic = critic
         self.gamma = gamma
 
-    def step(state_inputs, ship_state, game_state, reward, next_state_inputs, done):
+    def step(self, state_inputs, ship_state, game_state, reward, next_state_inputs, done):
+        state_features = self.actor.get_state_features(state_inputs)
+        next_features = self.actor.get_state_features(next_state_inputs)
+
+        td_error = self.critic.update(state_features, reward, next_features, done)
+
+        self.actor.update(td_error, state_features)
+
+        return self.actor.act(ship_state, game_state)
+
+from fuzzy_aggressive_controller import AggressiveFuzzyController 
+class AdaptiveAggressiveFuzzyController(AggressiveFuzzyController):
+        def __init__(self, normalization_distance_scale = None):
+            super().__init__(normalization_distance_scale)
+            num_features = 6
+            self.actor = FuzzyActor(self)
+            self.critic = FuzzyCritic(num_features)
+
+            self.agent = FuzzyActorCriticAgent(self.actor, self.critic)
+            self.prev_state = None
+
+        def actions(self, ship_state, game_state):
+            inputs = self.compute_inputs(ship_state, game_state)
+            action = super().actions(ship_state, game_state)
+
+            reward = self.compute_rewards(ship_state, game_state, action)
+
+            if self.prev_state is not None:
+                self.agent.step(self.prev_state, ship_state, game_state, reward, inputs, done=False)
+
+            self.prev_state = inputs
+            return action
         
+        def compute_inputs(self, ship_state, game_state):
+            return dict(
+                distance=dist_n,
+                rel_speed=rel_n,
+                angle=ang_n,
+                mine_distance=mdis_n,
+                mine_angle=mang_n,
+                danger=danger_n,
+            )
+        
+        def compute_rewards(self, ship_state, game_state, action):
+
+            reward = 0.0
+
+            return reward

@@ -3,8 +3,6 @@ from openai import OpenAI
 import re
 from dotenv import load_dotenv
 import os
-import tempfile
-import shutil
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
@@ -12,36 +10,91 @@ client = OpenAI(api_key=api_key)
 
 def gen_rule_set() -> str:
     prompt = """
-        Create a ruleset that the an ai agent has an aggressive play style.
-        Return only valid Python code for the ruleset, do NOT include explanations.
-        Here is a list of Antecedents and Consequents:
+    You are an expert in fuzzy control systems and Python code generation.
+    Your task is to generate NEW fuzzy rule combinations based on the rule set below.
 
-        These are your Antecedents
-        distance = 'very_close', 'close', 'sweet', 'far'
-        rel_speed = 'slow', 'medium', 'fast'
-        angle = 'left', 'ahead', 'fast'
-        mine_distance = 'very_near', 'near', 'mid', 'far'
-        mine_angle = 'left', 'ahead', 'fast'
-        danger = 'imminent', 'risky', 'safe'
+    GOAL:
+    - Produce fewer or alternate combinations.
+    - Recombine conditions (mine_distance, mine_angle, angle, danger, distance, rel_speed).
+    - Maintain logical correctness for a defensive control system.
+    - Keep the same general style: ctrl.Rule(condition, output_tuple)
+    - All outputs must be valid Python code using ctrl.Rule().
+    - You MAY reduce, simplify, or merge rules.
+    - You MAY restructure logic (e.g., combine OR patterns).
+    - The new rules must still be realistic and consistent.
 
-        These are your Consequents
-        thrust = 'reverse_hard', 'reverse_soft', 'medium', 'high'
-        turn = 'hard_left', 'soft_left', 'zero', 'soft_right', 'hard_right'
-        fire = 'no', 'yes'
-        mine = 'no', 'yes'
+    STRICT OUTPUT RULES:
+    - Return ONLY Python code.
+    - No comments.
+    - No markdown.
+    - No explanations.
+    - Only a `rules = []` block with appended ctrl.Rule() entries.
 
-        Use this code as a reference to creating the rule set:
-        rules = []
-        rules += [
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['left'],  (thrust['high'],   turn['hard_right'], fire['no'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  fire['no'], mine['no'])),
-            ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], fire['no'], mine['no'])),
-        ]
+    EXISTING RULESET:
+    rules = []
 
-        For refernce the current ruleset contains 32 different rules, it doesn't necessarily need to be 32 but the range of rules should 
-        be 20 - 45 rules.
+    rules += [
+        ctrl.Rule(mine_distance['very_near'] & mine_angle['left'],  (thrust['high'],   turn['hard_right'], fire['no'], mine['no'])),
+        ctrl.Rule(mine_distance['very_near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  fire['no'], mine['no'])),
+        ctrl.Rule(mine_distance['very_near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], fire['no'], mine['no'])),
+    ]
 
-        GENERATE PYTHON CODE ONLY and Thank you.
+    rules += [
+        ctrl.Rule(mine_distance['near'] & mine_angle['left'],  (thrust['high'],   turn['hard_right'], mine['no'])),
+        ctrl.Rule(mine_distance['near'] & mine_angle['right'], (thrust['high'],   turn['hard_left'],  mine['no'])),
+        ctrl.Rule(mine_distance['near'] & mine_angle['ahead'], (thrust['high'],   turn['soft_right'], mine['no'])),
+        ctrl.Rule(mine_distance['near'] & angle['ahead'], fire['yes']),
+    ]
+
+    rules += [
+        ctrl.Rule(mine_distance['mid'] & mine_angle['left'],  (thrust['medium'], turn['soft_right'])),
+        ctrl.Rule(mine_distance['mid'] & mine_angle['right'], (thrust['medium'], turn['soft_left'])),
+        ctrl.Rule(mine_distance['mid'] & angle['ahead'], fire['yes']),
+    ]
+
+    rules += [
+        ctrl.Rule(danger['imminent'] & angle['left'],  (thrust['reverse_hard'], turn['hard_right'], fire['no'], mine['no'])),
+        ctrl.Rule(danger['imminent'] & angle['right'], (thrust['reverse_hard'], turn['hard_left'],  fire['no'], mine['no'])),
+        ctrl.Rule(danger['imminent'] & angle['ahead'], (thrust['reverse_hard'], turn['soft_right'], fire['no'], mine['no'])),
+        ctrl.Rule(danger['risky'], thrust['medium']),
+    ]
+
+    rules += [
+        ctrl.Rule(distance['very_close'], thrust['reverse_hard']),
+        ctrl.Rule(distance['very_close'] & angle['ahead'], turn['soft_right']),
+        ctrl.Rule(distance['close'] & rel_speed['fast'], thrust['reverse_soft']),
+    ]
+
+    rules += [
+        ctrl.Rule((angle['ahead']) & (danger['safe'] | danger['risky']) & (mine_distance['far'] | mine_distance['mid'] | mine_distance['near']), fire['yes'])
+    ]
+
+    rules.append(ctrl.Rule(mine_distance['far'] & distance['very_close'], (thrust['reverse_hard'], turn['zero'], fire['no'])))
+
+    rules += [
+        ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])),
+        ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['left'],  (thrust['medium'], turn['soft_left'])),
+        ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & angle['right'], (thrust['medium'], turn['soft_right'])),
+    ]
+
+    rules += [
+        ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])),
+        ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & (angle['left'] | angle['right']), (thrust['medium'], fire['yes'])),
+    ]
+
+    rules += [
+        ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['ahead'], (thrust['high'], turn['zero'], fire['yes'])),
+        ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['left'],  (thrust['high'], turn['soft_left'])),
+        ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['far'] & angle['right'], (thrust['high'], turn['soft_right'])),
+    ]
+
+    rules.append(ctrl.Rule(mine_distance['far'] & (distance['sweet'] | distance['far']) & rel_speed['fast'] & angle['ahead'], fire['yes']))
+
+    rules += [
+        ctrl.Rule(mine_distance['far'] & danger['safe'] & (distance['close'] | distance['sweet']) & angle['ahead'], mine['yes']),
+        ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']),
+        ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']),
+    ]
     """
     
     response = client.responses.create(
