@@ -517,7 +517,7 @@ def rotating_cross(map_size=(1400, 1000), *,
     )
 
 
-def moving_maze_right(map_size=(2000, 1400), *,
+def moving_maze_right(map_size=(1800, 1000), *,
                       rows=11,                 # number of horizontal bands of rocks
                       cols=22,                 # density along X
                       margin=90,               # empty buffer around the edges before placing rocks
