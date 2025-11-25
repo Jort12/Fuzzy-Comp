@@ -61,7 +61,7 @@ def vertical_wall_left(map_size=(1000, 800), *,
     W, H = map_size
     cx, cy = W * 0.5, H * 0.5
 
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 0}
+    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     # Compute evenly spaced Y positions for the wall from top to bottom
     available_height = H - top_margin - bottom_margin
@@ -152,7 +152,7 @@ def crossing_lanes(map_size=(1200, 900), *,
 
     W, H = map_size
     cx, cy = W * 0.5, H * 0.5
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (cx, cy), 'angle': 0, 'lives': 9, 'team': 1, 'mines_remaining': 3}
 
     ast_states = []
 
@@ -292,9 +292,9 @@ def giants_with_kamikaze(map_size=(1200, 900), *,
         stop_if_no_ammo=False
     )
 
-# ------------------------------------------------------------
-# Stationary aim range in a large arena (concentric rings + top row)
-# ------------------------------------------------------------
+# --------------------------------------
+# Stationary aim range in a large arena 
+# ---------------------------------------
 def sniper_practice(map_size=(2000, 1400), *,
                     time_limit=120,
                     near_ring=(8, 0.25, 2),
@@ -304,7 +304,7 @@ def sniper_practice(map_size=(2000, 1400), *,
 
     W, H = map_size
     cx, cy = W * 0.5, H * 0.1  # ship near bottom center
-    ship = {'position': (cx, cy), 'angle': 90, 'lives': 3, 'team': 1, 'mines_remaining': 0}
+    ship = {'position': (cx, cy), 'angle': 90, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     def ring_asteroids(count, radius_ratio, size):
         r = min(W, H) * radius_ratio
@@ -442,23 +442,147 @@ def donut_ring_closing(map_size=(1200, 900), *,
         stop_if_no_ammo=False
     )
 
-
-def four_corner(map_size=(1000, 800), *, size_class=3, time_limit=60):
+# ----------------------------------------------------------------
+# Rotating Cross is a 4 lines shaped as a cross rotating clockwise
+# ----------------------------------------------------------------
+def rotating_cross(map_size=(1400, 1000), *,
+                            arm_density=26,
+                            omega_deg_per_s=8.0, 
+                            clockwise=True,
+                            tip_speed_scale=0.08,
+                            size_cycle=(3,2,2,1),
+                            time_limit=55):
     W, H = map_size
     cx, cy = W * 0.5, H * 0.5
 
-    # Ship in the middle facing right
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 0}
+    # Player far left
+    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
-    ast_states = [
-        {'position': (50, 50), 'size': size_class, 'angle': 45.0, 'speed': 30.0},  # Top-left
-        #{'position': (W - 50, 50), 'size': size_class, 'angle': 135.0, 'speed': 30.0},  # Top-right
-        #{'position': (50, H - 50), 'size': size_class, 'angle': 315.0, 'speed': 30.0},  # Bottom-left
-        #{'position': (W - 50, H - 50), 'size': size_class, 'angle': 225.0, 'speed': 30.0},  # Bottom-right
+    ast_states = []
+
+    # Angular speed in radians/sec; sign controls direction
+    omega = math.radians(omega_deg_per_s) * (-1.0 if clockwise else 1.0)
+
+    # Compute maximum extents from center to each edge along cardinal directions
+    r_right = W - cx     # center to right edge along +X
+    r_left  = cx         # center to left edge  along -X
+    r_up    = cy         # center to top edge   along -Y
+    r_down  = H - cy     # center to bottom edge along +Y
+
+    # Lines defined by base angle and max radius to edge in that direction
+    arms = [
+        (0.0,              r_right),  # right
+        (math.pi,          r_left),   # left
+        (math.pi / 2.0,    r_down),   # down (screen y+)
+        (3.0 * math.pi/2., r_up),     # up   (screen y-)
     ]
 
+    # Build each arm from center (r=0) to the specific edge radius
+    for phi, r_max in arms:
+        for i in range(arm_density + 1):
+            t = i / max(1, arm_density)
+            r = t * r_max
+
+            # Position along the line
+            x = cx + r * math.cos(phi)
+            y = cy + r * math.sin(phi)
+
+            # Tangent direction = line angle ± 90°
+            heading = phi + (math.pi / 2.0) * (-1.0 if clockwise else 1.0)
+            heading_deg = float(math.degrees(heading))
+
+            # Tangential speed so all radis share the same angular rate
+            v = abs(omega) * r
+
+            # For the outermost tip at the edge, slow speed to keep it attached
+            if i == arm_density:
+                v *= float(tip_speed_scale)
+
+            ast_states.append({
+                'position': (x, y),
+                'size': int(size_cycle[i % len(size_cycle)]),
+                'angle': heading_deg,
+                'speed': float(v)
+            })
+
     return Scenario(
-        name="Four Corner Giants",
+        name=f"Cross (Rotating Look, {'CW' if clockwise else 'CCW'})",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit, 
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+
+def moving_maze_right(map_size=(1800, 1000), *,
+                      rows=11,                 # number of horizontal bands of rocks
+                      cols=22,                 # density along X
+                      margin=90,               # empty buffer around the edges before placing rocks
+                      speed=140.0,             # all asteroids move to the right
+                      size_cycle=(2, 2, 3),    # repeating sizes to make walls feel chunky
+                      waves=2.5,               # how many sinusoidal wiggles of the corridor across the map
+                      amplitude_ratio=0.28,    # corridor vertical swing as a fraction of min(W,H)
+                      corridor_width_ratio=0.18, # thickness of the safe path
+                      time_limit=95):
+    """
+    'Asteroid Maze' with a snaking safe path. All rocks slide right together, so the corridor
+    remains open (it's a moving tunnel). Start the ship inside the corridor near the left.
+
+    Tweak:
+    - rows/cols: overall density
+    - speed: rightward drift of entire maze
+    - waves, amplitude_ratio: shape of the snake path
+    - corridor_width_ratio: difficulty (smaller = tighter)
+    - size_cycle: mix rock sizes for visual walls
+    """
+    W, H = map_size
+    cx, cy = W * 0.5, H * 0.5
+
+    # Ship starts near left edge inside the corridor, pointing right
+    ship = {'position': (W * 0.10, H * 0.50), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+
+    # Corridor geometry (sinusoidal centerline across X)
+    A = min(W, H) * amplitude_ratio
+    corridor_half = (min(W, H) * corridor_width_ratio) * 0.5
+
+    def corridor_center_y(x):
+        # sine that completes `waves` wiggles from left to right
+        return H * 0.5 + A * math.sin(2.0 * math.pi * waves * (x / max(1.0, W)))
+
+    # Build a grid of candidate asteroid positions, skip any that fall inside the corridor
+    usable_w = W - 2 * margin
+    usable_h = H - 2 * margin
+    dx = usable_w / max(1, cols - 1)
+    dy = usable_h / max(1, rows - 1)
+
+    ast_states = []
+    idx = 0
+    for r in range(rows):
+        y = margin + r * dy
+        for c in range(cols):
+            x = margin + c * dx
+
+            # Keep a gap where the safe corridor runs
+            y_c = corridor_center_y(x)
+            if abs(y - y_c) <= corridor_half:
+                continue  # leave space for the tunnel
+
+            # Stagger every other row a bit for a tighter maze feel
+            x_spawn = x + (dx * 0.35 if (r % 2 == 1) else 0.0)
+
+            ast_states.append({
+                'position': (x_spawn, y),
+                'size': int(size_cycle[idx % len(size_cycle)]),
+                'angle': 0.0,           # move to the right
+                'speed': float(speed)
+            })
+            idx += 1
+
+    return Scenario(
+        name="Moving Maze (Rightward Tunnel)",
         map_size=map_size,
         num_asteroids=0,
         asteroid_states=ast_states,
