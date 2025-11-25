@@ -13,9 +13,7 @@ from human_xbox_controller import HumanXboxController
 #SCENARIO = sc.asteroid_rain()
 #SCENARIOa = sc.giants_with_kamikaze()
 #SCENARIO = sc.donut_ring_closing()
-SCENARIO = sc.four_corner()
-
-
+SCENARIO = sc.moving_maze_right()
 
 game_settings = {
     'perf_tracker': True,
