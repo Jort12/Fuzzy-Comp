@@ -19,6 +19,56 @@ def find_closest_threat(asteroids, ship_pos):
             closest_asteroid = asteroid
     
     return closest_asteroid, closest_dist
+
+
+
+def calculate_context(ship_state, game_state):
+    #used for BOTH human logging and NF controller.
+
+    sx, sy = ship_state.position
+    heading = getattr(ship_state, "heading", getattr(ship_state, "angle", 0.0))
+
+    asteroids = getattr(game_state, "asteroids", [])
+    if not asteroids:
+        return {
+            "dist": 0.0,
+            "ttc": 0.0,
+            "heading_err": 0.0,
+            "approach_speed": 0.0,
+            "ammo": float(getattr(ship_state, "ammo", 0)),
+            "mines": float(getattr(ship_state, "mines", 0)),
+            "threat_density": 0.0,
+            "threat_angle": 0.0,
+        }
+
+    closest, dist = find_closest_threat(asteroids, (sx, sy))  # find closest asteroid
+    ax, ay = closest.position
+    avx, avy = getattr(closest, "velocity", (0.0, 0.0))
+    svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
+
+    rel_vx, rel_vy = avx - svx, avy - svy
+    approach_speed = (rel_vx * (ax - sx) + rel_vy * (ay - sy)) / max(dist, 1.0)
+
+    ttc = dist / max(abs(approach_speed), 1e-6)
+
+    # Same as you used during logging: everything in degrees, wrapped with wrap180
+    threat_angle_deg = math.degrees(math.atan2(ay - sy, ax - sx))
+    heading_err = wrap180(threat_angle_deg - heading)
+
+    density = len(asteroids) / 10.0
+
+    return {
+        "dist": dist,
+        "ttc": ttc,
+        "heading_err": heading_err,
+        "approach_speed": approach_speed,
+        "ammo": float(getattr(ship_state, "ammo", 0)),
+        "mines": float(getattr(ship_state, "mines", 0)),
+        "threat_density": density,
+        "threat_angle": threat_angle_deg,
+    }
+
+
 class HumanController(KesslerController):
     def __init__(self):
         # keys states tracking
@@ -39,34 +89,8 @@ class HumanController(KesslerController):
         self.debug_counter = 0  # just to not spam too much
         self.maneuver_logger = Logger("kessler-game/neural_fuzzy/data/maneuver.csv", FEATURES, ["thrust", "turn_rate"])#log data
         self.combat_logger   = Logger("kessler-game/neural_fuzzy/data/combat.csv", FEATURES, ["fire", "drop_mine"])
-    def context(self, ship_state, game_state):#returns a dictionary of context features
-        sx, sy = ship_state.position
-        heading = ship_state.heading
-        asteroids = getattr(game_state, "asteroids", [])
-        if not asteroids:
-            return {}
-
-        closest, dist = find_closest_threat(asteroids, (sx, sy)) # find closest asteroid
-        ax, ay = closest.position 
-        avx, avy = getattr(closest, "velocity", (0.0, 0.0))
-        svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
-        rel_vx, rel_vy = avx - svx, avy - svy
-        approach_speed = (rel_vx * (ax - sx) + rel_vy * (ay - sy)) / max(dist, 1)
-
-        ttc = dist / max(abs(approach_speed), 1e-6)
-        heading_err = wrap180(math.degrees(math.atan2(ay - sy, ax - sx)) - heading)
-        density = len(asteroids) / 10.0
-
-        return {
-            "dist": dist,
-            "ttc": ttc,
-            "heading_err": heading_err,
-            "approach_speed": approach_speed,
-            "ammo": getattr(ship_state, "ammo", 0),
-            "mines": getattr(ship_state, "mines", 0),
-            "threat_density": density,
-            "threat_angle": math.degrees(math.atan2(ay - sy, ax - sx))
-        }
+    def context(self, ship_state, game_state):
+        return calculate_context(ship_state, game_state)
         
     @property
     def name(self):

@@ -1,10 +1,10 @@
-# kessler-game/neural_fuzzy/nf_controller.py
 from concurrent.futures import thread
 import os
 import math
 from util import wrap180
 from networkx import turan_graph
 from nf_infer import NFPolicy
+from human_controller import calculate_context
 import torch
 from data_log import Logger, FEATURES, TARGET
 class NFController:
@@ -63,71 +63,4 @@ class NFController:
         return thrust, turn_rate, fire, drop_mine
 
     def compute_context(self, ship_state, game_state):
-        asteroids = getattr(game_state, "asteroids", [])
-        sx, sy = ship_state.position
-        svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
-
-        # Closest asteroid
-        if asteroids:# any asteroids present
-            closest = min(asteroids, key=lambda a: (a.position[0]-sx)**2 + (a.position[1]-sy)**2)
-            ax, ay = closest.position
-            avx, avy = getattr(closest, "velocity", (0.0, 0.0))
-            MAP_W = getattr(game_state, "map_size", (1000, 800))[0]
-            MAP_H = getattr(game_state, "map_size", (1000, 800))[1]
-
-            dx = ax - sx
-            dy = ay - sy
-
-            # --- wrap-around correction (shortest path) ---
-            if abs(dx) > MAP_W / 2:
-                dx -= math.copysign(MAP_W, dx)
-            if abs(dy) > MAP_H / 2:
-                dy -= math.copysign(MAP_H, dy)
-
-            dist = math.hypot(dx, dy)
-
-            # relative approach speed (positive when closing)
-            if dist > 1e-6:
-                rhatx, rhaty = dx/dist, dy/dist
-                rel_v_along = (avx - svx) * rhatx + (avy - svy) * rhaty
-            else:
-                rel_v_along = 0.0
-            approach_speed = max(0.0, -rel_v_along)  # closing only
-            threat_angle = math.atan2(dy, dx)
-        else:
-            dist, approach_speed, threat_angle = 0.0, 0.0, 0.0
-
-        # time-to-collision
-        if abs(approach_speed) > 0.01:  # Only calculate if actually approaching
-            ttc = dist / abs(approach_speed)
-            ttc = min(ttc, 500.0)  # Cap at reasonable maximum
-        else:
-            ttc = 500.0  
-        # heading error wrapped to [-pi, pi] 
-        heading = getattr(ship_state, "heading", None)# in radians
-        if heading is None:
-            heading_deg = float(getattr(ship_state, "angle", 0.0))# in degrees
-            heading = math.radians(heading_deg)# convert to radians
-
-        # threat_angle already in radians from atan2
-        heading_err = threat_angle - heading
-        while heading_err > math.pi:  heading_err -= 2*math.pi
-        while heading_err < -math.pi: heading_err += 2*math.pi
-
-        heading_err = math.degrees(heading_err)
-        threat_angle_deg = math.degrees(threat_angle)
-
-        ammo  = float(getattr(ship_state, "ammo", 0))
-        mines = float(getattr(ship_state, "mines_remaining", getattr(ship_state, "mines", 0)))
-        density = len(asteroids) / 10.0
-
-        return {
-            "dist": dist,
-            "ttc": ttc, # time to collision
-            "heading_err": heading_err,
-            "approach_speed": approach_speed,#in units per second
-            "ammo": ammo,#ammo left
-            "mines": mines,#mines left
-            "threat_density": density,# asteroids per 10 units
-            "threat_angle": threat_angle_deg
-        }
+        return calculate_context(ship_state, game_state)

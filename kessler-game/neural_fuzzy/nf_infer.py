@@ -96,11 +96,11 @@ class NFPolicy:
             y_r = model(xb_norm).squeeze().item()
 
             # Gain + clamp BEFORE tanh so small outputs still turn
-            TURN_GAIN = 2.0          # try 2.0–3.0
+            TURN_GAIN = 1.2
             y_r = max(-3.0, min(3.0, y_r * TURN_GAIN))
 
             turn_norm = np.tanh(y_r) # [-1, 1]
-            turn = -turn_norm * 180.0 # [-180, 180]
+            turn = turn_norm * 180.0 # [-180, 180]
 
 
         return float(thrust), float(turn)
