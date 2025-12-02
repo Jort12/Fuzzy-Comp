@@ -18,9 +18,6 @@ class NFPolicy:
             model.load_state_dict(info["state_dict"]); model.eval()
             self.models[name] = (model, info.get("mu"), info.get("sd"))
             self.feature_cols = self.feature_cols or info.get("feature_cols")
-        #print("[NFPolicy] loading:", model_path)
-        #print("[NFPolicy] heads:", list(bundle["heads"].keys()))
-
 
 
     def prep(self, x_list, mu, sd):
@@ -38,70 +35,61 @@ class NFPolicy:
         xb = self.prep(x_list, mu, sd)
         with torch.no_grad():
             y = model(xb).squeeze().item()
-        if post == "sigmoid":  # [0,1]
+        if post == "sigmoid":
             return 1.0 / (1.0 + np.exp(-y))
-        if post == "tanh":     # [-1,1]
+        if post == "tanh":
             e2y = np.exp(2*y); return (e2y - 1) / (e2y + 1)
         return y
 
     def act_maneuver_tensor(self, xb):
         has_t = "thrust" in self.models
         has_r = "turn_rate" in self.models
+        thrust, turn = 0.0, 0.0
+
         with torch.no_grad():
-            thrust, turn = 0.0, 0.0
+            if has_t:
+                model, mu, sd = self.models["thrust"]
+                if mu is not None and sd is not None:
+                    mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
+                    sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
+                    sd_t[sd_t <= 1e-6] = 1.0
+                    xb_norm = (xb - mu_t) / sd_t
+                else:
+                    xb_norm = xb
+                y_t = model(xb_norm).squeeze().item()
+                thrust_norm = np.tanh(y_t)
 
-            #THRUST
-        if has_t:
-            model, mu, sd = self.models["thrust"]
-            if mu is not None and sd is not None:
-                mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
-                sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
-                sd_t[sd_t <= 1e-6] = 1.0
-                xb_norm = (xb - mu_t) / sd_t
-            else:
-                xb_norm = xb
-            y_t = model(xb_norm).squeeze().item()
-            thrust_norm = np.tanh(y_t)
-            thrust = thrust_norm * 150.0
-            thrust = max(-150.0, min(150.0, thrust))
+                GAIN = 1.5
+                MIN_FWD = 0.4
+                MIN_BACK = 0.4
 
+                thrust_norm *= GAIN
+                thrust_norm = max(-1.0, min(1.0, thrust_norm))
 
-            # boost + floor
-            GAIN = 1.5
-            MIN_FWD = 0.4
-            MIN_BACK = 0.4
+                if 0.0 < thrust_norm < MIN_FWD:
+                    thrust_norm = MIN_FWD
+                elif -MIN_BACK < thrust_norm < 0.0:
+                    thrust_norm = -MIN_BACK
 
-            thrust_norm *= GAIN
-            thrust_norm = max(-1.0, min(1.0, thrust_norm))
+                thrust = thrust_norm * 150.0
 
-            if 0.0 < thrust_norm < MIN_FWD:
-                thrust_norm = MIN_FWD
-            elif -MIN_BACK < thrust_norm < 0.0:
-                thrust_norm = -MIN_BACK
+            if has_r:
+                model, mu, sd = self.models["turn_rate"]
+                if mu is not None and sd is not None:
+                    mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
+                    sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
+                    sd_t[sd_t <= 1e-6] = 1.0
+                    xb_norm = (xb - mu_t) / sd_t
+                else:
+                    xb_norm = xb
 
-            thrust = thrust_norm * 150.0
+                y_r = model(xb_norm).squeeze().item()
 
+                TURN_GAIN = 1.2
+                y_r = max(-3.0, min(3.0, y_r * TURN_GAIN))
 
-            #TURN
-        if has_r:
-            model, mu, sd = self.models["turn_rate"]
-            if mu is not None and sd is not None:
-                mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
-                sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
-                sd_t[sd_t <= 1e-6] = 1.0
-                xb_norm = (xb - mu_t) / sd_t
-            else:
-                xb_norm = xb
-
-            y_r = model(xb_norm).squeeze().item()
-
-            # Gain + clamp BEFORE tanh so small outputs still turn
-            TURN_GAIN = 1.2
-            y_r = max(-3.0, min(3.0, y_r * TURN_GAIN))
-
-            turn_norm = np.tanh(y_r) # [-1, 1]
-            turn = turn_norm * 180.0 # [-180, 180]
-
+                turn_norm = np.tanh(y_r)
+                turn = turn_norm * 180.0
 
         return float(thrust), float(turn)
 
@@ -110,10 +98,9 @@ class NFPolicy:
         has_f = "fire" in self.models
         has_m = "drop_mine" in self.models
         with torch.no_grad():
-            # FIRE
             if has_f:
                 model, mu, sd = self.models["fire"]
-    
+
                 if mu is not None and sd is not None:
                     mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
                     sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
@@ -121,17 +108,15 @@ class NFPolicy:
                     xb_norm = (xb - mu_t) / sd_t
                 else:
                     xb_norm = xb
-                
+
                 logit_f = model(xb_norm).squeeze().item()
                 fire = (1 / (1 + np.exp(-logit_f))) >= thresh
             else:
                 fire = False
 
-            # MINE
             if has_m:
                 model, mu, sd = self.models["drop_mine"]
-                
-                # Normalize input
+
                 if mu is not None and sd is not None:
                     mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
                     sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
@@ -139,10 +124,10 @@ class NFPolicy:
                     xb_norm = (xb - mu_t) / sd_t
                 else:
                     xb_norm = xb
-                
+
                 logit_m = model(xb_norm).squeeze().item()
                 mine = (1 / (1 + np.exp(-logit_m))) >= thresh
             else:
                 mine = False
-                
+
         return bool(fire), bool(mine)

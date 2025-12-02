@@ -13,8 +13,8 @@ from human_xbox_controller import HumanXboxController
 #SCENARIO = sc.asteroid_rain()
 #SCENARIOa = sc.giants_with_kamikaze()
 #SCENARIO = sc.donut_ring_closing()
-SCENARIO = sc.moving_maze_right()
-
+#SCENARIO = sc.moving_maze_right()
+SCENARIO = sc.four_corner()
 game_settings = {
     'perf_tracker': True,
     'graphics_type': GraphicsType.Tkinter,
@@ -25,7 +25,7 @@ game_settings = {
 
 game = KesslerGame(settings=game_settings)
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=SCENARIO, controllers=[HumanXboxController()])
+score, perf_data = game.run(scenario=SCENARIO, controllers=[NFController()])
 print('Scenario eval time:', time.perf_counter() - pre)
 print(score.stop_reason)
 print('Asteroids hit:', [team.asteroids_hit for team in score.teams])

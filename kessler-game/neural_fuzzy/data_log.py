@@ -24,8 +24,6 @@ import csv, os
 from pathlib import Path
 
 
-
-# List of feature names
 FEATURES = [
     "dist",
     "ttc",
@@ -37,28 +35,31 @@ FEATURES = [
     "threat_angle",
 ]
 
-# List of action names
-TARGET = ["thrust", "turn_rate"]#target action names, keep these separate from fire and mine
+TARGET = ["thrust", "turn_rate"]
 
 class Logger:
     
     def __init__(self, filepath, features, targets):
         self.filepath = filepath
-        self.fieldnames = features + targets#combine features and target names
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        file_exists = os.path.exists(filepath)#check if file exists
+        self.features = features
+        self.targets = targets
+        self.fieldnames = features + targets
+        dir_path = os.path.dirname(filepath)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
+        file_exists = os.path.exists(filepath)
 
-        self.file = open(self.filepath, mode='a', newline='') #append mode so it doenst overwritge old data
-        self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames) #create writer object
-        if not file_exists or os.path.getsize(filepath) == 0:#write header if file is new or empty
+        self.file = open(self.filepath, mode='a', newline='')
+        self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames)
+        if not file_exists or os.path.getsize(filepath) == 0:
             self.writer.writeheader()
             
-    def log(self, ctx, actions):#row_dict: Dict[str, Any]
-        row = {**ctx} #copy context data
-        for name, value in zip(self.fieldnames[len(ctx):], actions):#add action data
+    def log(self, ctx, actions):
+        row = {name: ctx.get(name, "") for name in self.features}
+        for name, value in zip(self.targets, actions):
             row[name] = value
-        self.writer.writerow(row)#write row to file (row ex: {'dist': 100.0, 'ttc': 5.0, ..., 'thrust': 0.8, 'turn_rate': -0.1})
-        self.file.flush()#ensure data is written to file, flush is used to clear buffer 
+        self.writer.writerow(row)
+        self.file.flush()
         
     def close(self):
         self.file.close()

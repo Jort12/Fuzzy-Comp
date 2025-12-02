@@ -591,3 +591,60 @@ def moving_maze_right(map_size=(1800, 1000), *,
         ammo_limit_multiplier=0,
         stop_if_no_ammo=False
     )
+    
+def four_corner(map_size=(1200, 900), *,
+                cluster_size=10,
+                corner_margin=80,
+                size_class=2,
+                speed=0.0,
+                time_limit=70):
+
+
+    W, H = map_size
+    cx, cy = W * 0.5, H * 0.5
+
+    ship = {
+        'position': (cx, cy),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 0
+    }
+
+    ast_states = []
+
+    # Corner spawn positions
+    corners = [
+        (corner_margin, corner_margin),               # Top-left
+        (W - corner_margin, corner_margin),           # Top-right
+        (corner_margin, H - corner_margin),           # Bottom-left
+        (W - corner_margin, H - corner_margin)        # Bottom-right
+    ]
+
+    # Generate asteroid clusters in each corner
+    for (cxn, cyn) in corners:
+        for i in range(cluster_size):
+            # random spread inside each cluster
+            x = cxn + random.uniform(-40, 40)
+            y = cyn + random.uniform(-40, 40)
+
+            # angle toward center
+            heading = math.degrees(math.atan2(cy - y, cx - x))
+
+            ast_states.append({
+                'position': (x, y),
+                'size': int(size_class),
+                'angle': float(heading),
+                'speed': float(speed)
+            })
+
+    return Scenario(
+        name="Four Corner Assault",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )

@@ -41,7 +41,7 @@ game_settings = {
 
 game = KesslerGame(settings=game_settings)
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=SCENARIO, controllers=[HumanController()])
+score, perf_data = game.run(scenario=SCENARIO, controllers=[hybrid_controller()])
 print('Scenario eval time:', time.perf_counter() - pre)
 print(score.stop_reason)
 print('Asteroids hit:', [team.asteroids_hit for team in score.teams])

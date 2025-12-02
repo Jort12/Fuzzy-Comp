@@ -3,6 +3,7 @@
 #Description: Hybrid fuzzy logic controller
 
 import math
+import os
 from kesslergame.controller import KesslerController
 from util import wrap180, triag, intercept_point
 from data_log import Logger, FEATURES
@@ -71,9 +72,11 @@ def rear_clearance(ship_pos, heading_deg, asteroids, check_range=200.0, safety=4
 class hybrid_controller(KesslerController):
     name = "HybridFuzzyController"
     def __init__(self):
-        self.debug_counter = 0  # just to not spam too much
-        self.maneuver_logger = Logger("kessler-game/neural_fuzzy/data/maneuver.csv", FEATURES, ["thrust", "turn_rate"])#log data
-        self.combat_logger   = Logger("kessler-game/neural_fuzzy/data/combat.csv", FEATURES, ["fire", "drop_mine"])
+        self.debug_counter = 0
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        data_dir = os.path.join(base_dir, "data")
+        self.maneuver_logger = Logger(os.path.join(data_dir, "maneuver.csv"), FEATURES, ["thrust", "turn_rate"])
+        self.combat_logger   = Logger(os.path.join(data_dir, "combat.csv"), FEATURES, ["fire", "drop_mine"])
 
     def context(self, ship_state, game_state):#returns a dictionary of context features
         sx, sy = ship_state.position
