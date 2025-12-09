@@ -1,5 +1,10 @@
 import pygame
 from kesslergame.controller import KesslerController
+from data_log import Logger, FEATURES as BASE_FEATURES
+import math
+import os
+import time
+HUMAN_FEATURES = BASE_FEATURES + ["session_id"]
 
 try:
     import keyboard as _kb
@@ -58,38 +63,110 @@ class HumanXboxController(KesslerController):
 
     DEFAULT_MAX_THRUST = 230.0
     DEFAULT_MAX_TURN = 540.0
-
     def __init__(self,
                  joystick_index: int = 0,
                  max_thrust: float = DEFAULT_MAX_THRUST,
-                 max_turn_rate: float = DEFAULT_MAX_TURN):
+                 max_turn_rate: float = DEFAULT_MAX_TURN,
+                 player_id: str = "player"):
+        """
+        player_id: string label for this player, used in CSV filenames.
+        Example: "P1", "Alice", "Test03"
+        """
 
         super().__init__()
 
-        # Store how strong ship thrust/turn can be.
         self.max_thrust = float(max_thrust)
         self.max_turn_rate = float(max_turn_rate)
 
-        # Make sure pygame systems are running.
-        # Even though we do NOT use pygame for keyboard input,
-        # pygame MUST be running to read an Xbox controller.
+        # sanitize player_id for filenames
+        safe_id = "".join(
+            c if (c.isalnum() or c in "-_") else "_"
+            for c in str(player_id)
+        )
+        self.player_id = safe_id
+        self.session_id = time.strftime("%Y%m%d-%H%M%S")
+
+        # init pygame + joystick
         if not pygame.get_init():
             pygame.init()
-
         pygame.joystick.init()
 
-        # Try to connect to an Xbox controller.
-        # If none is found, we simply set joy = None and keyboard still works.
         if pygame.joystick.get_count() <= joystick_index:
-            print("[HumanXboxController] No Xbox controller detected.")
+            print("[HumanXboxController] No controller found.")
             self.joy = None
         else:
             self.joy = pygame.joystick.Joystick(joystick_index)
             self.joy.init()
-            print(f"[HumanXboxController] Xbox controller connected: {self.joy.get_name()}")
+            print(f"[HumanXboxController] Using: {self.joy.get_name()} (player={self.player_id})")
 
-        # Deadzone means if a stick is barely moved, treat it as 0.
         self.deadzone = 0.15
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        data_dir = os.path.join(base_dir, "data_human")
+        os.makedirs(data_dir, exist_ok=True)
+
+        maneuver_path = os.path.join(
+            data_dir, f"{self.player_id}_{self.session_id}_maneuver.csv"
+        )
+        combat_path   = os.path.join(
+            data_dir, f"{self.player_id}_{self.session_id}_combat.csv"
+        )
+
+        # FEATURES comes from data_log.py
+        self.maneuver_logger = Logger(maneuver_path, HUMAN_FEATURES, ["thrust", "turn_rate"])
+        self.combat_logger   = Logger(combat_path, HUMAN_FEATURES, ["fire", "drop_mine"])
+    # ---------- context features (same idea as hybrid controller) ----------
+    def _context(self, ship_state, game_state):
+
+        if ship_state is None or game_state is None:
+            return {}
+
+        if not hasattr(ship_state, "position") or ship_state.position is None:
+            return {}
+        sx, sy = ship_state.position
+        heading = ship_state.heading
+
+        asteroids = getattr(game_state, "asteroids", [])
+        if not asteroids:
+            return {}
+
+        # find closest asteroid
+        closest = None
+        dist_min = float("inf")
+        for a in asteroids:
+            ax, ay = a.position
+            d = math.hypot(ax - sx, ay - sy)
+            if d < dist_min:
+                dist_min = d
+                closest = a
+
+        ax, ay = closest.position
+        avx, avy = getattr(closest, "velocity", (0.0, 0.0))
+        svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
+
+        rel_vx, rel_vy = avx - svx, avy - svy
+        approach_speed = (rel_vx * (ax - sx) + rel_vy * (ay - sy)) / max(dist_min, 1.0)
+
+        ttc = dist_min / max(abs(approach_speed), 1e-6)
+
+        target_angle = math.degrees(math.atan2(ay - sy, ax - sx))
+        # wrap into [-180, 180]
+        heading_err = ((target_angle - heading + 180.0) % 360.0) - 180.0
+
+        density = len(asteroids) / 10.0
+
+        return {
+            "dist": dist_min,
+            "ttc": ttc,
+            "heading_err": heading_err,
+            "approach_speed": approach_speed,
+            "ammo": getattr(ship_state, "ammo", 0),
+            "mines": getattr(ship_state, "mines", 0),
+            "threat_density": density,
+            "threat_angle": target_angle,
+            "session_id": self.session_id,
+        }
+
 
 
     # ----------------------------------------------------------
@@ -203,6 +280,17 @@ class HumanXboxController(KesslerController):
 
         thrust = thrust_input * self.max_thrust
         turn_rate = turn_input * self.max_turn_rate
+        ctx = self._context(ship_state, game_state)
+        if ctx:
+            thrust_n = max(-1, min(1, thrust / self.max_thrust))
+            turn_n   = max(-1, min(1, turn_rate / self.max_turn_rate))
+
+            fire_n = 1.0 if fire else 0.0
+            mine_n = 1.0 if drop_mine else 0.0
+
+            self.maneuver_logger.log(ctx, (thrust_n, turn_n))
+            self.combat_logger.log(ctx, (fire_n, mine_n))
+
 
         # Return final controls to the game
         return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
