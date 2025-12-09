@@ -102,13 +102,15 @@ def gen_rule_set() -> str:
         input=prompt
     )
 
-    full_text = response.output[0].content[0].text
-    match = re.search(r"```python\s*(.*?)```", full_text, re.DOTALL)
+    full_text = response.output[0].content[0].text.strip()
+    code_only = full_text
+    
+    #match = re.search(r"```python\s*(.*?)```", full_text, re.DOTALL)
 
-    if match:
-        code_only = match.group(1).strip()
-    else:
-        code_only = ""
+    #if match:
+    #    code_only = match.group(1).strip()
+    #else:
+    #    code_only = ""
 
     with open("results.txt", "a", encoding="utf-8") as f:
         f.write(code_only + "\n")
