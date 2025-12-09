@@ -3,6 +3,7 @@ import time
 from kesslergame import KesslerGame, GraphicsType
 from fuzzy_aggressive_controller import AggressiveFuzzyController
 import scenarios as sc  
+from human_xbox_controller import HumanXboxController
 
 #SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
@@ -12,10 +13,9 @@ import scenarios as sc
 #SCENARIO = sc.crossing_lanes()
 #SCENARIO = sc.asteroid_rain()
 #SCENARIO = sc.giants_with_kamikaze()
-SCENARIO = sc.donut_ring_closing()
+#SCENARIO = sc.donut_ring_closing()
 #SCENARIO = sc.rotating_cross()
-
-
+SCENARIO = sc.moving_maze_right()
 
 game_settings = {
     'perf_tracker': True,
@@ -26,8 +26,14 @@ game_settings = {
 }
 
 game = KesslerGame(settings=game_settings)
+
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=SCENARIO, controllers=[AggressiveFuzzyController()])
+
+score, perf_data = game.run(
+    scenario=SCENARIO,
+    controllers=[HumanXboxController()]
+)
+
 print('Scenario eval time:', time.perf_counter() - pre)
 print(score.stop_reason)
 print('Asteroids hit:', [team.asteroids_hit for team in score.teams])
