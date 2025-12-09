@@ -158,3 +158,15 @@ rules += [
     ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']),
     ctrl.Rule((mine_distance['very_near'] | mine_distance['near'] | danger['imminent']), mine['no']),
 ]
+rules = []
+
+rules.append(ctrl.Rule(mine_distance['very_near'], (thrust['high'], turn['hard_right'], fire['no'], mine['no'])))
+rules.append(ctrl.Rule(mine_distance['near'], (thrust['high'], turn['hard_right'], mine['no'])))
+rules.append(ctrl.Rule(mine_distance['mid'] & (mine_angle['left'] | mine_angle['right']), (thrust['medium'], turn['soft_right'])))
+rules.append(ctrl.Rule(danger['imminent'], (thrust['reverse_hard'], turn['hard_right'], fire['no'], mine['no'])))
+rules.append(ctrl.Rule(distance['very_close'] | (distance['close'] & rel_speed['fast']), thrust['reverse_hard']))
+rules.append(ctrl.Rule(angle['ahead'] & (danger['safe'] | danger['risky']) & (mine_distance['mid'] | mine_distance['far']), fire['yes']))
+rules.append(ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']))
+rules.append(ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])))
+rules.append(ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']))
+rules.append(ctrl.Rule(mine_distance['far'] & distance['far'] & angle['ahead'], (thrust['high'], turn['zero'], fire['yes'])))
