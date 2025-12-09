@@ -1,4 +1,0 @@
-,eval_time,stop_reason,asteroids_hit,deaths,accuracy,mean_eval_time
-0,12.792,StopReason.no_ships,[58],[3],[0.3557692307692308],[2.169180873766457]
-1,10.309,StopReason.no_ships,[50],[3],[0.639344262295082],[1.9530357085389825]
-2,6.989,StopReason.no_ships,[23],[3],[0.8571428571428571],[1.2860833021267133]
