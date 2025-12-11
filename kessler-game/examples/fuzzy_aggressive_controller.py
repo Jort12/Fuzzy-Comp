@@ -112,16 +112,51 @@ class AggressiveFuzzyController(KesslerController):
         #BEGIN GENERATED CODE
         rules = []
 
-        rules.append(ctrl.Rule(mine_distance['very_near'], (thrust['high'], turn['hard_right'], fire['no'], mine['no'])))
-        rules.append(ctrl.Rule(mine_distance['near'], (thrust['high'], turn['hard_right'], mine['no'])))
-        rules.append(ctrl.Rule(mine_distance['mid'] & (mine_angle['left'] | mine_angle['right']), (thrust['medium'], turn['soft_right'])))
-        rules.append(ctrl.Rule(danger['imminent'], (thrust['reverse_hard'], turn['hard_right'], fire['no'], mine['no'])))
-        rules.append(ctrl.Rule(distance['very_close'] | (distance['close'] & rel_speed['fast']), thrust['reverse_hard']))
-        rules.append(ctrl.Rule(angle['ahead'] & (danger['safe'] | danger['risky']) & (mine_distance['mid'] | mine_distance['far']), fire['yes']))
-        rules.append(ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']))
-        rules.append(ctrl.Rule(mine_distance['far'] & danger['safe'] & distance['sweet'] & angle['ahead'], (thrust['medium'], turn['zero'], fire['yes'])))
-        rules.append(ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']))
-        rules.append(ctrl.Rule(mine_distance['far'] & distance['far'] & angle['ahead'], (thrust['high'], turn['zero'], fire['yes'])))
+        rules += [
+            ctrl.Rule(mine_distance['very_near'] & (mine_angle['left'] | mine_angle['right'] | mine_angle['ahead']), (thrust['high'], turn['hard_right'], fire['no'], mine['no'])),
+        ]
+
+        rules += [
+            ctrl.Rule((mine_distance['near'] | mine_distance['mid']) & (mine_angle['left'] | mine_angle['right']), (thrust['high'], turn['hard_right'], mine['no'])),
+            ctrl.Rule((mine_distance['near'] | mine_distance['mid']) & mine_angle['ahead'], (thrust['high'], turn['soft_right'], mine['no'])),
+            ctrl.Rule((mine_distance['near'] | mine_distance['mid']) & angle['ahead'], fire['yes']),
+        ]
+
+        rules += [
+            ctrl.Rule(danger['imminent'], (thrust['reverse_hard'], turn['hard_right'], fire['no'], mine['no'])),
+            ctrl.Rule(danger['risky'], thrust['medium']),
+        ]
+
+        rules += [
+            ctrl.Rule(distance['very_close'], (thrust['reverse_hard'], turn['soft_right'])),
+            ctrl.Rule(distance['close'] & rel_speed['fast'], thrust['reverse_soft']),
+        ]
+
+        rules += [
+            ctrl.Rule(angle['ahead'] & (danger['safe'] | danger['risky']) & (mine_distance['mid'] | mine_distance['near'] | mine_distance['far']), fire['yes'])
+        ]
+
+        rules.append(ctrl.Rule(mine_distance['far'] & distance['very_close'], (thrust['reverse_hard'], turn['zero'], fire['no'])))
+
+        rules += [
+            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & distance['close'] & (angle['left'] | angle['ahead'] | angle['right']), (thrust['medium'], turn['zero'], fire['yes'])),
+        ]
+
+        rules += [
+            ctrl.Rule(mine_distance['far'] & danger['safe'] & (distance['sweet'] | distance['close']) & (angle['ahead'] | angle['left'] | angle['right']), (thrust['medium'], fire['yes'])),
+        ]
+
+        rules += [
+            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & (distance['far'] | distance['sweet']) & (angle['ahead'] | angle['left'] | angle['right']), (thrust['high'], turn['zero'], fire['yes'])),
+        ]
+
+        rules.append(ctrl.Rule(mine_distance['far'] & (distance['sweet'] | distance['far']) & rel_speed['fast'] & angle['ahead'], fire['yes']))
+
+        rules += [
+            ctrl.Rule(mine_distance['far'] & (danger['safe'] | danger['risky']) & (distance['close'] | distance['sweet']) & angle['ahead'], mine['yes']),
+            ctrl.Rule(mine_distance['far'] & (distance['close'] | distance['sweet']) & rel_speed['fast'], mine['yes']),
+            ctrl.Rule(mine_distance['very_near'] | mine_distance['near'] | danger['imminent'], mine['no']),
+        ]
         #END GENERATED CODE
         
         self.ctrl_system = ctrl.ControlSystem(rules)
