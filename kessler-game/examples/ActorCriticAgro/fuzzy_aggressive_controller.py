@@ -1,4 +1,5 @@
 import math
+from kiwisolver import strength
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
@@ -193,9 +194,26 @@ class AggressiveFuzzyController(KesslerController):
         fast = max(0.0, min(1.0, rel_speed_n))
         risk = near * fast
         return max(0.0, min(1.0, 1.0 - risk))
+    
+    #computes the firing strength mu for each fuzzy rule
+    @staticmethod
+    def _rule_firing_strengths(self, inputs):
+        mu = np.zeros(len(self.ctrl_system.rules))
+
+        for i, rule in enumerate(self.ctrl_system.rules):
+            strength = 1.0
+            for term in rule.antecedent_terms:
+                var_name = term.parent.label
+                mf = term.term.mf
+                x = inputs[var_name]
+                degree = fuzz.interp_membership(term.parent.universe, mf, x)
+                strength *= degree
+            mu[i] = strength
+        
+        return mu / (np.sum(mu) + 1e-6)
 
     # Main control: produce actions
-    def actions(self, ship_state, game_state):
+    def actions(self, ship_state, game_state, return_rule_strengths=False):
         """Return (thrust, turn_rate, fire?, drop_mine?) for the current frame."""
         sim = ctrl.ControlSystemSimulation(self.ctrl_system)
 
@@ -278,14 +296,21 @@ class AggressiveFuzzyController(KesslerController):
         mang_n   = self._norm_angle_deg_to_unit(mine_err)
         danger_n = self._norm_ttc_like(dist_n, rel_n)
 
+        fuzzy_inputs = {
+            'distance': dist_n,
+            'rel_speed': rel_n,
+            'angel': ang_n,
+            'mine distance': mdis_n,
+            'mine angle': mang_n,
+            'danger': danger_n
+        }
+
+        rule_strength = self._rule_firing_strengths(fuzzy_inputs)
+
         # Run fuzzy inference
         try:
-            sim.input['distance'] = dist_n
-            sim.input['rel_speed'] = rel_n
-            sim.input['angle'] = ang_n
-            sim.input['mine_distance'] = mdis_n
-            sim.input['mine_angle'] = mang_n
-            sim.input['danger'] = danger_n
+            for k, v in fuzzy_inputs.items():
+                sim.input[k] = v
             sim.compute()
         except:
             # If FIS fails, idle (safe fallback)
@@ -306,7 +331,10 @@ class AggressiveFuzzyController(KesslerController):
         fire_bool = (out_fire >= 0.25)  
         drop_mine = (out_mine >= 0.40)  
 
-        return float(engine_thrust), float(turn_rate), bool(fire_bool), bool(drop_mine)
+        if return_rule_strengths:
+            return (engine_thrust, turn_rate, fire_bool, drop_mine), rule_strength
+        else:
+            return engine_thrust, turn_rate, fire_bool, drop_mine
 
     @property
     def name(self) -> str:
