@@ -4,17 +4,21 @@ from kesslergame.controller import KesslerController
 from util import wrap180, intercept_point, side_score
 
 
-"""
-    PLANSS:
-    A rule class that handles taking in the antecedents and consequents
-    
-    A engine that take cares of
-    
-    
-    
-"""
+"""_summary_
+Returns the rule strength based on the given membership values and mode.
+_args_   : mus: list of membership values in [0,1]      
+            mode: "prod" for product, "min" for minimum
+_returns_: rule strength as a float
 
-
+Sugeno FIS:
+1. Each input is fuzzified using membership functions (e.g., Gaussian).
+2. Each rule combines input memberships (via AND) to compute a rule strength (firing strength).
+3. Each rule outputs a linear function (or constant) of the inputs.
+4. The system combines all rule outputs into a final crisp value:
+       y = Σ(w_i * f_i(x)) / Σ(w_i)
+    where w_i = rule_strength_i x rule_weight_i
+"""
+    
 def rule_strength(mus, mode="prod"):
     #mus: list of membership values in [0,1]
     acc = 1.0 if mode == "prod" else 1.0    
@@ -25,7 +29,12 @@ def rule_strength(mus, mode="prod"):
         return min(mus) if mus else 0.0
 
 
+#Sugeno fuzzy system
+"""
+    Sugeno Rule handels individual rules for the Sugeno fuzzy system
+    SugenoSystem handles the collection of rules and evaluation
 
+"""
 class SugenoRule:
     def __init__(self, antecedents, consequents, weight=1.0):
         self.antecedents = antecedents  #list of (fuzzy_set_name, membership_value) tuples
@@ -33,28 +42,53 @@ class SugenoRule:
         self.weight = weight  #weight of the rule, default to 1.0
     
 class SugenoSystem:
-    def __init__(self, rules=None, mode="prod"):
+    def __init__(self, rules=None, mode="prod"): #rules are list of SugenoRule
         self.rules = rules if rules else []
-        self.mode = mode  #"prod" or "min"
-    def add_rule(self,rule:SugenoRule):
+        self.mode = mode  #"prod" or "min", product or minimum for AND operation
+    def add_rule(self,rule:SugenoRule): 
         self.rules.append(rule)
-    def evaluate(self,inputs:dict): #evalutate with crisp inputs, ex:{'dist': 300, 'approach': 1.5, 'ammo': 3}
-        numerator, denominator = 0.0,0.0
-        #For each rule, calculate its strength and contribute to the output
+    def evaluate(self, inputs: dict):  
+        results = {}#{output_name: [numerator, denominator]}
+
         for rule in self.rules:
+            #rule strength
             mus = []
-            for (fuzzy_set_name, membership_value) in rule.antecedents:
+            for (fuzzy_set_name, membership_func) in rule.antecedents:
                 if fuzzy_set_name in inputs:
-                    mu = membership_value(inputs[fuzzy_set_name])
+                    mu = membership_func(inputs[fuzzy_set_name])
                     mus.append(mu)
                 else:
-                    mus.append(0.0)  # If input not found, assume membership is 0
-                    
-        
-        
+                    mus.append(0.0)
+            w = rule_strength(mus, self.mode) * rule.weight
 
+            #handle consequents (support dicts and lists)
+            if isinstance(rule.consequents, dict):
+                consequents_iter = rule.consequents.items()
+            else:
+                consequents_iter = rule.consequents
 
+            for output_name, output_value in consequents_iter:
+                # first order: function of crisp inputs
+                if callable(output_value):
+                    y_i = float(output_value(inputs))
+                else:
+                    y_i = float(output_value)
 
+                if output_name not in results:
+                    results[output_name] = [0.0, 0.0]
+                results[output_name][0] += w * y_i #numerator
+                results[output_name][1] += w #denominator
+
+        #Defuzzify (weighted average)
+        outputs = {}
+        for name, (num, den) in results.items():
+            outputs[name] = num / den if den != 0 else 0.0
+
+        return outputs
+
+            
+                        
+            
 
 
 
