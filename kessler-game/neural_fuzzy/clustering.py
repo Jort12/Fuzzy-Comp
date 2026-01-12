@@ -401,7 +401,7 @@ def main():
     print(f"[save] centroids -> {cent_path}")
     print(f"[save] player style -> {style_path}")
 
-    # Quick console peek
+    # Summaries, isnt really helpful, but pretty print
     print("\n=== Scenario distribution ===")
     print(dfc["scenario"].value_counts())
 
