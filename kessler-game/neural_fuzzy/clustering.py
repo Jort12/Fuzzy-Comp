@@ -54,7 +54,7 @@ STATE_COLS = [
 
 ACTION_COLS = ["thrust", "turn_rate", "fire", "drop_mine"]
 
-# Clustering params
+# params
 DEFAULT_N_COMPONENTS = 3            # per scenario
 MIN_ROWS_PER_SCENARIO = 150         # skip tiny scenarios
 RANDOM_STATE = 42
@@ -117,7 +117,7 @@ def safe_float(x, default=np.nan) -> float:
 
 
 
-def label_scenario(row: Dict) -> str:
+def label_scenario(row: Dict): #Subject to change
 
     dist = safe_float(row.get("dist", np.inf), np.inf)
     ttc = safe_float(row.get("ttc", np.inf), np.inf)
@@ -125,30 +125,28 @@ def label_scenario(row: Dict) -> str:
     density = safe_float(row.get("threat_density", 0.0), 0.0)
     ammo = safe_float(row.get("ammo", 0), 0)
 
-    # 1) Imminent collision (panic)
+    #Imminent collision (panic)
     if ttc < 1.2:
         return "imminent_collision"
 
-    # 2) Close evasive maneuvering (threat is close but not instant)
+    #Close evasive maneuvering (threat is close but not instant)
     if dist < 120 and heading_err > 45:
         return "evasive_close"
 
-    # 3) Aligned attack opportunity
+    #Aligned attack opportunity
     if dist < 180 and heading_err < 20 and ammo > 0:
         return "aligned_attack"
 
-    # 4) Crowded navigation (lots of threats)
+    #Crowded navigation (lots of threats)
     if density > 0.6:
         return "crowded_navigation"
 
-    # 5) Low threat / cruising
+    #Low threat / cruising
     return "low_threat"
 
 
-# -----------------------------
-# Loading + merging logs
-# -----------------------------
 
+#Logging
 def load_logs(data_dir: str) -> pd.DataFrame:
     """
     Loads maneuver + combat logs and merges them.
@@ -173,7 +171,6 @@ def load_logs(data_dir: str) -> pd.DataFrame:
         man["player_id"] = pid
         man["session_id"] = man.get("session_id", sid)
 
-        # Ensure action columns exist (maneuver has thrust, turn_rate)
         if "thrust" not in man.columns:
             man["thrust"] = np.nan
         if "turn_rate" not in man.columns:
@@ -184,7 +181,6 @@ def load_logs(data_dir: str) -> pd.DataFrame:
             com["player_id"] = pid
             com["session_id"] = com.get("session_id", sid)
 
-            # Ensure combat actions exist
             if "fire" not in com.columns:
                 com["fire"] = 0.0
             if "drop_mine" not in com.columns:
@@ -214,20 +210,16 @@ def load_logs(data_dir: str) -> pd.DataFrame:
     df = pd.concat(all_sessions, ignore_index=True)
 
     # Convert state/action columns to numeric where possible
-    for c in STATE_COLS + ACTION_COLS + ["alive"]:
+    for c in STATE_COLS + ACTION_COLS:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # If alive missing, assume alive=1
-    if "alive" not in df.columns:
-        df["alive"] = 1
 
     return df
 
 
-# -----------------------------
 # Clustering
-# -----------------------------
+
 
 @dataclass
 class ScenarioClusterModel:
