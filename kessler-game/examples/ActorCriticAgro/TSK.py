@@ -15,6 +15,12 @@ def rule_strength(mus, mode="prod"):
     else:  # "min"
         return min(mus) if mus else 0.0
     
+class SugenoRule:
+    def __init__(self, antecedents, consequents, weight=1.0):
+        self.antecedents = antecedents  #list of (fuzzy_set_name, membership_value) tuples
+        self.consequents = consequents  #list of (output_name, output_value) tuples
+        self.weight = weight  #weight of the rule, default to 1.0
+    
 class SugenoSystem:
     def __init__(self, rules=None, mode="prod"): #rules are list of SugenoRule
         self.rules = rules if rules else []
