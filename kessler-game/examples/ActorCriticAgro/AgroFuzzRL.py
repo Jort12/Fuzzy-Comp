@@ -26,13 +26,22 @@ def build_antecedents(rules_ants):
 
         func = MF_REGISTRY[var]
 
-        
+        antecedents.append(
+            (var, lambda x, f=func, m=mf: f(x)[m])
+        )
+
     return antecedents
 
 def build_consequents(spec):
-    consequents = []
+    ctype = spec['type']
+    
+    if ctype == 'constant':
+        return lambda x,v=spec["value"]:v
+    elif ctype == 'expression':
+        expr = spec['expression']
+        return lambda  x, e=expr: eval(e, {}, x)
 
-    return consequents
+  
 
 def build_rules(rules):
     consequents = {

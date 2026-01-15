@@ -1,0 +1,6349 @@
+{
+    "mode": "prod",
+    "rules": [
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_LEFT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_LEFT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_LEFT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_LEFT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_AHEAD__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_AHEAD__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_AHEAD__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_AHEAD__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_RIGHT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_RIGHT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_RIGHT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_IMMINENT__THREAT_ANGLE_RIGHT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_LEFT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_LEFT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_LEFT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_LEFT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_AHEAD__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_AHEAD__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_AHEAD__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_AHEAD__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_RIGHT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_RIGHT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_RIGHT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_SOON__THREAT_ANGLE_RIGHT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_LEFT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_LEFT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_LEFT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_LEFT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_AHEAD__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_AHEAD__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_AHEAD__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_AHEAD__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_RIGHT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_RIGHT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_RIGHT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_LATER__THREAT_ANGLE_RIGHT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_LEFT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_LEFT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_LEFT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_LEFT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_AHEAD__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_AHEAD__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_AHEAD__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_AHEAD__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_RIGHT_SIDE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_RIGHT_SIDE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_RIGHT_SIDE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "CRITICAL_EVASION__TTC_FAR_FUTURE__THREAT_ANGLE_RIGHT_SIDE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 30
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 2.0
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_AWAY__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "away"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_AWAY__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "away"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_AWAY__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "away"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_AWAY__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "away"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_STABLE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "stable"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_STABLE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "stable"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_STABLE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "stable"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_STABLE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "stable"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_APPROACHING__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_APPROACHING__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_APPROACHING__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_APPROACHING__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_FAST_APPROACHING__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_FAST_APPROACHING__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_FAST_APPROACHING__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_FAST_APPROACHING__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_VERY_FAST_APPROACHING__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "very_fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_VERY_FAST_APPROACHING__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "very_fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_VERY_FAST_APPROACHING__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "very_fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "APPROACH_DIST__APPROACH_SPEED_VERY_FAST_APPROACHING__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "approach_speed",
+                    "mf": "very_fast_approaching"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 40
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.8
+        },
+        {
+            "name": "TTC_ANGLE__TTC_IMMINENT__THREAT_ANGLE_LEFT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_IMMINENT__THREAT_ANGLE_AHEAD",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_IMMINENT__THREAT_ANGLE_RIGHT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_SOON__THREAT_ANGLE_LEFT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_SOON__THREAT_ANGLE_AHEAD",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_SOON__THREAT_ANGLE_RIGHT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_LATER__THREAT_ANGLE_LEFT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_LATER__THREAT_ANGLE_AHEAD",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_LATER__THREAT_ANGLE_RIGHT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_FAR_FUTURE__THREAT_ANGLE_LEFT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "left_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_FAR_FUTURE__THREAT_ANGLE_AHEAD",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "ahead"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "TTC_ANGLE__TTC_FAR_FUTURE__THREAT_ANGLE_RIGHT_SIDE",
+            "antecedents": [
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                },
+                {
+                    "var": "threat_angle",
+                    "mf": "right_side"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 60
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 150
+                }
+            },
+            "weight": 1.5
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_CLEAR__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "clear"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_CLEAR__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "clear"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_CLEAR__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "clear"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_CLEAR__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "clear"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_LOW__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "low"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_LOW__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "low"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_LOW__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "low"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_LOW__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "low"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_MODERATE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "moderate"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_MODERATE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "moderate"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_MODERATE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "moderate"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_MODERATE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "moderate"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_DENSE__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "dense"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_DENSE__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "dense"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_DENSE__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "dense"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_DIST__THREAT_DENSITY_DENSE__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "dense"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 80
+                },
+                "turn_rate": {
+                    "type": "conditional",
+                    "condition": "threat_angle > 0",
+                    "true": 180,
+                    "false": -180
+                }
+            },
+            "weight": 1.3
+        },
+        {
+            "name": "DENSITY_ONLY__THREAT_DENSITY_CLEAR",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "clear"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 100
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "120 * sign(escape_vector)"
+                }
+            },
+            "weight": 1.0
+        },
+        {
+            "name": "DENSITY_ONLY__THREAT_DENSITY_LOW",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "low"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 100
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "120 * sign(escape_vector)"
+                }
+            },
+            "weight": 1.0
+        },
+        {
+            "name": "DENSITY_ONLY__THREAT_DENSITY_MODERATE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "moderate"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 100
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "120 * sign(escape_vector)"
+                }
+            },
+            "weight": 1.0
+        },
+        {
+            "name": "DENSITY_ONLY__THREAT_DENSITY_DENSE",
+            "antecedents": [
+                {
+                    "var": "threat_density",
+                    "mf": "dense"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "constant",
+                    "value": 100
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "120 * sign(escape_vector)"
+                }
+            },
+            "weight": 1.0
+        },
+        {
+            "name": "DIST_TTC__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "DIST_TTC__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "100 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.3
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_LEFT__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_LEFT__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_LEFT__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_left"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_STRAIGHT__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "straight"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SLIGHT_RIGHT__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "slight_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_RIGHT__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_VERY_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_VERY_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_VERY_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_VERY_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_CLOSE__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_CLOSE__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_CLOSE__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_CLOSE__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "close"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_MEDIUM__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_MEDIUM__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_MEDIUM__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_MEDIUM__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_FAR__TTC_IMMINENT",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "imminent"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_FAR__TTC_SOON",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "soon"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_FAR__TTC_LATER",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "later"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "HEADING_DIST_TTC__HEADING_ERR_SHARP_RIGHT__DIST_FAR__TTC_FAR_FUTURE",
+            "antecedents": [
+                {
+                    "var": "heading_err",
+                    "mf": "sharp_right"
+                },
+                {
+                    "var": "dist",
+                    "mf": "far"
+                },
+                {
+                    "var": "ttc",
+                    "mf": "far_future"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "80 + 40 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "expression",
+                    "expr": "K_TURN * 90 * heading_norm"
+                }
+            },
+            "weight": 0.5
+        },
+        {
+            "name": "DEFAULT_DIST__DIST_VERY_CLOSE",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "very_close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "60 + 20 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.2
+        },
+        {
+            "name": "DEFAULT_DIST__DIST_CLOSE",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "close"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "60 + 20 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.2
+        },
+        {
+            "name": "DEFAULT_DIST__DIST_MEDIUM",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "medium"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "60 + 20 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.2
+        },
+        {
+            "name": "DEFAULT_DIST__DIST_FAR",
+            "antecedents": [
+                {
+                    "var": "dist",
+                    "mf": "far"
+                }
+            ],
+            "consequents": {
+                "thrust": {
+                    "type": "expression",
+                    "expr": "60 + 20 * dist_norm"
+                },
+                "turn_rate": {
+                    "type": "constant",
+                    "value": 0.0
+                }
+            },
+            "weight": 0.2
+        }
+    ]
+}
