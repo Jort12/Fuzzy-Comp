@@ -1,46 +1,36 @@
-#!/usr/bin/env python3
 """
-Scenario-conditioned action clustering + per-player behavior profiling
-for Kessler-style human controller logs.
+Merging maneuver + combat logs per (player, session) - Files are joined by frame order
 
-Expected folder layout (same dir as this script):
-  data_human/
-    <player>_<session>_maneuver.csv
-    <player>_<session>_combat.csv
+Assigning each frame to a high-level scenario using soft scoring
+   (imminent collision, evasive maneuvering, aligned attack,
+    crowded navigation, low threat), avoiding brittle hard thresholds.
 
-Outputs:
-  outputs/
-    merged_dataset.csv
-    cluster_centroids_by_scenario.csv
-    player_style_by_scenario.csv
-    (optional) plots/*.png
+Engineering context-conditioned action features so identical joystick
+   inputs are comparable across different distances and time-to-collision.
+
+Clustering actions each scenario using (GMMs), rather than clustering all behavior globally.
+
+Auto select the number of clusters per scenario Bayesian Information Criterion (BIC), balancing model fit and complexity.
+
+outputs:
+   Per-scenario action centroids (mean behavior per cluster)
+   Per-player behavioral style distributions by scenario
+   Optional plots
 """
 
-from __future__ import annotations
-
+from __future__ import annotations # type annotations
+import argparse# for command-line parsing
+import glob# for file pattern matching
 import os
-import glob
-import re
+import re# for regex parsing
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-
-from sklearn.preprocessing import StandardScaler
 from sklearn.mixture import GaussianMixture
-from sympy import plot
+from sklearn.preprocessing import StandardScaler
 
-
-# -----------------------------
-# Config
-# -----------------------------
-
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_human")
-OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
-PLOT_DIR = os.path.join(OUT_DIR, "plots")
-
-# Columns we expect
 STATE_COLS = [
     "dist",
     "ttc",
@@ -54,52 +44,18 @@ STATE_COLS = [
 
 ACTION_COLS = ["thrust", "turn_rate", "fire", "drop_mine"]
 
-# params
-DEFAULT_N_COMPONENTS = 3            # per scenario
-MIN_ROWS_PER_SCENARIO = 150         # skip tiny scenarios
-RANDOM_STATE = 42
+RANDOM_STATE_DEFAULT = 42
 
 
-CLUSTER_NAMES = {
-    "imminent_collision": {
-        0: "hard_evade",
-        1: "panic_spin",
-        2: "freeze",
-    },
-    "evasive_close": {
-        0: "wide_turn",
-        1: "brake_turn",
-        2: "drift",
-    },
-    "aligned_attack": {
-        0: "controlled_fire",
-        1: "strafe_fire",
-        2: "hold_fire",
-    },
-    "crowded_navigation": {
-        0: "thread_gap",
-        1: "slow_probe",
-        2: "overcorrect",
-    },
-    "low_threat": {
-        0: "idle",
-        1: "micro_adjust",
-        2: "explore",
-    },
-}
-
-
-def ensure_dirs():
-    os.makedirs(OUT_DIR, exist_ok=True)
-    os.makedirs(PLOT_DIR, exist_ok=True)
+def ensure_dirs(out_dir: str, plot_dir: str) -> None:
+    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(plot_dir, exist_ok=True)
 
 
 def parse_player_and_session(filename: str) -> Tuple[str, str]:
-
     base = os.path.basename(filename)
     m = re.match(r"(.+?)_(\d{8}-\d{6})_(maneuver|combat)\.csv$", base)
     if not m:
-        # fallback: treat everything before last two underscores as player, etc.
         parts = base.replace(".csv", "").split("_")
         if len(parts) >= 3:
             return "_".join(parts[:-2]), parts[-2]
@@ -107,7 +63,7 @@ def parse_player_and_session(filename: str) -> Tuple[str, str]:
     return m.group(1), m.group(2)
 
 
-def safe_float(x, default=np.nan) -> float:
+def safe_float(x, default: float = np.nan) -> float:
     try:
         if x == "" or x is None:
             return default
@@ -116,42 +72,73 @@ def safe_float(x, default=np.nan) -> float:
         return default
 
 
+def _clamp(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
 
-def label_scenario(row: Dict): #Subject to change
+
+
+"""Soft scoring for each scenario.
+    The weights are intentionally simple and monotonic. much less brittle than hard
+    threshold trees."""
+def scenario_scores(row: Dict) -> Dict[str, float]:
+
 
     dist = safe_float(row.get("dist", np.inf), np.inf)
     ttc = safe_float(row.get("ttc", np.inf), np.inf)
     heading_err = abs(safe_float(row.get("heading_err", 180.0), 180.0))
     density = safe_float(row.get("threat_density", 0.0), 0.0)
-    ammo = safe_float(row.get("ammo", 0), 0)
+    ammo = safe_float(row.get("ammo", 0.0), 0.0)
 
-    #Imminent collision (panic)
-    if ttc < 1.2:
-        return "imminent_collision"
+    # Normalize into [0, 1]
+    near = _clamp((200.0 - dist) / 200.0, 0.0, 1.0)
+    close = _clamp((120.0 - dist) / 120.0, 0.0, 1.0)
+    aligned = _clamp((25.0 - heading_err) / 25.0, 0.0, 1.0)
+    misaligned = _clamp((heading_err - 35.0) / 90.0, 0.0, 1.0)
 
-    #Close evasive maneuvering (threat is close but not instant)
-    if dist < 120 and heading_err > 45:
-        return "evasive_close"
+    # ttc: smaller means more urgent
+    ttc_urgent = 0.0 if np.isinf(ttc) else _clamp((1.6 - ttc) / 1.6, 0.0, 1.0)
+    ttc_soon = 0.0 if np.isinf(ttc) else _clamp((4.0 - ttc) / 4.0, 0.0, 1.0)
 
-    #Aligned attack opportunity
-    if dist < 180 and heading_err < 20 and ammo > 0:
-        return "aligned_attack"
+    ammo_ok = 1.0 if ammo > 0 else 0.0
 
-    #Crowded navigation (lots of threats)
-    if density > 0.6:
-        return "crowded_navigation"
+    # Scores
+    imminent_collision = 2.2 * ttc_urgent + 0.7 * misaligned + 0.8 * density + 0.3 * close
+    evasive_close = 1.0 * close + 1.2 * misaligned + 0.4 * ttc_soon + 0.4 * density
+    aligned_attack = 1.1 * near + 1.6 * aligned + 0.8 * ammo_ok + 0.2 * (1.0 - density)
+    crowded_navigation = 1.8 * density + 0.6 * close + 0.2 * ttc_soon
 
-    #Low threat / cruising
-    return "low_threat"
+    # Low threat is a baseline; it only wins when everything else is low.
+    low_threat = 0.15 + 0.25 * (1.0 - density) + 0.15 * (1.0 - near)
+
+    return {
+        "imminent_collision": float(imminent_collision),
+        "evasive_close": float(evasive_close),
+        "aligned_attack": float(aligned_attack),
+        "crowded_navigation": float(crowded_navigation),
+        "low_threat": float(low_threat),
+    }
 
 
 
-#Logging
+
+def label_scenario(row: Dict) -> str:
+    scores = scenario_scores(row)
+    # If all "interesting" scores are tiny, keep low_threat.
+    interesting = [scores[s] for s in ("imminent_collision", "evasive_close", "aligned_attack", "crowded_navigation")]
+    if max(interesting) < 0.55:
+        return "low_threat"
+    return max(scores.items(), key=lambda kv: kv[1])[0]
+
+
+
+
+
+"""Load maneuver + combat logs and merge.
+    If both exist for (player, session), we join by row index (frame order).
+    Maneuver contributes state + thrust/turn_rate; combat contributes fire/mine."""
 def load_logs(data_dir: str) -> pd.DataFrame:
-    """
-    Loads maneuver + combat logs and merges them.
-    If both exist for a (player, session), we join by row order (frame order).
-    """
+
+
     maneuver_files = sorted(glob.glob(os.path.join(data_dir, "*_maneuver.csv")))
     combat_files = sorted(glob.glob(os.path.join(data_dir, "*_combat.csv")))
 
@@ -165,36 +152,33 @@ def load_logs(data_dir: str) -> pd.DataFrame:
 
     for mf in maneuver_files:
         pid, sid = parse_player_and_session(mf)
-        cf = combat_map.get((pid, sid), None)
+        cf = combat_map.get((pid, sid))
 
         man = pd.read_csv(mf)
         man["player_id"] = pid
         man["session_id"] = man.get("session_id", sid)
 
-        if "thrust" not in man.columns:
-            man["thrust"] = np.nan
-        if "turn_rate" not in man.columns:
-            man["turn_rate"] = np.nan
+        #make surre thrust/turn_rate exist
+        for c in ["thrust", "turn_rate"]:
+            if c not in man.columns:
+                man[c] = np.nan
 
         if cf and os.path.exists(cf):
             com = pd.read_csv(cf)
             com["player_id"] = pid
             com["session_id"] = com.get("session_id", sid)
 
-            if "fire" not in com.columns:
-                com["fire"] = 0.0
-            if "drop_mine" not in com.columns:
-                com["drop_mine"] = 0.0
+            for c in ["fire", "drop_mine"]:
+                if c not in com.columns:
+                    com[c] = 0.0
 
-            # Join by row index (frame order).
-            # Keep state from maneuver; take fire/mine from combat.
             n = min(len(man), len(com))
             man = man.iloc[:n].reset_index(drop=True)
             com = com.iloc[:n].reset_index(drop=True)
 
             merged = man.copy()
-            merged["fire"] = com["fire"].astype(float)
-            merged["drop_mine"] = com["drop_mine"].astype(float)
+            merged["fire"] = pd.to_numeric(com["fire"], errors="coerce").fillna(0.0)
+            merged["drop_mine"] = pd.to_numeric(com["drop_mine"], errors="coerce").fillna(0.0)
         else:
             merged = man.copy()
             merged["fire"] = 0.0
@@ -202,103 +186,198 @@ def load_logs(data_dir: str) -> pd.DataFrame:
 
         all_sessions.append(merged)
 
-    if not all_sessions:
-        raise FileNotFoundError(
-            f"No maneuver logs found in {data_dir}. Expected files like *_maneuver.csv"
-        )
 
     df = pd.concat(all_sessions, ignore_index=True)
 
-    # Convert state/action columns to numeric where possible
+    # Convert known columns to numeric
     for c in STATE_COLS + ACTION_COLS:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
+    
+    #DOESNT DO ANYTHING RN
+    if "alive" in df.columns:
+        df["alive"] = pd.to_numeric(df["alive"], errors="coerce")
 
     return df
 
+"""Add a few context-conditioned action features.
+These help avoid the 'same joystick values mean different intent' problem.
+"""
+def add_action_features(df: pd.DataFrame) -> pd.DataFrame:
 
-# Clustering
 
+    out = df.copy()
 
+    # Safe denominators
+    dist = out["dist"].astype(float).fillna(np.inf)
+    ttc = out["ttc"].astype(float).fillna(np.inf)
+    denom_dist = (dist.replace(np.inf, np.nan).fillna(dist[~np.isinf(dist)].median() if (~np.isinf(dist)).any() else 200.0) + 1.0)
+    denom_ttc = (ttc.replace(np.inf, np.nan).fillna(ttc[~np.isinf(ttc)].median() if (~np.isinf(ttc)).any() else 4.0) + 0.5)
+
+    out["turn_per_dist"] = out["turn_rate"].astype(float) / denom_dist
+    out["thrust_per_ttc"] = out["thrust"].astype(float) / denom_ttc
+    out["turn_per_ttc"] = out["turn_rate"].astype(float) / denom_ttc
+    out["turn_abs"] = out["turn_rate"].astype(float).abs()
+    out["thrust_abs"] = out["thrust"].astype(float).abs()
+
+    return out
+
+# Data class to hold per-scenario clustering model
 @dataclass
 class ScenarioClusterModel:
     scenario: str
     scaler: StandardScaler
     gmm: GaussianMixture
+    cluster_cols: List[str]
+
+#Choose number of components by minimizing BIC.
+
+def choose_k_bic(Xs: np.ndarray, k_min: int, k_max: int, random_state: int) -> Tuple[int, float, List[Tuple[int, float]]]:
+
+    history: List[Tuple[int, float]] = []
+    best_k = k_min
+    best_bic = float("inf")
+
+    # Cap by sample size (GMM need enough points)
+    n = int(Xs.shape[0])
+    k_max_eff = max(k_min, min(k_max, max(1, n // 10)))
+
+    for k in range(k_min, k_max_eff + 1):
+        try:
+            gmm = GaussianMixture(n_components=k, covariance_type="full", random_state=random_state)
+            gmm.fit(Xs)
+            bic = float(gmm.bic(Xs))
+            history.append((k, bic))
+            if bic < best_bic:
+                best_bic = bic
+                best_k = k
+        except Exception:
+            #Skip weird  cases
+            continue
+
+    if not history:
+        return k_min, float("nan"), []
+
+    return best_k, best_bic, history
 
 
 def cluster_actions_within_scenarios(
     df: pd.DataFrame,
-    n_components: int = DEFAULT_N_COMPONENTS,
-    min_rows: int = MIN_ROWS_PER_SCENARIO,
-) -> Tuple[pd.DataFrame, List[ScenarioClusterModel]]:
-    df = df.copy()
+    n_components: int,
+    auto_k: bool,
+    k_min: int,
+    k_max: int,
+    min_rows: int,
+    random_state: int,
+) -> Tuple[pd.DataFrame, List[ScenarioClusterModel], pd.DataFrame]:
+    #Cluster actions within each scenario and return {df_with_labels, models, quality_table}
 
-    # Filter to alive frames only
-    df = df[df["alive"] == 1].copy()
+    work = df.copy()
 
-    # Drop rows missing essential state/action info
-    needed = [c for c in STATE_COLS if c in df.columns] + [c for c in ACTION_COLS if c in df.columns]
-    df = df.dropna(subset=needed)
+    #MAY ADD ALIVE IN FUTURE 
+    """ if "alive" in work.columns:
+        work = work[work["alive"].astype(float) == 1.0].copy()"""
 
-    # Add scenario labels
-    df["scenario"] = df.apply(lambda r: label_scenario(r.to_dict()), axis=1)
+    for c in ACTION_COLS:
+        if c not in work.columns:
+            work[c] = 0.0 if c in ("fire", "drop_mine") else np.nan
+
+    # Drop missing rows
+    needed = [c for c in STATE_COLS if c in work.columns] + [c for c in ACTION_COLS if c in work.columns]
+    work = work.dropna(subset=needed)
+
+    # Scenario labels
+    work["scenario"] = work.apply(lambda r: label_scenario(r.to_dict()), axis=1)
+
+    #cluster features
+    work = add_action_features(work)
+
+    cluster_cols = [
+        "thrust",
+        "turn_rate",
+        "fire",
+        "drop_mine",
+        "turn_per_dist",
+        "thrust_per_ttc",
+        "turn_per_ttc",
+    ]
 
     models: List[ScenarioClusterModel] = []
     out_frames: List[pd.DataFrame] = []
+    quality_rows: List[Dict[str, object]] = []
 
-    for scenario, sub in df.groupby("scenario"):
-        if len(sub) < min_rows:
-            # Keep it but mark as "unclustered"
-            sub = sub.copy()
+    for scenario, sub in work.groupby("scenario"):
+        sub = sub.copy()
+        n_rows = len(sub)
+
+        if n_rows < min_rows:
             sub["action_cluster"] = -1
             out_frames.append(sub)
+            quality_rows.append({
+                "scenario": scenario,
+                "n_rows": n_rows,
+                "chosen_k": -1,
+                "bic": np.nan,
+                "note": f"< min_rows ({min_rows})",
+            })
             continue
 
-        X = sub[ACTION_COLS].astype(float).to_numpy()
-
+        X = sub[cluster_cols].astype(float).to_numpy()
         scaler = StandardScaler()
         Xs = scaler.fit_transform(X)
 
-        gmm = GaussianMixture(
-            n_components=n_components,
-            covariance_type="full",
-            random_state=RANDOM_STATE
-        )
+        chosen_k = n_components
+        bic_best = np.nan
+        bic_hist: List[Tuple[int, float]] = []
+
+        if auto_k:
+            chosen_k, bic_best, bic_hist = choose_k_bic(Xs, k_min=k_min, k_max=k_max, random_state=random_state)
+
+        # If auto-k couldn't decide (nan)
+        if not np.isfinite(bic_best) and auto_k:
+            chosen_k = n_components
+
+        gmm = GaussianMixture(n_components=int(chosen_k), covariance_type="full", random_state=random_state)
         labels = gmm.fit_predict(Xs)
 
-        sub = sub.copy()
         sub["action_cluster"] = labels
 
-        models.append(ScenarioClusterModel(scenario=scenario, scaler=scaler, gmm=gmm)) # Store model #type: ignore
+        # Basic cluster balance metric (entropy)
+        counts = np.bincount(labels, minlength=int(chosen_k)).astype(float)
+        p = counts / max(1.0, counts.sum())
+        entropy = float(-(p[p > 0] * np.log(p[p > 0])).sum())
+
+        quality_rows.append({
+            "scenario": scenario,
+            "n_rows": n_rows,
+            "chosen_k": int(chosen_k),
+            "bic": float(bic_best) if np.isfinite(bic_best) else np.nan,
+            "entropy": entropy,
+            "cluster_counts": ";".join(str(int(c)) for c in counts.tolist()),
+            "bic_history": ";".join(f"{k}:{bic:.1f}" for k, bic in bic_hist) if bic_hist else "",
+        })
+
+        models.append(ScenarioClusterModel(scenario=scenario, scaler=scaler, gmm=gmm, cluster_cols=cluster_cols))
         out_frames.append(sub)
 
-    return pd.concat(out_frames, ignore_index=True), models
+    df_out = pd.concat(out_frames, ignore_index=True)
+    quality = pd.DataFrame(quality_rows).sort_values(["scenario"]).reset_index(drop=True)
+    return df_out, models, quality
 
 
 def cluster_centroids(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Mean action values per (scenario, action_cluster).
-    """
     cent = (
         df.groupby(["scenario", "action_cluster"])[ACTION_COLS]
-          .mean()
-          .reset_index()
-          .sort_values(["scenario", "action_cluster"])
+        .mean()
+        .reset_index()
+        .sort_values(["scenario", "action_cluster"])
     )
     return cent
 
 
 def player_style_table(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    For each player and scenario: distribution over action clusters.
-    """
-    counts = (
-        df.groupby(["player_id", "scenario", "action_cluster"])
-          .size()
-          .reset_index(name="count")
-    )
+    counts = (df.groupby(["player_id", "scenario", "action_cluster"]).size().reset_index(name="count"))
 
     pivot = counts.pivot_table(
         index=["player_id", "scenario"],
@@ -309,109 +388,109 @@ def player_style_table(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     pivot = pivot.div(pivot.sum(axis=1), axis=0)
-
-    # Make it a flat table for CSV readability
     pivot = pivot.reset_index()
     pivot.columns = [str(c) for c in pivot.columns]
     return pivot
 
-
-
-def maybe_plot(df: pd.DataFrame):
-    """
-    Display labeled scatter plots of thrust vs turn_rate per scenario
-    with legends and human-readable cluster names.
-    """
-
+    #Scatter plots per scenario.
+def maybe_plot(df: pd.DataFrame, plot_dir: str) -> None:
     import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
 
     for scenario, sub in df.groupby("scenario"):
-        if scenario == "dead_or_invalid":
-            continue
         if len(sub) < 200:
             continue
 
-        clusters = sorted(sub["action_cluster"].unique())
-        clusters = [c for c in clusters if c >= 0]
-
-        cmap = cm.get_cmap("tab10", len(clusters))
+        clusters = sorted([c for c in sub["action_cluster"].unique() if c >= 0])
+        if not clusters:
+            continue
 
         plt.figure(figsize=(7, 6))
-
-        for i, c in enumerate(clusters):
+        for c in clusters:
             pts = sub[sub["action_cluster"] == c]
-
-            label = (
-                CLUSTER_NAMES.get(scenario, {}).get(c, f"cluster_{c}") #type: ignore
-            )
-
-            plt.scatter(
-                pts["thrust"],
-                pts["turn_rate"],
-                s=12,
-                alpha=0.7,
-                color=cmap(i),
-                label=label,
-            )
+            plt.scatter(pts["thrust"], pts["turn_rate"], s=12, alpha=0.7, label=f"cluster_{c}")
 
         plt.xlabel("thrust")
         plt.ylabel("turn_rate")
-        plt.title(f"Action clusters — {scenario.replace('_', ' ').title()}")#type: ignore
-
-        plt.legend(title="Behavior", loc="best")
+        plt.title(f"Action clusters — {scenario.replace('_', ' ').title()}")
+        plt.legend(loc="best")
         plt.grid(alpha=0.2)
         plt.tight_layout()
 
-        #plt.show()
-        plot_path = os.path.join(PLOT_DIR, f"clusters_{scenario}.png")
+        plot_path = os.path.join(plot_dir, f"clusters_{scenario}.png")
         plt.savefig(plot_path)
-        print(f"[plot] Saved cluster plot -> {plot_path}")
         plt.close()
 
 
 
 
-def main():
-    ensure_dirs()
+def main() -> int:
+    here = os.path.dirname(os.path.abspath(__file__))
 
-    print(f"[load] Reading logs from: {DATA_DIR}")
-    df = load_logs(DATA_DIR)
+    p = argparse.ArgumentParser(description="Scenario-conditioned action clustering")
+    p.add_argument("--data_dir", default=os.path.join(here, "data_human"), help="Folder containing *_maneuver.csv logs")
+    p.add_argument("--out_dir", default=os.path.join(here, "outputs"), help="Output folder")
+    p.add_argument("--plots", type=int, default=1, help="1=save plots, 0=skip")
+
+    # clustering params
+    p.add_argument("--min_rows", type=int, default=150, help="Skip clustering for scenarios smaller than this")
+    p.add_argument("--auto_k", type=int, default=1, help="1=choose K per scenario by BIC")
+    p.add_argument("--n_components", type=int, default=3, help="Used when --auto_k 0")
+    p.add_argument("--k_min", type=int, default=2, help="Min components when --auto_k 1")
+    p.add_argument("--k_max", type=int, default=6, help="Max components when --auto_k 1")
+    p.add_argument("--random_state", type=int, default=RANDOM_STATE_DEFAULT)
+
+    args = p.parse_args()
+
+    plot_dir = os.path.join(args.out_dir, "plots")
+    ensure_dirs(args.out_dir, plot_dir)
+
+    print(f"[load] Reading logs from: {args.data_dir}")
+    df = load_logs(args.data_dir)
     print(f"[load] Total rows: {len(df)}")
 
-    # Cluster
-    dfc, models = cluster_actions_within_scenarios(df)
+    dfc, models, quality = cluster_actions_within_scenarios(
+        df,
+        n_components=args.n_components,
+        min_rows=args.min_rows,
+        auto_k=bool(args.auto_k),
+        k_min=args.k_min,
+        k_max=args.k_max,
+        random_state=args.random_state,
+    )
+
     print(f"[cluster] Rows after filtering+labeling: {len(dfc)}")
     print(f"[cluster] Scenarios modeled: {[m.scenario for m in models]}")
 
-    # Summaries
     cent = cluster_centroids(dfc)
     style = player_style_table(dfc)
 
-    # Save
-    merged_path = os.path.join(OUT_DIR, "merged_dataset.csv")
-    cent_path = os.path.join(OUT_DIR, "cluster_centroids_by_scenario.csv")
-    style_path = os.path.join(OUT_DIR, "player_style_by_scenario.csv")
+    merged_path = os.path.join(args.out_dir, "merged_dataset.csv")
+    cent_path = os.path.join(args.out_dir, "cluster_centroids_by_scenario.csv")
+    style_path = os.path.join(args.out_dir, "player_style_by_scenario.csv")
+    quality_path = os.path.join(args.out_dir, "cluster_quality_by_scenario.csv")
 
     dfc.to_csv(merged_path, index=False)
     cent.to_csv(cent_path, index=False)
     style.to_csv(style_path, index=False)
+    quality.to_csv(quality_path, index=False)
 
     print(f"[save] merged dataset -> {merged_path}")
     print(f"[save] centroids -> {cent_path}")
     print(f"[save] player style -> {style_path}")
+    print(f"[save] quality -> {quality_path}")
 
-    # Summaries, isnt really helpful, but pretty print
     print("\n=== Scenario distribution ===")
     print(dfc["scenario"].value_counts())
 
     print("\n=== Centroids (mean actions) ===")
     print(cent.head(20).to_string(index=False))
 
-    print("\n=== Player style (first 10 rows) ===")
-    print(style.head(10).to_string(index=False))
-    maybe_plot(dfc)
+    if args.plots:
+        maybe_plot(dfc, plot_dir)
+        print(f"[plot] Saved plots -> {plot_dir}")
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
