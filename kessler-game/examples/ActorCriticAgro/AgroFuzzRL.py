@@ -1,9 +1,17 @@
 from kesslergame.controller import KesslerController
 from util import *
 from TSK import *
-import math
-import numpy as np
+from TSK_Helper import *
 import json
+
+MF_REGISTRY = {
+    "ttc": mu_ttc,
+    "dist": mu_dist,
+    "threat_angle": mu_threat_angle,
+    "approach_speed": mu_approach,
+    "threat_density": mu_threat_density,
+    "heading_err": mu_heading_err
+}
 
 def load_sugeno_json():
     with open("rules.json", "r") as f:
@@ -37,11 +45,18 @@ def build_consequents(spec):
     
     if ctype == 'constant':
         return lambda x,v=spec["value"]:v
-    elif ctype == 'expression':
+    
+    if ctype == 'expression':
         expr = spec['expression']
         return lambda  x, e=expr: eval(e, {}, x)
+    
+    if ctype == "conditional":
+        cond = spec["condition"]
+        tval = spec["true"]
+        fval = spec["false"]
+        return lambda x, c=cond, t=tval, f=fval: t if eval(c,{},x) else f
 
-  
+    raise ValueError(f"Unkown consequent type: {ctype}")
 
 def build_rules(rules):
     consequents = {
@@ -49,25 +64,27 @@ def build_rules(rules):
         for name, spec in rules["consequents"].items()
     }
 
-    rulesList = SugenoRule(
+    return SugenoRule(
         antecedents=build_antecedents(rules["antecdents"]),
         consequents=consequents,
         weight=rules.get("weight", 1.0)
     )
-    return rulesList
-
-MF_REGISTRY = {
-    "ttc": mu_ttc,
-    "dist": mu_dist,
-    "threat_angle": mu_threat_angle,
-    "approach_speed": mu_approach,
-    "threat_density": mu_threat_density,
-    "heading_err": mu_heading_err
-}
 
 class ActorController(KesslerController):
     def __init__(self):
         super().__init__()
         self.system = SugenoSystem(rules=build_rules())
+    
+    def actions(self, ship_state, game_state):
+        ctx = context(ship_state, game_state)
+        outputs = self.system.evaluate(ctx)
+
+        thrust = outputs.get("thrust", 0.0)
+        turn_rate = outputs.get("turn_rate", 0.0)
+        drop_mine = False 
+        fire = True
+
+
+        return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
 
         
