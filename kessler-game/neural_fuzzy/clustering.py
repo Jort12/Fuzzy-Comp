@@ -52,7 +52,7 @@ def ensure_dirs(out_dir: str, plot_dir: str) -> None:
     os.makedirs(plot_dir, exist_ok=True)
 
 
-def parse_player_and_session(filename: str) -> Tuple[str, str]:
+def parse_player_and_session(filename: str):
     base = os.path.basename(filename)
     m = re.match(r"(.+?)_(\d{8}-\d{6})_(maneuver|combat)\.csv$", base)
     if not m:
@@ -63,7 +63,7 @@ def parse_player_and_session(filename: str) -> Tuple[str, str]:
     return m.group(1), m.group(2)
 
 
-def safe_float(x, default: float = np.nan) -> float:
+def safe_float(x, default: float = np.nan):
     try:
         if x == "" or x is None:
             return default
@@ -72,24 +72,21 @@ def safe_float(x, default: float = np.nan) -> float:
         return default
 
 
-def _clamp(x: float, lo: float, hi: float) -> float:
+def _clamp(x: float, lo: float, hi: float):
     return max(lo, min(hi, x))
 
 
 
-"""Soft scoring for each scenario.
-    The weights are intentionally simple and monotonic. much less brittle than hard
-    threshold trees."""
-def scenario_scores(row: Dict) -> Dict[str, float]:
-
-
+"""Soft scoring for each scenario, much less brittle than hard
+    threshold trees. Basically a member function per scenario"""
+def scenario_scores(row: Dict):
     dist = safe_float(row.get("dist", np.inf), np.inf)
     ttc = safe_float(row.get("ttc", np.inf), np.inf)
     heading_err = abs(safe_float(row.get("heading_err", 180.0), 180.0))
     density = safe_float(row.get("threat_density", 0.0), 0.0)
     ammo = safe_float(row.get("ammo", 0.0), 0.0)
 
-    # Normalize into [0, 1]
+    #clamp into [0, 1]
     near = _clamp((200.0 - dist) / 200.0, 0.0, 1.0)
     close = _clamp((120.0 - dist) / 120.0, 0.0, 1.0)
     aligned = _clamp((25.0 - heading_err) / 25.0, 0.0, 1.0)
@@ -120,22 +117,21 @@ def scenario_scores(row: Dict) -> Dict[str, float]:
 
 
 
-
-def label_scenario(row: Dict) -> str:
+#For each row, pick the scenario with the highest score,
+def label_scenario(row: Dict):
     scores = scenario_scores(row)
     # If all "interesting" scores are tiny, keep low_threat.
     interesting = [scores[s] for s in ("imminent_collision", "evasive_close", "aligned_attack", "crowded_navigation")]
-    if max(interesting) < 0.55:
+    if max(interesting) < 0.55:# if none stand out, low threat
         return "low_threat"
-    return max(scores.items(), key=lambda kv: kv[1])[0]
+    return max(scores.items(), key=lambda kv: kv[1])[0]  #kv = (scenario, score)
 
 
 
 
 
 """Load maneuver + combat logs and merge.
-    If both exist for (player, session), we join by row index (frame order).
-    Maneuver contributes state + thrust/turn_rate; combat contributes fire/mine."""
+    If both exist for (player, session),join by row index (frame order)."""
 def load_logs(data_dir: str) -> pd.DataFrame:
 
 
@@ -231,8 +227,11 @@ class ScenarioClusterModel:
     gmm: GaussianMixture
     cluster_cols: List[str]
 
-#Choose number of components by minimizing BIC.
 
+
+
+#Choose number of components by minimizing BIC.
+#Returns (best_k, best_bic, history)
 def choose_k_bic(Xs: np.ndarray, k_min: int, k_max: int, random_state: int) -> Tuple[int, float, List[Tuple[int, float]]]:
 
     history: List[Tuple[int, float]] = []
@@ -275,7 +274,7 @@ def cluster_actions_within_scenarios(
 
     work = df.copy()
 
-    #MAY ADD ALIVE IN FUTURE 
+    #MAY ADD IN FUTURE 
     """ if "alive" in work.columns:
         work = work[work["alive"].astype(float) == 1.0].copy()"""
 
@@ -366,7 +365,7 @@ def cluster_actions_within_scenarios(
     return df_out, models, quality
 
 
-def cluster_centroids(df: pd.DataFrame) -> pd.DataFrame:
+def cluster_centroids(df: pd.DataFrame):
     cent = (
         df.groupby(["scenario", "action_cluster"])[ACTION_COLS]
         .mean()
@@ -376,7 +375,7 @@ def cluster_centroids(df: pd.DataFrame) -> pd.DataFrame:
     return cent
 
 
-def player_style_table(df: pd.DataFrame) -> pd.DataFrame:
+def player_style_table(df: pd.DataFrame):
     counts = (df.groupby(["player_id", "scenario", "action_cluster"]).size().reset_index(name="count"))
 
     pivot = counts.pivot_table(
@@ -393,7 +392,7 @@ def player_style_table(df: pd.DataFrame) -> pd.DataFrame:
     return pivot
 
     #Scatter plots per scenario.
-def maybe_plot(df: pd.DataFrame, plot_dir: str) -> None:
+def maybe_plot(df: pd.DataFrame, plot_dir: str):
     import matplotlib.pyplot as plt
 
     for scenario, sub in df.groupby("scenario"):
@@ -419,7 +418,6 @@ def maybe_plot(df: pd.DataFrame, plot_dir: str) -> None:
         plot_path = os.path.join(plot_dir, f"clusters_{scenario}.png")
         plt.savefig(plot_path)
         plt.close()
-
 
 
 
@@ -479,10 +477,10 @@ def main() -> int:
     print(f"[save] player style -> {style_path}")
     print(f"[save] quality -> {quality_path}")
 
-    print("\n=== Scenario distribution ===")
+    print("\nScenario distribution:")
     print(dfc["scenario"].value_counts())
 
-    print("\n=== Centroids (mean actions) ===")
+    print("\nCentroids (mean actions):")
     print(cent.head(20).to_string(index=False))
 
     if args.plots:
