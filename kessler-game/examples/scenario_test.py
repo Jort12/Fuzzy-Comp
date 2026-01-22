@@ -1,13 +1,14 @@
 # kessler-game/examples/scenario_test.py
 import time
+from git import Actor
 from kesslergame import KesslerGame, GraphicsType
-from fuzzy_aggressive_controller import AggressiveFuzzyController
+from ActorCriticFuzz.ActorFuzz import ActorController 
 import scenarios as sc  
-from human_xbox_controller import HumanXboxController
+
 
 #SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
-#SCENARIO = sc.stock_scenario()
+SCENARIO = sc.stock_scenario()
 #SCENARIO = sc.spiral_arms()
 #SCENARIO = sc.sniper_practice()
 #SCENARIO = sc.crossing_lanes()
@@ -15,7 +16,7 @@ from human_xbox_controller import HumanXboxController
 #SCENARIO = sc.giants_with_kamikaze()
 #SCENARIO = sc.donut_ring_closing()
 #SCENARIO = sc.rotating_cross()
-SCENARIO = sc.moving_maze_right()
+#SCENARIO = sc.moving_maze_right()
 
 game_settings = {
     'perf_tracker': True,
@@ -31,7 +32,7 @@ pre = time.perf_counter()
 
 score, perf_data = game.run(
     scenario=SCENARIO,
-    controllers=[HumanXboxController()]
+    controllers=[ActorController()]
 )
 
 print('Scenario eval time:', time.perf_counter() - pre)

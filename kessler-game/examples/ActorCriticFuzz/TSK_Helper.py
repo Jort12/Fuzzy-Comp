@@ -1,5 +1,11 @@
-from util import *
+from .util import *
 import math
+def heading_norm(x):
+        return (x["heading_err"] / 180.0)
+
+def dist_norm(x):
+    return norm(x["dist"], 0, 1000)
+
 def mu_dist(d):
     return {
         "very_close": triag(d, 0, 80, 160),
