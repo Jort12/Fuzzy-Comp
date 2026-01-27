@@ -132,8 +132,8 @@ class ActorController(KesslerController):
         ctx = context(ship_state, game_state)
         outputs = self.system.evaluate(ctx)
 
-        thrust = outputs.get("thrust", 0.0)
-        turn_rate = outputs.get("turn_rate", 0.0)
+        thrust = outputs.get("thrust")
+        turn_rate = outputs.get("turn_rate")
         drop_mine = False 
         fire = (
             ship_state.can_fire and 

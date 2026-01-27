@@ -78,9 +78,9 @@ def norm(x, lo, hi):
     return (x - lo) / (hi - lo)
 
 def heading_norm(x):
-    return (x["heading_err"] / 180.0)
+    return max(-1.0, min(1.0, x / 180.0))
 def dist_norm(x):
-    return norm(x["dist"], 0, 1000)
+    return norm(x, 0.0, 1000.0)
 
 def context(ship_state, game_state):
     ctx = {}
@@ -148,7 +148,7 @@ def context(ship_state, game_state):
         best_closing = 0.0
         best_ttc = float('inf')
     
-    escape_x = -1 if threat_angle > 0 else 1
+    escape_x = max(-1.0, min(1.0, threat_angle / 90.0))
     
     nearby_count = sum(
         1 for ast in game_state.asteroids
@@ -164,7 +164,7 @@ def context(ship_state, game_state):
         "mines": ship_state.mines_remaining,
         "threat_density": nearby_count,
         "threat_angle": threat_angle,
-        "escape_x": escape_x,
-        "dist_norm": float(dist_norm({"dist": dist})),
-        "heading_norm": float(heading_norm({"heading_err": heading_error})),
+        "escape_x": float(escape_x),
+        "dist_norm": float(dist_norm(dist)),
+        "heading_norm": float(heading_norm(heading_error)),
     }

@@ -9,17 +9,15 @@
           "value": 30
         },
         "turn_rate": {
-          "type": "conditional",
-          "if": {
-            "var": "threat_angle",
-            "op": ">",
-            "value": 0.0
-          },
-          "then": 180,
-          "else": -180
+          "type": "linear",
+          "bias": 0.0,
+          "weights": {
+            "escape_x": -180.0
+          }
         }
       }
     },
+
     "approach_dist": {
       "weight": 1.8,
       "out": {
@@ -28,17 +26,15 @@
           "value": 40
         },
         "turn_rate": {
-          "type": "conditional",
-          "if": {
-            "var": "threat_angle",
-            "op": ">",
-            "value": 0.0
-          },
-          "then": 180,
-          "else": -180
+          "type": "linear",
+          "bias": 0.0,
+          "weights": {
+            "escape_x": -180.0
+          }
         }
       }
     },
+
     "ttc_angle": {
       "weight": 1.5,
       "out": {
@@ -47,11 +43,15 @@
           "value": 60
         },
         "turn_rate": {
-          "type": "constant",
-          "value": 150
+          "type": "linear",
+          "bias": 0.0,
+          "weights": {
+            "escape_x": 150.0
+          }
         }
       }
     },
+
     "density_dist": {
       "weight": 1.3,
       "out": {
@@ -60,17 +60,15 @@
           "value": 80
         },
         "turn_rate": {
-          "type": "conditional",
-          "if": {
-            "var": "threat_angle",
-            "op": ">",
-            "value": 0.0
-          },
-          "then": 180,
-          "else": -180
+          "type": "linear",
+          "bias": 0.0,
+          "weights": {
+            "escape_x": -180.0
+          }
         }
       }
     },
+
     "density_only": {
       "weight": 1.0,
       "out": {
@@ -87,12 +85,16 @@
         }
       }
     },
+
     "dist_ttc": {
       "weight": 0.3,
       "out": {
         "thrust": {
-          "type": "expr",
-          "expression": "100 + 40 * dist_norm"
+          "type": "linear",
+          "bias": 100.0,
+          "weights": {
+            "dist_norm": 40.0
+          }
         },
         "turn_rate": {
           "type": "constant",
@@ -100,25 +102,36 @@
         }
       }
     },
+
     "heading_dist_ttc": {
       "weight": 0.5,
       "out": {
         "thrust": {
-          "type": "expr",
-          "expression": "80 + 40 * dist_norm"
+          "type": "linear",
+          "bias": 80.0,
+          "weights": {
+            "dist_norm": 40.0
+          }
         },
         "turn_rate": {
-          "type": "expr",
-          "expression": "K_TURN * 90 * heading_norm"
+          "type": "linear",
+          "bias": 0.0,
+          "weights": {
+            "heading_norm": 90.0
+          }
         }
       }
     },
+
     "default_dist": {
       "weight": 0.2,
       "out": {
         "thrust": {
-          "type": "expr",
-          "expression": "60 + 20 * dist_norm"
+          "type": "linear",
+          "bias": 60.0,
+          "weights": {
+            "dist_norm": 20.0
+          }
         },
         "turn_rate": {
           "type": "constant",
