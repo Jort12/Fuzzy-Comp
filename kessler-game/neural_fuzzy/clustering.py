@@ -197,6 +197,19 @@ def load_logs(data_dir: str) -> pd.DataFrame:
 
     return df
 
+
+
+
+ #WLoad logs from multiple folders and add a dataset label column.
+def load_logs_multi(data_dirs):
+    frames = []
+    for d in data_dirs:
+        df = load_logs(d)
+        df["dataset"] = os.path.basename(os.path.normpath(d))  #good_data or data_human
+        frames.append(df)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
 """Add a few context-conditioned action features.
 These help avoid the 'same joystick values mean different intent' problem.
 """
@@ -421,7 +434,7 @@ def maybe_plot(df: pd.DataFrame, plot_dir: str):
 
 
 
-def main() -> int:
+def main():
     here = os.path.dirname(os.path.abspath(__file__))
 
     p = argparse.ArgumentParser(description="Scenario-conditioned action clustering")
@@ -437,14 +450,30 @@ def main() -> int:
     p.add_argument("--k_max", type=int, default=6, help="Max components when --auto_k 1")
     p.add_argument("--random_state", type=int, default=RANDOM_STATE_DEFAULT)
 
+    #dataset selection
+    p.add_argument("--dataset",choices=["good", "human", "all"],default="good",help="Which dataset to use: good=good_data, human=data_human, all=both")
+
+
     args = p.parse_args()
 
     plot_dir = os.path.join(args.out_dir, "plots")
     ensure_dirs(args.out_dir, plot_dir)
 
-    print(f"[load] Reading logs from: {args.data_dir}")
-    df = load_logs(args.data_dir)
-    print(f"[load] Total rows: {len(df)}")
+    dirs = [os.path.join(here, "data_human"), os.path.join(here, "good_data")]
+    good_dir = os.path.join(here, "good_data")
+    human_dir = os.path.join(here, "data_human")
+
+    if args.dataset == "good":
+        data_dirs = [good_dir]
+    elif args.dataset == "human":
+        data_dirs = [human_dir]
+    else:
+        data_dirs = [good_dir, human_dir]
+
+    print(f"load Reading logs from: {data_dirs}")
+    df = load_logs_multi(data_dirs)
+    print(f"load Total rows: {len(df)}")
+    print(df["dataset"].value_counts())
 
     dfc, models, quality = cluster_actions_within_scenarios(
         df,
@@ -456,8 +485,8 @@ def main() -> int:
         random_state=args.random_state,
     )
 
-    print(f"[cluster] Rows after filtering+labeling: {len(dfc)}")
-    print(f"[cluster] Scenarios modeled: {[m.scenario for m in models]}")
+    print(f"cluster Rows after filtering+labeling: {len(dfc)}")
+    print(f"cluster Scenarios modeled: {[m.scenario for m in models]}")
 
     cent = cluster_centroids(dfc)
     style = player_style_table(dfc)
@@ -472,10 +501,10 @@ def main() -> int:
     style.to_csv(style_path, index=False)
     quality.to_csv(quality_path, index=False)
 
-    print(f"[save] merged dataset -> {merged_path}")
-    print(f"[save] centroids -> {cent_path}")
-    print(f"[save] player style -> {style_path}")
-    print(f"[save] quality -> {quality_path}")
+    print(f"save merged dataset -> {merged_path}")
+    print(f"save centroids -> {cent_path}")
+    print(f"save player style -> {style_path}")
+    print(f"save quality -> {quality_path}")
 
     print("\nScenario distribution:")
     print(dfc["scenario"].value_counts())
@@ -485,7 +514,7 @@ def main() -> int:
 
     if args.plots:
         maybe_plot(dfc, plot_dir)
-        print(f"[plot] Saved plots -> {plot_dir}")
+        print(f"plot Saved plots -> {plot_dir}")
 
     return 0
 
