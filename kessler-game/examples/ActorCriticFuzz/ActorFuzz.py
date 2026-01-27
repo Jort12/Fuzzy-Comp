@@ -19,82 +19,113 @@ SAFE_FUNCS = {
     "abs": abs,
     "min": min,
     "max": max,
-    "dist_norm": dist_norm
+    "K_TURN": 1.5
 }
 
 def load_sugeno_json():
     base_dir = os.path.dirname(__file__)
     rules_path = os.path.join(base_dir, "rules.json")
 
-    with open(rules_path, "r") as f:
+    with open(rules_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    return data["rules"]
+    return data
 
-def build_antecedents(rules_ants):
+def build_antecedents(cond_maps):
     antecedents = []
 
-    for a in rules_ants:
-        var = a["var"]
-        mf = a["mf"]
-
+    for var, mf in cond_maps.items():
         if var not in MF_REGISTRY:
-            raise KeyError(
-                f"Antecedent var '{var}' not found in MF_REGISTRY. "
-            )
-
+            raise ValueError(f"Antecedent var '{var}' not found in MF_Registry")
         func = MF_REGISTRY[var]
-
-        antecedents.append(
-            (var, lambda x, f=func, m=mf: f(x)[m])
-        )
-
+        antecedents.append((var, lambda x, f=func, m=mf: f(x)[m]))
     return antecedents
 
 def build_consequents(spec):
     ctype = spec['type']
     
     if ctype == 'constant':
-        return lambda x,v=spec["value"]:v
+        return lambda x,v=float(spec["value"]):v
     
-    if ctype == 'expression':
-        expr = spec['expr']
+    if ctype == 'linear':
+        bias = float(spec.get("bias", 0.0))
+        weights = spec.get("weights", {})
+
+        def _f(x, b=bias, w=weights):
+            total = b
+            for k, wk in w.items():
+                total += float(wk) * float(x[k])
+            return total
+
+        return _f
+    
+    if ctype in ("expr", "expression"):
+        expr = spec.get("expression", spec.get("expr", "")).strip()
+
         def _f(x, e=expr):
             y = eval(e, SAFE_FUNCS, x)
             if callable(y):
-                raise TypeError(
-                    f"Expression returned a function (did you forget parentheses?). expr={e!r}"
-                )
-            return y
+                raise TypeError(f"Expression returned a function. Did you forget ()? expr={e!r}")
+            return float(y)
 
         return _f
 
-    if ctype == "conditional":
-        cond = spec["condition"]
-        tval = spec["true"]
-        fval = spec["false"]
-        return lambda x, c=cond, t=tval, f=fval: t if eval(c, SAFE_FUNCS, x) else f
 
-    raise ValueError(f"Unkown consequent type: {ctype}")
+    if ctype == 'conditional':
+        cond = spec["if"]
+        var = cond["var"]
+        op  = cond["op"]
+        val = float(cond["value"])
+        tval = float(spec["then"])
+        fval = float(spec["else"])
 
-def build_rules(rules):
-    consequents = {
-        name: build_consequents(spec)
-        for name, spec in rules["consequents"].items()
-    }
+        if op == ">":
+            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) > c else f
+        if op == "<":
+            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) < c else f
+        if op == ">=":
+            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) >= c else f
+        if op == "<=":
+            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) <= c else f
+        if op == "==":
+            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) == c else f
+        if op == "!=":
+            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) != c else f
 
-    return SugenoRule(
-        antecedents=build_antecedents(rules["antecedents"]),
-        consequents=consequents,
-        weight=rules.get("weight", 1.0)
-    )
+        raise ValueError(f"Unsupported conditional op: {op}")
+
+    raise ValueError(f"Unknown consequent type: {ctype}")
+
+def build_rules(cfg):
+    profiles = cfg["profiles"]
+    compiled = []
+
+    for r in cfg["rules"]:
+        prof_name = r["use"]
+        cond_map = r["if"]
+
+        prof = profiles[prof_name]
+        weight = float(prof.get("weight", 1.0))
+        out_spec = prof["out"]
+
+        consequents = {name: build_consequents(spec) for name, spec in out_spec.items()}
+
+        compiled.append(
+            SugenoRule(
+                antecedents=build_antecedents(cond_map),
+                consequents=consequents,
+                weight=weight
+            )
+        )
+    
+    return compiled
 
 class ActorController(KesslerController):
     def __init__(self):
         super().__init__()
         rule_dicts = load_sugeno_json()
-        rules = [build_rules(r) for r in rule_dicts]
-        self.system = SugenoSystem(rules=rules)
+        rules = build_rules(rule_dicts)
+        self.system = SugenoSystem(rules=rules, mode=rule_dicts.get("mode","prod"))
 
     
     def actions(self, ship_state, game_state):

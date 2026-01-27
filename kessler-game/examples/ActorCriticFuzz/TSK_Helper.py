@@ -1,11 +1,5 @@
 from .util import *
 import math
-def heading_norm(x):
-        return (x["heading_err"] / 180.0)
-
-def dist_norm(x):
-    return norm(x["dist"], 0, 1000)
-
 def mu_dist(d):
     return {
         "very_close": triag(d, 0, 80, 160),
@@ -154,7 +148,7 @@ def context(ship_state, game_state):
         best_closing = 0.0
         best_ttc = float('inf')
     
-    escape_vector = -1 if threat_angle > 0 else 1
+    escape_x = -1 if threat_angle > 0 else 1
     
     nearby_count = sum(
         1 for ast in game_state.asteroids
@@ -170,5 +164,7 @@ def context(ship_state, game_state):
         "mines": ship_state.mines_remaining,
         "threat_density": nearby_count,
         "threat_angle": threat_angle,
-        "escape_vector": escape_vector
+        "escape_x": escape_x,
+        "dist_norm": float(dist_norm({"dist": dist})),
+        "heading_norm": float(heading_norm({"heading_err": heading_error})),
     }
