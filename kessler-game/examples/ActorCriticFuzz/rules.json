@@ -1,5 +1,5 @@
 {
-  "mode": "prod",
+  "mode": "min",
   "profiles": {
     "critical_evasion": {
       "weight": 2.0,

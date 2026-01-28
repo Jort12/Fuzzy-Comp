@@ -58,41 +58,6 @@ def build_consequents(spec):
             return total
 
         return _f
-    
-    if ctype in ("expr", "expression"):
-        expr = spec.get("expression", spec.get("expr", "")).strip()
-
-        def _f(x, e=expr):
-            y = eval(e, SAFE_FUNCS, x)
-            if callable(y):
-                raise TypeError(f"Expression returned a function. Did you forget ()? expr={e!r}")
-            return float(y)
-
-        return _f
-
-
-    if ctype == 'conditional':
-        cond = spec["if"]
-        var = cond["var"]
-        op  = cond["op"]
-        val = float(cond["value"])
-        tval = float(spec["then"])
-        fval = float(spec["else"])
-
-        if op == ">":
-            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) > c else f
-        if op == "<":
-            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) < c else f
-        if op == ">=":
-            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) >= c else f
-        if op == "<=":
-            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) <= c else f
-        if op == "==":
-            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) == c else f
-        if op == "!=":
-            return lambda x, v=var, c=val, t=tval, f=fval: t if float(x[v]) != c else f
-
-        raise ValueError(f"Unsupported conditional op: {op}")
 
     raise ValueError(f"Unknown consequent type: {ctype}")
 
