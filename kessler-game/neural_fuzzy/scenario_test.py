@@ -6,15 +6,15 @@ import scenarios as sc
 from human_xbox_controller import HumanXboxController
 #SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
-#SCENARIO = sc.stock_scenario()
+SCENARIO = sc.stock_scenario()
 #SCENARIO = sc.spiral_arms()
 #SCENARIO = sc.sniper_practice()
 #SCENARIO = sc.crossing_lanes()
 #SCENARIO = sc.asteroid_rain()
-#SCENARIOa = sc.giants_with_kamikaze()
+#SCENARIO = sc.giants_with_kamikaze()
 #SCENARIO = sc.donut_ring_closing()
 #SCENARIO = sc.moving_maze_right()
-SCENARIO = sc.four_corner()
+#SCENARIO = sc.four_corner()
 game_settings = {
     'perf_tracker': True,
     'graphics_type': GraphicsType.Tkinter,
