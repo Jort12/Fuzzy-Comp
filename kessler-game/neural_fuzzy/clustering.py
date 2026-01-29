@@ -47,7 +47,7 @@ ACTION_COLS = ["thrust", "turn_rate", "fire", "drop_mine"]
 RANDOM_STATE_DEFAULT = 42
 
 
-def ensure_dirs(out_dir: str, plot_dir: str) -> None:
+def ensure_dirs(out_dir: str, plot_dir: str):
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
 
@@ -132,7 +132,7 @@ def label_scenario(row: Dict):
 
 """Load maneuver + combat logs and merge.
     If both exist for (player, session),join by row index (frame order)."""
-def load_logs(data_dir: str) -> pd.DataFrame:
+def load_logs(data_dir: str):
 
 
     maneuver_files = sorted(glob.glob(os.path.join(data_dir, "*_maneuver.csv")))
@@ -213,7 +213,7 @@ def load_logs_multi(data_dirs):
 """Add a few context-conditioned action features.
 These help avoid the 'same joystick values mean different intent' problem.
 """
-def add_action_features(df: pd.DataFrame) -> pd.DataFrame:
+def add_action_features(df: pd.DataFrame):
 
 
     out = df.copy()
@@ -245,7 +245,7 @@ class ScenarioClusterModel:
 
 #Choose number of components by minimizing BIC.
 #Returns (best_k, best_bic, history)
-def choose_k_bic(Xs: np.ndarray, k_min: int, k_max: int, random_state: int) -> Tuple[int, float, List[Tuple[int, float]]]:
+def choose_k_bic(Xs: np.ndarray, k_min: int, k_max: int, random_state: int):
 
     history: List[Tuple[int, float]] = []
     best_k = k_min
