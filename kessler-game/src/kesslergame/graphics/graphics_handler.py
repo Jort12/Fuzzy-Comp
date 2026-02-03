@@ -61,13 +61,20 @@ class GraphicsHandler:
             assert scenario is not None
             self.graphics.start(scenario)
 
-    def update(self, score: Score, ships: list[Ship], asteroids: list[Asteroid], bullets: list[Bullet], mines: list[Mine]) -> None:
-        """
-        Update the graphics draw with new simulation data each simulation time-step
-        """
+    def update(
+        self,
+        score: Score,
+        ships: list[Ship],
+        asteroids: list[Asteroid],
+        bullets: list[Bullet],
+        mines: list[Mine],
+        overlay_text: str | None = None,
+    ) -> None:
         if self.type != GraphicsType.NoGraphics:
             assert self.graphics is not None
-            self.graphics.update(score, ships, asteroids, bullets, mines)
+            self.graphics.update(score, ships, asteroids, bullets, mines, overlay_text=overlay_text)
+
+
 
     def close(self) -> None:
         """

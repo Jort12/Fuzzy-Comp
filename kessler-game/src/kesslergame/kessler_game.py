@@ -5,7 +5,7 @@
 
 import time
 
-from math import inf, nan, isfinite, isnan
+from math import inf, nan, isfinite, isnan, ceil
 from typing import Any, TypedDict, cast
 from enum import Enum
 
@@ -20,6 +20,7 @@ from .ship import Ship
 from .bullet import Bullet
 from .settings_dicts import SettingsDict, UISettingsDict
 from .state_models import GameState, ShipState
+import math
 
 
 class StopReason(Enum):
@@ -142,6 +143,10 @@ class KesslerGame:
                 random_asteroid_splits=self.random_ast_splits,
                 competition_safe_mode=self.competition_safe_mode
             )
+
+        # --- PRE-START COUNTDOWN (render-only; no sim updates) ---
+        self._run_start_countdown(scenario, score, ships, asteroids, bullets, mines, graphics)
+
 
         while stop_reason == StopReason.not_stopped:
             # Get perf time at the start of time step evaluation and initialize performance tracker
@@ -613,6 +618,49 @@ class KesslerGame:
 
         # Return the score and stop condition
         return score, perf_dict
+    
+    def _run_start_countdown(
+        self,
+        scenario: Scenario,
+        score: Score,
+        ships: list[Ship],
+        asteroids: list[Asteroid],
+        bullets: list[Bullet],
+        mines: list[Mine],
+        graphics: GraphicsHandler,
+    ) -> None:
+
+        if self.graphics_type == GraphicsType.NoGraphics:
+            return
+
+        delay = float(getattr(scenario, "start_delay", 0.0) or 0.0)
+        if delay <= 0.0:
+            return
+
+        end_time = time.perf_counter() + delay
+        frame_dt = 1.0 / max(1.0, float(self.frequency))
+
+        # Draw frames until time expires
+        while True:
+            remaining = end_time - time.perf_counter()
+            if remaining <= 0.0:
+                break
+
+            # Show 5..1 style countdown (ceil gives 4.2 -> 5, 1.01 -> 2, etc.)
+            display_n = int(math.ceil(remaining))
+            if display_n < 1:
+                display_n = 1
+
+            try:
+                graphics.update(score, ships, asteroids, bullets, mines, overlay_text=str(display_n))
+            except Exception:
+                pass
+                
+            time.sleep(frame_dt)
+
+
+
+    
 
 
 class TrainerEnvironment(KesslerGame):

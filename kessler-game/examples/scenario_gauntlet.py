@@ -2,10 +2,14 @@
 
 import time
 from copy import deepcopy
+import kesslergame
+print("kesslergame imported from:", kesslergame.__file__)
+
 
 from kesslergame import KesslerGame, GraphicsType
 from kesslergame.controller import KesslerController
 import scenarios as sc
+print("scenarios imported from:", sc.__file__)
 from human_xbox_controller import HumanXboxController
 from fuzzy_aggressive_controller import AggressiveFuzzyController
 
@@ -72,6 +76,7 @@ def main():
         print("=" * 60)
 
         start = time.perf_counter()
+        print("start_delay =", getattr(scenario, "start_delay", None))
         score, perf_data = game.run(
             scenario=scenario,
             controllers=controllers,

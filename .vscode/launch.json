@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Kessler Scenario Gauntlet (local src)",
+      "type": "debugpy",
+      "request": "launch",
+
+      "program": "${workspaceFolder}/kessler-game/examples/scenario_gauntlet.py",
+
+      "console": "integratedTerminal",
+
+      "cwd": "${workspaceFolder}/kessler-game",
+
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/kessler-game/src"
+      }
+    }
+  ]
+}

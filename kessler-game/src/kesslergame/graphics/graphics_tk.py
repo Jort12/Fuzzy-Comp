@@ -93,7 +93,9 @@ class GraphicsTK(KesslerGraphics):
         self.ship_sprites = [ImageTk.PhotoImage(img) for img in self.ship_images]
         self.ship_icons = [ImageTk.PhotoImage((Image.open(image)).resize((ship_radius, ship_radius))) for image in self.image_paths]
 
-    def update(self, score: Score, ships: list[Ship], asteroids: list[Asteroid], bullets: list[Bullet], mines: list[Mine]) -> None:
+    def update(self, score, ships, asteroids, bullets, mines, overlay_text=None):
+
+
         # Delete everything from canvas so we can re-plot
         self.game_canvas.delete("all")
         self._per_frame_images: list[ImageTk.PhotoImage] = []  # Keep PhotoImage references for this frame, to prevent GC
@@ -109,6 +111,20 @@ class GraphicsTK(KesslerGraphics):
         self.update_score(score, ships)
 
         # Push updates to graphics refresh
+        self.update_score(score, ships)
+
+        # Draw overlay LAST (so it appears on top), but BEFORE window.update()
+        if overlay_text is not None:
+            self.game_canvas.create_text(
+                self.game_width // 2,
+                self.game_height // 2,
+                text=str(overlay_text),
+                fill="white",
+                font=("Courier New", int(120 * self.scale), "bold"),
+                anchor="center"
+            )
+
+        # Push updates to graphics refresh (do this AFTER everything is drawn)
         self.window.update()
 
     def close(self) -> None:
@@ -197,6 +213,8 @@ class GraphicsTK(KesslerGraphics):
                 image=self.ship_icons[icon_idx % self.num_images]
             )
             team_num += 1
+            
+
 
     def format_ui(self, team: Team) -> str:
         # lives, accuracy, asteroids hit, shots taken, bullets left

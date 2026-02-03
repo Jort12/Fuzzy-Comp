@@ -20,8 +20,16 @@ class KesslerGraphics:
     def start(self, scenario: Scenario) -> None:
         raise NotImplementedError('Your derived KesslerGraphics must include a start() method.')
 
-    def update(self, score: Score, ships: list[Ship], asteroids: list[Asteroid], bullets: list[Bullet], mines: list[Mine]) -> None:
-        raise NotImplementedError('Your derived KesslerGraphics must include an update() method.')
+    def update(
+        self,
+        score: Score,
+        ships: list[Ship],
+        asteroids: list[Asteroid],
+        bullets: list[Bullet],
+        mines: list[Mine],
+        overlay_text: str | None = None,
+    ) -> None:
+        raise NotImplementedError
 
     def close(self) -> None:
         raise NotImplementedError('Your derived KesslerGraphics must include a close() method.')

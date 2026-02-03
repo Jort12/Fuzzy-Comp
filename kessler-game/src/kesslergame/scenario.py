@@ -44,7 +44,7 @@ def nudge_asteroid_away_from_border(asteroid_dict: dict[str, Any], map_size: tup
 class Scenario:
     def __init__(self, name: str = "Unnamed", num_asteroids: int = 0, asteroid_states: list[dict[str, Any]] | None = None,
                  ship_states: list[dict[str, Any]] | None = None, map_size: tuple[int, int] | None = None, seed: int | None = None,
-                 time_limit: float = inf, ammo_limit_multiplier: float = 0.0, stop_if_no_ammo: bool = False) -> None:
+                 time_limit: float = inf, ammo_limit_multiplier: float = 0.0, stop_if_no_ammo: bool = False, start_delay: float = 3.0) -> None:
         """
         Specify the starting state of the environment, including map dimensions and optional features
 
@@ -75,6 +75,9 @@ class Scenario:
 
         # Set the time_limit to infinity if it is 0 or None
         self.time_limit = time_limit
+
+        # Pre-start freeze (seconds). Clamp to >= 0.
+        self.start_delay = max(0.0, float(start_delay))
 
         # Store random seed
         self.seed = seed
