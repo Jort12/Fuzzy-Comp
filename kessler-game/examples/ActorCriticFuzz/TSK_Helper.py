@@ -19,7 +19,25 @@ def mu_approach(v):
     
     
 def mu_ttc(t):
-    return{
+    # Missing / invalid TTC -> no confidence (or choose far_future if you prefer)
+    if t is None or (isinstance(t, float) and math.isnan(t)):
+        return {
+            "imminent": 0.0,
+            "soon": 0.0,
+            "later": 0.0,
+            "far_future": 0.0
+        }
+
+    # Not closing or undefined TTC -> treat as far future
+    if isinstance(t, float) and math.isinf(t):
+        return {
+            "imminent": 0.0,
+            "soon": 0.0,
+            "later": 0.0,
+            "far_future": 1.0
+        }
+
+    return {
         "imminent": triag(t, 0, 1, 3),
         "soon": triag(t, 2, 4, 6),
         "later": triag(t, 5, 8, 12),
@@ -83,17 +101,16 @@ def dist_norm(x):
     return norm(x, 0.0, 1000.0)
 
 def context(ship_state, game_state):
-    ctx = {}
-    
     best_target = None
     best_score = -float("inf")
     best_heading_err = 0.0
+    best_heading_abs = 0.0
     best_closing = 0.0
     best_ttc = float("inf")
-    
-    closest_ast = None
+    best_dist = float("inf")
+
     closest_dist = float("inf")
-    threat_angle = 0
+    threat_angle = 0.0
 
     sx, sy = ship_state.position
     svx, svy = ship_state.velocity
@@ -103,22 +120,25 @@ def context(ship_state, game_state):
         avx, avy = ast.velocity
         dx, dy = ax - sx, ay - sy
         dist = math.hypot(dx, dy)
-        
+
+        # closest asteroid for threat info / dist input
         if dist < closest_dist:
             closest_dist = dist
-            closest_ast = ast
             angle_to_ast = angle_between(ship_state.position, ast.position)
             threat_angle = wrap180(angle_to_ast - ship_state.heading)
-        
+
         if dist > 800:
             continue
 
         ux, uy = (dx / max(dist, 1e-6), dy / max(dist, 1e-6))
-        rel_los = -((avx - svx) * ux + (avy - svy) * uy)
+        rel_los = -((avx - svx) * ux + (avy - svy) * uy)  # positive when closing
 
-        intercept = intercept_point(ship_state.position, ship_state.velocity, ast.position, ast.velocity)
+        intercept = intercept_point(ship_state.position, ship_state.velocity,
+                                    ast.position, ast.velocity)
         angle_to_intercept = angle_between(ship_state.position, intercept)
-        heading_error = abs(wrap180(angle_to_intercept - ship_state.heading))
+
+        signed_err = wrap180(angle_to_intercept - ship_state.heading)
+        abs_err = abs(signed_err)
 
         cluster_score = 0.0
         for other in game_state.asteroids:
@@ -128,28 +148,36 @@ def context(ship_state, game_state):
             if od < 150:
                 cluster_score += (150 - od) / 150.0
 
-        score = (1000.0 / max(dist, 1.0)) + cluster_score * 100.0 - heading_error * 2.0
+        score = (1000.0 / max(dist, 1.0)) + cluster_score * 100.0 - abs_err * 2.0
 
         if score > best_score:
             best_score = score
             best_target = ast
-            best_heading_err = wrap180(angle_to_intercept - ship_state.heading)
+            best_dist = dist
+            best_heading_err = signed_err
+            best_heading_abs = abs_err
             best_closing = max(0.0, rel_los)
-            best_ttc = (dist / max(best_closing, 1e-3)) if best_closing > 0.0 else float('inf')
+            best_ttc = (dist / max(best_closing, 1e-3)) if best_closing > 0.0 else float("inf")
 
     if best_target is None:
         nearest = find_nearest_asteroid(ship_state, game_state)
         if nearest is None:
             return None
-        intercept = intercept_point(ship_state.position, ship_state.velocity, nearest.position, nearest.velocity)
-        angle_to_intercept = angle_between(ship_state.position, intercept)
-        best_heading_err = wrap180(angle_to_intercept - ship_state.heading)
+
         dist = distance(ship_state.position, nearest.position)
+        intercept = intercept_point(ship_state.position, ship_state.velocity,
+                                    nearest.position, nearest.velocity)
+        angle_to_intercept = angle_between(ship_state.position, intercept)
+        signed_err = wrap180(angle_to_intercept - ship_state.heading)
+
+        best_dist = dist
+        best_heading_err = signed_err
+        best_heading_abs = abs(signed_err)
         best_closing = 0.0
-        best_ttc = float('inf')
-    
+        best_ttc = float("inf")
+        closest_dist = min(closest_dist, dist)  # keep dist input sane
+
     escape_x = max(-1.0, min(1.0, threat_angle / 90.0))
-    
     nearby_count = sum(
         1 for ast in game_state.asteroids
         if distance(ship_state.position, ast.position) < 200
@@ -165,6 +193,6 @@ def context(ship_state, game_state):
         "threat_density": nearby_count,
         "threat_angle": threat_angle,
         "escape_x": float(escape_x),
-        "dist_norm": float(dist_norm(dist)),
-        "heading_norm": float(heading_norm(heading_error)),
+        "dist_norm": float(dist_norm(best_dist)),
+        "heading_norm": float(heading_norm(best_heading_abs)),
     }

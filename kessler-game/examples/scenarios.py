@@ -36,13 +36,16 @@ def _get_asteroid_list(scenario):
 # ------------------------------------------------------------
 def stock_scenario(map_size=(1000, 800)):
     random.seed(42)
+    s = _mk_ship(pos=(map_size[0] * 0.75, map_size[1] * 0.5), angle=180)
+    s["bullets_remaining"] = 200
+
     return Scenario(
         name="Stock Scenario",
         num_asteroids=15,
-        ship_states=[_mk_ship(pos=(map_size[0] * 0.75, map_size[1] * 0.5), angle=180)],
+        ship_states=[s],
         map_size=map_size,
         time_limit=60,
-        ammo_limit_multiplier=0,
+        ammo_limit_multiplier=1,   # keep >= 1 so scenario doesn't clamp ammo to 0
         stop_if_no_ammo=False
     )
 

@@ -92,28 +92,41 @@ class ActorController(KesslerController):
         rules = build_rules(rule_dicts)
         self.system = SugenoSystem(rules=rules, mode=rule_dicts.get("mode","prod"))
 
+        #Constants to offset what game engine wants
+        self.T_MAX = 230.0       
+        self.MAX_TURN = 540.0
     
     def actions(self, ship_state, game_state):
         ctx = context(ship_state, game_state)
         outputs = self.system.evaluate(ctx)
 
-        thrust = outputs.get("thrust")
-        turn_rate = outputs.get("turn_rate")
         drop_mine = False 
+        err = abs(ctx["heading_err"])
+        dist = ctx["dist"]
+        closing = ctx.get("approach_speed", 0.0)
+        ttc = ctx.get("ttc", float("inf"))
+
+        # Aim tolerance: looser when farther
+        aim_tol = 6 if dist < 200 else 10 if dist < 400 else 14
+
+        closing_ok = closing > 5.0                 # tune this
+        ttc_ok = (math.isfinite(ttc) and ttc < 12) # tune this
+
         fire = (
-            ship_state.can_fire and 
-            ctx["ammo"] != 0 and
-            abs(ctx["heading_err"]) < 6 and
-            ctx["ttc"] > 3 and
-            ctx["dist"] > 150
-
+            ship_state.can_fire and
+            ctx["ammo"] > 0 and
+            dist < 700 and
+            err < aim_tol and
+            (closing_ok or ttc_ok)                  # don't require finite TTC
         )
-
-
-        return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)
     
+        thrust_norm = max(0.0, min(outputs["thrust"] / 100.0, 1.0))       # 0..1
+        turn_norm   = max(-1.0, min(outputs["turn_rate"] / 180.0, 1.0))  # -1..1
+
+        engine_thrust = thrust_norm * self.T_MAX
+        turn_rate = turn_norm * self.MAX_TURN
+
+        return float(engine_thrust), float(turn_rate), bool(fire), bool(drop_mine)
     @property
     def name(self) -> str:
         return "ActorController"
-
-        
