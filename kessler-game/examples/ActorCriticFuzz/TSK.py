@@ -39,9 +39,9 @@ class SugenoSystem:
     def evaluate(self, inputs: dict):
         results = {}
 
-        #print("RAW inputs:", {k: inputs.get(k) for k in ["dist", "ttc", "heading_err"]})
-
         '''
+        print("RAW inputs:", {k: inputs.get(k) for k in ["dist", "ttc", "heading_err"]})
+        
         if "dist" in inputs:
             dist_mus = MF_REGISTRY["dist"](inputs["dist"])
             print("dist mus:", dist_mus, "max:", max(dist_mus.values()) if dist_mus else None)
