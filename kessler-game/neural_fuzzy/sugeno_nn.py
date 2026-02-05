@@ -107,11 +107,14 @@ class SugenoNet(nn.Module):
         self.rule_layer = RuleLayer(num_inputs, num_mfs)#number of rules = num_mfs^num_inputs
         self.sugeno_layer = SugenoLayer(num_rules=num_mfs ** num_inputs, num_inputs=num_inputs)
         self.to(self.device)
+        self.dropout = nn.Dropout(p=0.1)#regularization
+
         print(f"device: {self.device}")
 
 
     def forward(self, x):
         mf_outputs = [mf(x[:, i]) for i, mf in enumerate(self.mf_layers)]#get MF outputs for each input
         rule_strengths = self.rule_layer(mf_outputs)#get rule strengths
+        rule_strengths = self.dropout(rule_strengths)  #apply dropout for regularization
         y = self.sugeno_layer(rule_strengths, x)#get final output
         return y.unsqueeze(1)  #(batch_size, 1)
