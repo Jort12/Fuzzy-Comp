@@ -42,7 +42,7 @@ game_settings = {
     'frequency': 30
 }
 
-game = KesslerGame(settings=game_settings)
+game = KesslerGame(settings=game_settings)#type: ignore
 pre = time.perf_counter()
 score, perf_data = game.run(
     scenario=SCENARIO, 

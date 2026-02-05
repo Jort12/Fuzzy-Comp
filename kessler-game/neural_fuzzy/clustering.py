@@ -370,7 +370,7 @@ def cluster_actions_within_scenarios(
             "bic_history": ";".join(f"{k}:{bic:.1f}" for k, bic in bic_hist) if bic_hist else "",
         })
 
-        models.append(ScenarioClusterModel(scenario=scenario, scaler=scaler, gmm=gmm, cluster_cols=cluster_cols))
+        models.append(ScenarioClusterModel(scenario=str(scenario), scaler=scaler, gmm=gmm, cluster_cols=cluster_cols))
         out_frames.append(sub)
 
     df_out = pd.concat(out_frames, ignore_index=True)
@@ -423,7 +423,7 @@ def maybe_plot(df: pd.DataFrame, plot_dir: str):
 
         plt.xlabel("thrust")
         plt.ylabel("turn_rate")
-        plt.title(f"Action clusters — {scenario.replace('_', ' ').title()}")
+        plt.title(f"Action clusters — {scenario.replace('_', ' ').title()}") # type: ignore
         plt.legend(loc="best")
         plt.grid(alpha=0.2)
         plt.tight_layout()
