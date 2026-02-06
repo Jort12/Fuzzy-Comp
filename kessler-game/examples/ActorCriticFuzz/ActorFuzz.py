@@ -4,6 +4,7 @@ from .TSK import *
 from .TSK_Helper import *
 import json
 import os
+from .CriticFuzz import *
 
 MF_REGISTRY = {
     "ttc": mu_ttc,
@@ -22,9 +23,9 @@ SAFE_FUNCS = {
     "K_TURN": 1.5
 }
 
-def load_sugeno_json():
+def load_sugeno_json(name):
     base_dir = os.path.dirname(__file__)
-    rules_path = os.path.join(base_dir, "rules.json")
+    rules_path = os.path.join(base_dir, name)
 
     with open(rules_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -87,10 +88,24 @@ def build_rules(cfg):
 
 class ActorController(KesslerController):
     def __init__(self):
+        #Actor
         super().__init__()
-        rule_dicts = load_sugeno_json()
+        rule_dicts = load_sugeno_json("actor_rules.json")
         rules = build_rules(rule_dicts)
         self.system = SugenoSystem(rules=rules, mode=rule_dicts.get("mode","prod"))
+
+        #Critic
+        critic_cfg = load_sugeno_json("critic_rules.json")
+        critic_rules = build_rules(critic_cfg)
+        self.critic = FuzzCritic(
+            rules = critic_rules,
+            alpha= 0.01,
+            gamma=0.99
+        )
+
+        #track previous state
+        self.last_ship_state = None
+        self.last_game_state = None
 
         #Constants to offset what game engine wants
         self.T_MAX = 230.0       

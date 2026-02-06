@@ -21,13 +21,17 @@ def reward(ship_state, game_state):
 
     return reward
 
-class FuzzController():
+class FuzzCritic():
     def __init__(self, rules, alpha=0.01, gamma=0.99):
         self.rules = rules
         self.alpha = alpha
         self.gamma = gamma
+
+        self.last_fire = []
+        self.last_total = 0.0
     
-    def value():
-        pass
+    def value(self, ship_state, game_state):
+        ctx = context(ship_state, game_state)
+        
     def update():
         pass
