@@ -1,5 +1,10 @@
 from .util import *
+from .TSK import *
 import math
+import numpy as np
+import os 
+import json
+
 def mu_dist(d):
     return {
         "very_close": triag(d, 0, 80, 160),
@@ -100,6 +105,26 @@ def heading_norm(x):
 def dist_norm(x):
     return norm(x, 0.0, 1000.0)
 
+def reward(ship_state, game_state):
+    reward = 0
+    dt = game_state.delta_time
+    ctx = context(ship_state, game_state)
+  
+    reward += 0.01 * dt
+
+    if ctx["dist"] > 300: reward += 0.1 * dt
+    
+    if ctx["threat_density"] < 3: reward += 0.2 * dt
+
+    if not ship_state.is_respawning:
+        for asteroids in game_state.asteroids:
+            distance  = np.sqrt((asteroids.position[0]-ship_state["position"][0])**2 + (asteroids.position[1]-ship_state["position"][1])**2)
+            if distance <= asteroids.radius + ship_state.radius:
+                reward -= 20 * dt
+                break
+
+    return reward
+
 def context(ship_state, game_state):
     best_target = None
     best_score = -float("inf")
@@ -196,3 +221,86 @@ def context(ship_state, game_state):
         "dist_norm": float(dist_norm(best_dist)),
         "heading_norm": float(heading_norm(best_heading_abs)),
     }
+
+
+#########################################
+#build the rules
+MF_REGISTRY = {
+    "ttc": mu_ttc,
+    "dist": mu_dist,
+    "threat_angle": mu_threat_angle,
+    "approach_speed": mu_approach,
+    "threat_density": mu_threat_density,
+    "heading_err": mu_heading_err
+}
+
+SAFE_FUNCS = {
+    "sign": lambda x: -1 if x < 0 else (1 if x > 0 else 0),
+    "abs": abs,
+    "min": min,
+    "max": max,
+    "K_TURN": 1.5
+}
+
+def load_sugeno_json(name):
+    base_dir = os.path.dirname(__file__)
+    rules_path = os.path.join(base_dir, name)
+
+    with open(rules_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    return data
+
+def build_antecedents(cond_maps):
+    antecedents = []
+
+    for var, mf in cond_maps.items():
+        if var not in MF_REGISTRY:
+            raise ValueError(f"Antecedent var '{var}' not found in MF_Registry")
+        func = MF_REGISTRY[var]
+        antecedents.append((var, lambda x, f=func, m=mf: f(x)[m]))
+    return antecedents
+
+def build_consequents(spec):
+    ctype = spec['type']
+    
+    if ctype == 'constant':
+        return lambda x,v=float(spec["value"]):v
+    
+    if ctype == 'linear':
+        bias = float(spec.get("bias", 0.0))
+        weights = spec.get("weights", {})
+
+        def _f(x, b=bias, w=weights):
+            total = b
+            for k, wk in w.items():
+                total += float(wk) * float(x[k])
+            return total
+
+        return _f
+
+    raise ValueError(f"Unknown consequent type: {ctype}")
+
+def build_rules(cfg):
+    profiles = cfg["profiles"]
+    compiled = []
+
+    for r in cfg["rules"]:
+        prof_name = r["use"]
+        cond_map = r["if"]
+
+        prof = profiles[prof_name]
+        weight = float(prof.get("weight", 1.0))
+        out_spec = prof["out"]
+
+        consequents = {name: build_consequents(spec) for name, spec in out_spec.items()}
+
+        compiled.append(
+            SugenoRule(
+                antecedents=build_antecedents(cond_map),
+                consequents=consequents,
+                weight=weight
+            )
+        )
+    
+    return compiled

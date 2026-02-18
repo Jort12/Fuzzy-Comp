@@ -4,16 +4,6 @@ Docstring for kessler-game.examples.ActorCriticAgro.TSK
 Brief: A modified version of fuzzy_system.py for Actor-Critic. Mainly changing the evaluate function
 Authors: 85% Kyle Nyguyen and 15% Justin Ortega
 """
-from .TSK_Helper import *
-
-MF_REGISTRY = {
-    "ttc": mu_ttc,
-    "dist": mu_dist,
-    "threat_angle": mu_threat_angle,
-    "approach_speed": mu_approach,
-    "threat_density": mu_threat_density,
-    "heading_err": mu_heading_err
-}
 
 def rule_strength(mus, mode="prod"):
     #mus: list of membership values in [0,1]
