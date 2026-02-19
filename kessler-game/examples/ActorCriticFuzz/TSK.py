@@ -24,10 +24,15 @@ class SugenoSystem:
     def __init__(self, rules=None, mode="prod"): #rules are list of SugenoRule
         self.rules = rules if rules else []
         self.mode = mode  #"prod" or "min", product or minimum for AND operation
+
+        self.last_firing_strengths = []
+        self.last_total_firing = {}
+
     def add_rule(self,rule): 
         self.rules.append(rule)
     def evaluate(self, inputs: dict):
         results = {}
+        firing_strengths = []
 
         '''
         print("RAW inputs:", {k: inputs.get(k) for k in ["dist", "ttc", "heading_err"]})
@@ -49,6 +54,7 @@ class SugenoSystem:
                 mus.append(mu)
 
             strength = rule_strength(mus, self.mode)
+            firing_strengths.append(strength)
             w = strength * rule.weight
 
             if w != 0.0:
@@ -67,6 +73,9 @@ class SugenoSystem:
         print("--- DENOMINATORS ---")
         for name, (num, den) in results.items():
             print(f"{name}: den={den}, num={num}")
+
+        self.last_firing_strengths = firing_strengths
+        self.last_total_firing = {name: den for name, (num, den) in results.items()}
 
         outputs = {}
         for name, (num, den) in results.items():

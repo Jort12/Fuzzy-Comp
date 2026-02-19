@@ -251,56 +251,92 @@ def load_sugeno_json(name):
 
     return data
 
-def build_antecedents(cond_maps):
-    antecedents = []
-
-    for var, mf in cond_maps.items():
-        if var not in MF_REGISTRY:
-            raise ValueError(f"Antecedent var '{var}' not found in MF_Registry")
-        func = MF_REGISTRY[var]
-        antecedents.append((var, lambda x, f=func, m=mf: f(x)[m]))
-    return antecedents
-
-def build_consequents(spec):
-    ctype = spec['type']
-    
-    if ctype == 'constant':
-        return lambda x,v=float(spec["value"]):v
-    
-    if ctype == 'linear':
-        bias = float(spec.get("bias", 0.0))
-        weights = spec.get("weights", {})
-
-        def _f(x, b=bias, w=weights):
-            total = b
-            for k, wk in w.items():
-                total += float(wk) * float(x[k])
-            return total
-
-        return _f
-
-    raise ValueError(f"Unknown consequent type: {ctype}")
-
-def build_rules(cfg):
+def build_actor_rules(cfg, params_dict):
+    #Builds actor fuzzy rules with learnable consequents
     profiles = cfg["profiles"]
-    compiled = []
+    rules = []
 
-    for r in cfg["rules"]:
-        prof_name = r["use"]
-        cond_map = r["if"]
+    for rule_idx, rule_spec in enumerate(cfg["rules"]):
+        prof_name = rule_spec["use"]
+        profile = profiles[prof_name]
 
-        prof = profiles[prof_name]
-        weight = float(prof.get("weight", 1.0))
-        out_spec = prof["out"]
+        antecedents = []
+        for var, mf_name in rule_spec["if"].items():
+            if var not in MF_REGISTRY:
+                raise ValueError(f"Variable {var} not in MF_REGISTRY")
+            mf_funce = MF_REGISTRY[var]
+            antecedents.append((var, lambda x, f=mf_funce, m=mf_name:f(x)[m]))
 
-        consequents = {name: build_consequents(spec) for name, spec in out_spec.items()}
+        consequents = {}
+        for output_name, spec in profile["out"].items():
+            param_key = f"actor_rule{rule_idx}_{output_name}"
 
-        compiled.append(
-            SugenoRule(
-                antecedents=build_antecedents(cond_map),
-                consequents=consequents,
-                weight=weight
-            )
-        )
-    
-    return compiled
+            params_dict[param_key] = {
+                'bias': float(spec.get("bias",0.0)),
+                'weights': {k: float(v) for k, v in spec.get("weights", {}).items()}
+            }
+
+            def make_consequent(pk):
+                def _consequent(x):
+                    params = params_dict[pk]
+                    total = params['bias']
+                    for var_name, weight in params['weights'].items():
+                        if var_name in x:
+                            total += weight * x[var_name]
+                    return total
+                return _consequent
+            
+            consequents[output_name] = make_consequent(param_key)
+
+        rules.append(SugenoRule(
+            antecedents,
+            consequents,
+            weight=float(profile.get("weight", 1.0))
+        ))
+
+    return rules
+
+def build_critic_rules(cfg, params_dict):
+    #Builds critic fuzzy rules with learnable consequents
+    profiles = cfg["profiles"]
+    rules = []
+
+    for rule_idx, rule_spec in enumerate(cfg["rules"]):
+        prof_name = rule_spec["use"]
+        profile = profiles[prof_name]
+
+        antecedents = []
+        for var, mf_name in rule_spec["if"].items():
+            if var not in MF_REGISTRY:
+                raise ValueError(f"Variable {var} not in MF_REGISTRY")
+            mf_funce = MF_REGISTRY[var]
+            antecedents.append((var, lambda x, f=mf_funce, m=mf_name:f(x)[m]))
+
+        consequents = {}
+        for output_name, spec in profile["out"].items():
+            param_key = f"critic_rule{rule_idx}_{output_name}"
+
+            params_dict[param_key] = {
+                'bias': float(spec.get("bias",0.0)),
+                'weights': {k: float(v) for k, v in spec.get("weights", {}).items()}
+            }
+
+            def make_consequent(pk):
+                def _consequent(x):
+                    params = params_dict[pk]
+                    total = params['bias']
+                    for var_name, weight in params['weights'].items():
+                        if var_name in x:
+                            total += weight * x[var_name]
+                    return total
+                return _consequent
+            
+            consequents[output_name] = make_consequent(param_key)
+
+        rules.append(SugenoRule(
+            antecedents,
+            consequents,
+            weight=float(profile.get("weight", 1.0))
+        ))
+
+    return rules

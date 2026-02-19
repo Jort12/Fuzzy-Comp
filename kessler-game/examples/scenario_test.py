@@ -2,7 +2,7 @@
 import time
 from git import Actor
 from kesslergame import KesslerGame, GraphicsType
-from ActorCriticFuzz.ActorFuzz import ActorController 
+from ActorCriticFuzz.Actor_Critic import ActorCriticController 
 import scenarios as sc  
 
 
@@ -32,7 +32,7 @@ pre = time.perf_counter()
 
 score, perf_data = game.run(
     scenario=SCENARIO,
-    controllers=[ActorController()]
+    controllers=[ActorCriticController()]
 )
 
 print('Scenario eval time:', time.perf_counter() - pre)

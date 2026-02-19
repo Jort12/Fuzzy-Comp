@@ -12,6 +12,13 @@ class FuzzCritic():
     
     def value(self, ship_state, game_state):
         ctx = context(ship_state, game_state)
+
+        weighted_sum = 0.0
+        total_firing = 0.0
+        firing_strengths = []
+
+        for rule in self.rules:
+            firing = 1.0
         
-    def update():
-        pass
+    def update(self, td_error, ship_state, game_state):
+        
