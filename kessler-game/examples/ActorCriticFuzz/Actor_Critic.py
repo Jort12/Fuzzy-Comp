@@ -34,7 +34,11 @@ class FuzzActor():
         return outputs
     
     def update(self, td_error, alpha):
-        pass
+        firing_strengths = self.system.last_firing_strengths
+        total_firing_dict = self.system.last_total_firing
+        ctx = self.last_ctx
+
+        
 
 class ActorCriticController(KesslerController):
     def __init__(self, enable_learning=False):
