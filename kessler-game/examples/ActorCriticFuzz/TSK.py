@@ -74,12 +74,13 @@ class SugenoSystem:
         for name, (num, den) in results.items():
             print(f"{name}: den={den}, num={num}")
 
-        self.last_firing_strengths = firing_strengths
-        self.last_total_firing = {name: den for name, (num, den) in results.items()}
-
         outputs = {}
         for name, (num, den) in results.items():
             outputs[name] = (num / den) if den != 0 else (30.0 if name == "thrust" else 0.0)
 
         print("OUTPUTS:", outputs)
+
+        #Store for learning
+        self.last_firing_strengths = firing_strengths
+        self.last_total_firing = {name: den for name, (num, den) in results.items()}
         return outputs
