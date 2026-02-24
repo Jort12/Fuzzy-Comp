@@ -7,10 +7,11 @@ from kesslergame import KesslerGame, GraphicsType
 from kesslergame.controller import KesslerController
 import scenarios as sc
 from human_xbox_controller import HumanXboxController
-from fuzzy_aggressive_controller import AggressiveFuzzyController
+from ActorCriticFuzz.ActorFuzz import ActorController
 
 
-# Build the list of scenarios in the order you want to play them
+
+# Build the list of scenarios in this order
 SCENARIOS = [
     sc.donut_ring(),
     sc.vertical_wall_left(),
@@ -26,7 +27,7 @@ SCENARIOS = [
 
 game_settings = {
     "perf_tracker": True,
-    "graphics_type": GraphicsType.Tkinter,
+    "graphics_type": GraphicsType.Tkinter,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
     "realtime_multiplier": 1,
     "graphics_obj": None,
     "frequency": 30,
@@ -58,7 +59,8 @@ def main():
     game = KesslerGame(settings=game_settings)
 
     player1 = HumanXboxController()
-    player2 = AggressiveFuzzyController()
+    player2 = ActorController()
+
 
     controllers = [player1, player2]
 

@@ -82,7 +82,7 @@ class HumanXboxController(KesslerController):
         self.player_id = safe_id
         self.session_id = time.strftime("%Y%m%d-%H%M%S")
         # Make sure pygame systems are running.
-        # Even though we do NOT use pygame for keyboard input,
+        # Even though it does not use pygame for keyboard input,
         # pygame MUST be running to read an Xbox controller.
         if not pygame.get_init():
             pygame.init()
@@ -90,7 +90,7 @@ class HumanXboxController(KesslerController):
         pygame.joystick.init()
 
         # Try to connect to an Xbox controller.
-        # If none is found, we simply set joy = None and keyboard still works.
+        # If none is found, simply set joy = None and keyboard still works.
         if pygame.joystick.get_count() <= joystick_index:
             print("[HumanXboxController] No Xbox controller detected.")
             self.joy = None
@@ -205,7 +205,7 @@ class HumanXboxController(KesslerController):
         It returns:
             (thrust, turn_rate, fire, drop_mine)
 
-        We combine:
+        Combines:
         - Xbox inputs
         - Keyboard inputs
         into one final set of values to control the ship.
