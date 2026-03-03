@@ -85,7 +85,7 @@ Y_tensor = torch.tensor(Y, dtype=torch.float32)
 
 dataset = TensorDataset(X_tensor, Y_tensor)
 n_total = len(dataset)
-n_val = int(n_total * args.val_frac)
+n_val = max(1, int(n_total * args.val_frac))
 n_train = n_total - n_val
 train_ds, val_ds = random_split(dataset, [n_train, n_val])
 
@@ -136,7 +136,7 @@ for output_idx, output_name in enumerate(output_cols):
                 pred = model(xb).squeeze(1)
                 loss = loss_fn(pred, yb[:, output_idx])
                 total_val += loss.item() * xb.size(0)
-        avg_val = total_val / n_val
+        avg_val = total_val / max(1, n_val)
 
         if epoch % 10 == 0 or epoch == 1:
             print(f"[{epoch:03d}] Train={avg_train:.6f}  Val={avg_val:.6f}")

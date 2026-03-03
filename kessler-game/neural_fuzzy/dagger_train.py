@@ -46,7 +46,7 @@ def main():
         beta = beta_at(i)
         print(f"ITER {i+1}/{args.iters}  beta={beta:.3f}")
 
-        #Collect DAgger rollouts (appends to data/dagger_*.csv)
+        # Collect DAgger rollouts (appends to data/dagger_*.csv)
         all_scenarios = [
             "stock",
             "donut_ring",
@@ -56,19 +56,23 @@ def main():
             "asteroid_rain",
             "four_corner",
         ]
+        scenarios_to_run = all_scenarios if args.scenario.lower() == "all" else [args.scenario]
 
-    scenarios_to_run = all_scenarios if args.scenario.lower() == "all" else [args.scenario]
+        for s in scenarios_to_run:
+            print(f"  Collecting: scenario={s} episodes={args.episodes_per_iter} beta={beta:.3f}")
+            run([
+                "python", str(here / "dagger_collect.py"),
+                "--beta", f"{beta}",
+                "--episodes", str(args.episodes_per_iter),
+                "--scenario", s,
+                "--record",
+            ])
 
-    # Collect DAgger rollouts (appends to data/dagger_*.csv)
-    for s in scenarios_to_run:
-        print(f"  Collecting: scenario={s} episodes={args.episodes_per_iter} beta={beta:.3f}")
-         
-
-        #merge base + dagger
+        # merge base + dagger
         run(["python", str(here / "merge_datasets.py"), "--task", "maneuver"])
         run(["python", str(here / "merge_datasets.py"), "--task", "combat"])
 
-        #Train on aggregated datasets
+        # Train on aggregated datasets
         run([
             "python", str(here / "nf_train.py"),
             "--task", "maneuver",
