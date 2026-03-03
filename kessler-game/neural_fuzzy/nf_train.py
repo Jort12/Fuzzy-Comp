@@ -21,7 +21,7 @@ Saves the trained models as a bundle for later inference.
 arguments = argparse.ArgumentParser()
 arguments.add_argument("--task", choices=["maneuver", "combat"], required=True)
 arguments.add_argument("--csv", type=str, default=None, help="Path to training CSV (overrides default for task)")
-arguments.add_argument("--num_mfs", type=int, default=2)
+arguments.add_argument("--num_mfs", type=int, default=3)
 arguments.add_argument("--epochs", type=int, default=200)
 arguments.add_argument("--batch_size", type=int, default=128)
 arguments.add_argument("--lr", type=float, default=0.01)
@@ -58,14 +58,25 @@ else:
     output_cols = ['fire', 'drop_mine']
     loss_fn = nn.BCEWithLogitsLoss()
 
-feature_cols = [c for c in df.columns if c not in output_cols]
+feature_cols = [
+    "dist",
+    "ttc",
+    "heading_err",
+    "approach_speed",
+    "ammo",
+    "mines",
+    "threat_density",
+    "threat_angle",
+]
+
 
 X = df[feature_cols].values.astype("float32")
 Y = df[output_cols].values.astype("float32")
 
 # Normalize inputs
 mu = X.mean(axis=0)
-sd = X.std(axis=0) + 1e-6
+sd = X.std(axis=0)
+sd[sd < 1e-6] = 1.0
 X = (X - mu) / sd
 
 # Convert to tensors (basically multi dimension array)

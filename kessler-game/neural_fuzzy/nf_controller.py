@@ -44,6 +44,7 @@ def calculate_context(ship_state, game_state):
     approach_speed = (rel_vx * (ax - sx) + rel_vy * (ay - sy)) / max(dist, 1)
 
     ttc = dist / max(abs(approach_speed), 1e-6)
+    ttc = min(ttc, 100.0)  
     heading_err = wrap180(math.degrees(math.atan2(ay - sy, ax - sx)) - heading)
     density = len(asteroids) / 10.0
 
@@ -85,6 +86,7 @@ class NFController:
         ]
 
     def actions(self, ship_state, game_state):
+        print("asteroids:", len(getattr(game_state, "asteroids", [])))
         ctx = calculate_context(ship_state, game_state)
         if self.input_buffer is None:
             device = self.maneuver_nf.device

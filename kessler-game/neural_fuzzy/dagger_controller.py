@@ -71,6 +71,7 @@ class DAggerController(KesslerController):
         # 1) Build context (what you train on)
         ctx = calculate_context(ship_state, game_state)
 
+
         # 2) Expert label (ALWAYS compute; log only if record=True)
         exp_thrust, exp_turn, exp_fire, exp_mine = self.expert.actions(ship_state, game_state)
 
@@ -90,17 +91,30 @@ class DAggerController(KesslerController):
         lr_fire   = bool(lr_fire_c > 0.5)
         lr_mine   = bool(lr_mine_c > 0.5)
 
+
+
         # 4) Mix: execute expert with prob beta, otherwise learner
         if random.random() < self.beta:
             exec_action = (float(exp_thrust), float(exp_turn), bool(exp_fire), bool(exp_mine))
         else:
             exec_action = (lr_thrust, lr_turn, lr_fire, lr_mine)
+            
+            
+        try:
+            speed = float(ship_state.speed)
+        except Exception:
+            speed = float(ship_state.get("speed", 0.0))  # if dict-like
 
+        # Unstuck / minimum motion: always apply when we're barely moving
+        if speed < 5.0:
+            lr_thrust = max(lr_thrust, 30.0)   # force some forward thrust
+            lr_turn += 10.0     # small nudge to break symmetry
+            
         # 5) Log expert labels for visited states ONLY if recording
         if self.record:
             self.maneuver_logger.log(ctx, (exp_thrust_c, exp_turn_c))
             self.combat_logger.log(ctx, (exp_fire_c, exp_mine_c))
-
+        
         return exec_action
 
     def _ctx_to_feature_list(self, policy: NFPolicy, ctx: dict) -> list[float]:
@@ -109,9 +123,18 @@ class DAggerController(KesslerController):
 
     def _learner_maneuver(self, ctx: dict):
         x = self._ctx_to_feature_list(self.learner_maneuver, ctx)
-        thrust = self.learner_maneuver.run_model("thrust", x, post="tanh")      # -> [-1, 1]
-        turn   = self.learner_maneuver.run_model("turn_rate", x, post="tanh")   # -> [-1, 1]
-        return float(thrust), float(turn)
+        thrust = self.learner_maneuver.run_model("thrust", x, post=None)
+        turn   = self.learner_maneuver.run_model("turn_rate", x, post=None)
+
+        # Clamp to safety
+        thrust = max(-1.0, min(1.0, float(thrust)))
+        turn   = max(-1.0, min(1.0, float(turn)))
+
+        # Deadzone push: if learner outputs near 0, give it minimum forward so it moves
+        if abs(thrust) < 0.15:
+            thrust = 0.40
+
+        return thrust, turn
 
     def _learner_combat(self, ctx: dict):
         x = self._ctx_to_feature_list(self.learner_combat, ctx)

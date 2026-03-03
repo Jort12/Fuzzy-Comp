@@ -18,7 +18,7 @@ from hybrid_fuzzy import hybrid_controller
 from nf_controller import NFController
 import scenarios as sc
 from human_controller import HumanController
-#SCENARIO = sc.donut_ring()
+SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
 #SCENARIO = sc.stock_scenario()
 #SCENARIO = sc.spiral_arms()
@@ -27,7 +27,7 @@ from human_controller import HumanController
 #SCENARIO = sc.asteroid_rain()
 #SCENARIO = sc.giants_with_kamikaze()
 #SCENARIO = sc.donut_ring_closing()
-SCENARIO = sc.four_corner()
+#SCENARIO = sc.four_corner()
 
 
 

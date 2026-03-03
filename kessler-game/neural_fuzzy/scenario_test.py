@@ -17,15 +17,16 @@ Appends todagger_maneuver.csv dagger_combat.csv
 """
 
 import time
+from hybrid_fuzzy import hybrid_controller
 from kesslergame import KesslerGame, GraphicsType
 from nf_controller import NFController
 import scenarios as sc
 from human_xbox_controller import HumanXboxController
 from dagger_controller import DAggerController
 
-#SCENARIO = sc.donut_ring()
+SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
-SCENARIO = sc.stock_scenario()
+#SCENARIO = sc.stock_scenario()
 #SCENARIO = sc.spiral_arms()
 #SCENARIO = sc.sniper_practice()
 #SCENARIO = sc.crossing_lanes()
@@ -46,7 +47,7 @@ game = KesslerGame(settings=game_settings)#type: ignore
 pre = time.perf_counter()
 score, perf_data = game.run(
     scenario=SCENARIO, 
-    controllers=[DAggerController(beta=0.5, record=False)]
+    controllers=[DAggerController(record=False, beta=1)]#beta=0.0 means use only the learner, beta=0.5 means mix expert and learner, beta=1.0 means use only the expert
 )  
 print('Scenario eval time:', time.perf_counter() - pre)
 print(score.stop_reason)

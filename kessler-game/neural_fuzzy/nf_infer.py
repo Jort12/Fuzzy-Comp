@@ -52,7 +52,7 @@ class NFPolicy:
                 if mu is not None and sd is not None:
                     mu_t = torch.tensor(mu, dtype=torch.float32, device=self.device)
                     sd_t = torch.tensor(sd, dtype=torch.float32, device=self.device)
-                    sd_t[sd_t <= 1e-6] = 1.0
+                    sd_t[sd_t < 1e-6] = 1.0
                     xb_norm = (xb - mu_t) / sd_t
                 else:
                     xb_norm = xb
