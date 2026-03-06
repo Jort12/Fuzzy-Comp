@@ -27,7 +27,7 @@ def calculate_threat_priority(asteroid, ship_pos, ship_vel):
     
     """(1000 / distance) → closer asteroids = higher priority.
 (max(closing_speed, 0) / 50) → if the asteroid is rushing toward you, add danger. If moving away, ignore it (max(...,0)).
-(5 - size) → smaller asteroids add to priority (maybe theyare harder to hit or dodge).
+(5 - size) -> smaller asteroids add to priority (maybe theyare harder to hit or dodge).
 
 """
 
@@ -77,13 +77,23 @@ class hybrid_controller(KesslerController):
         data_dir = os.path.join(base_dir, "data")
         self.maneuver_logger = Logger(os.path.join(data_dir, "maneuver.csv"), FEATURES, ["thrust", "turn_rate"])
         self.combat_logger   = Logger(os.path.join(data_dir, "combat.csv"), FEATURES, ["fire", "drop_mine"])
+        self.enable_logging = True  # set False when using as DAgger expert
 
     def context(self, ship_state, game_state):#returns a dictionary of context features
         sx, sy = ship_state.position
         heading = ship_state.heading
         asteroids = getattr(game_state, "asteroids", [])
         if not asteroids:
-            return {}
+            return {
+                "dist": 1000.0,
+                "ttc": 100.0,
+                "heading_err": 0.0,
+                "approach_speed": 0.0,
+                "ammo": getattr(ship_state, "ammo", 0),
+                "mines": getattr(ship_state, "mines", 0),
+                "threat_density": 0.0,
+                "threat_angle": 0.0
+            }
 
         closest, dist = find_closest_threat(asteroids, (sx, sy)) # find closest asteroid
         ax, ay = closest.position 
@@ -274,18 +284,18 @@ class hybrid_controller(KesslerController):
 
 
         # Log data
-        try:
-            thrust_c = max(-1.0, min(1.0, float(thrust) / 150.0))  # normalize –150 to 150  –1 to 1
-            turn_rate_c = max(-1.0, min(1.0, float(turn_rate) / 180.0))  # normalize –180 to 180  –1 to 1  
-
-            fire_c      = 1.0 if fire else 0.0
-            mine_c      = 1.0 if drop_mine else 0.0
-
-            self.maneuver_logger.log(ctx, (thrust_c, turn_rate_c))
-            self.combat_logger.log(ctx, (fire_c, mine_c))
-
-        except Exception as e:
-            if self.debug_counter % 120 == 0:
-                print(f"[Logger warning] {e}")
+        if self.enable_logging:
+            try:
+                thrust_c = max(-1.0, min(1.0, float(thrust) / 150.0))  # normalize –150 to 150  –1 to 1
+                turn_rate_c = max(-1.0, min(1.0, float(turn_rate) / 180.0))  # normalize –180 to 180  –1 to 1  
+    
+                fire_c      = 1.0 if fire else 0.0
+                mine_c      = 1.0 if drop_mine else 0.0
+    
+                self.maneuver_logger.log(ctx, (thrust_c, turn_rate_c))
+                self.combat_logger.log(ctx, (fire_c, mine_c))
+            except Exception as e:
+                if self.debug_counter % 120 == 0:
+                    print(f"[Logger warning] {e}")
 
         return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)

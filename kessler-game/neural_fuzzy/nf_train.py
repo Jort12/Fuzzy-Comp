@@ -20,9 +20,10 @@ Saves the trained models as a bundle for later inference.
 # CLI stuff
 arguments = argparse.ArgumentParser()
 arguments.add_argument("--task", choices=["maneuver", "combat"], required=True)
-arguments.add_argument("--num_mfs", type=int, default=2)
+arguments.add_argument("--csv", type=str, default=None, help="Path to training CSV (overrides default for task)")
+arguments.add_argument("--num_mfs", type=int, default=3)
 arguments.add_argument("--epochs", type=int, default=200)
-arguments.add_argument("--batch_size", type=int, default=64)
+arguments.add_argument("--batch_size", type=int, default=128)
 arguments.add_argument("--lr", type=float, default=0.01)
 arguments.add_argument("--val_frac", type=float, default=0.1)
 args = arguments.parse_args()
@@ -35,12 +36,15 @@ model_dir = os.path.join(base_dir, "models")
 
 os.makedirs(model_dir, exist_ok=True)
 
+# Default CSV/model paths for the chosen task (can be overridden by --csv)
 if args.task == "maneuver":
-    args.csv = os.path.join(data_dir, "maneuver.csv")
+    default_csv = os.path.join(data_dir, "maneuver.csv")
     args.model_out = os.path.join(model_dir, "maneuver.pt")
 else:
-    args.csv = os.path.join(data_dir, "combat.csv")
+    default_csv = os.path.join(data_dir, "combat.csv")
     args.model_out = os.path.join(model_dir, "combat.pt")
+
+args.csv = args.csv or default_csv
 
 # Load dataset
 df = pd.read_csv(args.csv)
@@ -54,14 +58,25 @@ else:
     output_cols = ['fire', 'drop_mine']
     loss_fn = nn.BCEWithLogitsLoss()
 
-feature_cols = [c for c in df.columns if c not in output_cols]
+feature_cols = [
+    "dist",
+    "ttc",
+    "heading_err",
+    "approach_speed",
+    "ammo",
+    "mines",
+    "threat_density",
+    "threat_angle",
+]
+
 
 X = df[feature_cols].values.astype("float32")
 Y = df[output_cols].values.astype("float32")
 
 # Normalize inputs
 mu = X.mean(axis=0)
-sd = X.std(axis=0) + 1e-6
+sd = X.std(axis=0)
+sd[sd < 1e-6] = 1.0
 X = (X - mu) / sd
 
 # Convert to tensors (basically multi dimension array)
@@ -70,7 +85,7 @@ Y_tensor = torch.tensor(Y, dtype=torch.float32)
 
 dataset = TensorDataset(X_tensor, Y_tensor)
 n_total = len(dataset)
-n_val = int(n_total * args.val_frac)
+n_val = max(1, int(n_total * args.val_frac))
 n_train = n_total - n_val
 train_ds, val_ds = random_split(dataset, [n_train, n_val])
 
@@ -93,7 +108,10 @@ for output_idx, output_name in enumerate(output_cols):
     
     best_val_loss = float("inf")
     best_state = None
-    
+    #print(f"Device: {model.device}")
+    patience = 20
+    epochs_since_improvement = 0
+
     for epoch in range(1, args.epochs + 1):
         model.train()
         total_train = 0.0
@@ -118,7 +136,7 @@ for output_idx, output_name in enumerate(output_cols):
                 pred = model(xb).squeeze(1)
                 loss = loss_fn(pred, yb[:, output_idx])
                 total_val += loss.item() * xb.size(0)
-        avg_val = total_val / n_val
+        avg_val = total_val / max(1, n_val)
 
         if epoch % 10 == 0 or epoch == 1:
             print(f"[{epoch:03d}] Train={avg_train:.6f}  Val={avg_val:.6f}")
@@ -126,7 +144,14 @@ for output_idx, output_name in enumerate(output_cols):
         # Save best model for this output
         if avg_val < best_val_loss:
             best_val_loss = avg_val
-            best_state = {k: v.detach().cpu() for k, v in model.state_dict().items()}
+            best_state = {k: v.detach().cpu() for k, v in model.state_dict().items()} #Save CPU tensors
+            epochs_since_improvement = 0
+        else:
+            epochs_since_improvement += 1
+            if epochs_since_improvement >= patience:
+                print(f"Early stopping triggered at epoch {epoch}")
+                break
+
     
     print(f"Best validation loss for {output_name}: {best_val_loss:.6f}")
     
