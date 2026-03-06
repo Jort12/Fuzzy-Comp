@@ -1,11 +1,11 @@
 import pygame
 from kesslergame.controller import KesslerController
-import pygame
-from kesslergame.controller import KesslerController
 from data_log import Logger, FEATURES as BASE_FEATURES
 import math
 import os
 import time
+HUMAN_FEATURES = BASE_FEATURES + ["session_id"]
+
 try:
     import keyboard as _kb
     _KEYBOARD_AVAILABLE = True
@@ -15,7 +15,7 @@ except ImportError:
     print(
         "Install it with: pip install keyboard"
     )
-HUMAN_FEATURES = BASE_FEATURES + ["session_id"]
+
 
 """
 ============================
@@ -63,43 +63,42 @@ class HumanXboxController(KesslerController):
 
     DEFAULT_MAX_THRUST = 230.0
     DEFAULT_MAX_TURN = 540.0
-
     def __init__(self,
                  joystick_index: int = 0,
                  max_thrust: float = DEFAULT_MAX_THRUST,
                  max_turn_rate: float = DEFAULT_MAX_TURN,
                  player_id: str = "player"):
+        """
+        player_id: string label for this player, used in CSV filenames.
+        Example: "P1", "Alice", "Test03"
+        """
 
         super().__init__()
 
-        # Store how strong ship thrust/turn can be.
         self.max_thrust = float(max_thrust)
         self.max_turn_rate = float(max_turn_rate)
+
+        # sanitize player_id for filenames
         safe_id = "".join(
             c if (c.isalnum() or c in "-_") else "_"
             for c in str(player_id)
         )
         self.player_id = safe_id
         self.session_id = time.strftime("%Y%m%d-%H%M%S")
-        # Make sure pygame systems are running.
-        # Even though we do NOT use pygame for keyboard input,
-        # pygame MUST be running to read an Xbox controller.
+
+        # init pygame + joystick
         if not pygame.get_init():
             pygame.init()
-
         pygame.joystick.init()
 
-        # Try to connect to an Xbox controller.
-        # If none is found, we simply set joy = None and keyboard still works.
         if pygame.joystick.get_count() <= joystick_index:
-            print("[HumanXboxController] No Xbox controller detected.")
+            print("[HumanXboxController] No controller found.")
             self.joy = None
         else:
             self.joy = pygame.joystick.Joystick(joystick_index)
             self.joy.init()
-            print(f"[HumanXboxController] Xbox controller connected: {self.joy.get_name()}")
+            print(f"[HumanXboxController] Using: {self.joy.get_name()} (player={self.player_id})")
 
-        # Deadzone means if a stick is barely moved, treat it as 0.
         self.deadzone = 0.15
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -112,13 +111,11 @@ class HumanXboxController(KesslerController):
         combat_path   = os.path.join(
             data_dir, f"{self.player_id}_{self.session_id}_combat.csv"
         )
+
+        # FEATURES comes from data_log.py
         self.maneuver_logger = Logger(maneuver_path, HUMAN_FEATURES, ["thrust", "turn_rate"])
         self.combat_logger   = Logger(combat_path, HUMAN_FEATURES, ["fire", "drop_mine"])
-    # ----------------------------------------------------------
-    # Helper functions to safely read Xbox input through pygame
-    # ----------------------------------------------------------
-
-
+    # ---------- context features (same idea as hybrid controller) ----------
     def _context(self, ship_state, game_state):
 
         if ship_state is None or game_state is None:
@@ -169,6 +166,13 @@ class HumanXboxController(KesslerController):
             "threat_angle": target_angle,
             "session_id": self.session_id,
         }
+
+
+
+    # ----------------------------------------------------------
+    # Helper functions to safely read Xbox input through pygame
+    # ----------------------------------------------------------
+
     def _get_axis(self, idx: int) -> float:
         """Read a joystick axis (left stick or trigger) and apply the deadzone."""
         if self.joy is None:
@@ -286,6 +290,7 @@ class HumanXboxController(KesslerController):
 
             self.maneuver_logger.log(ctx, (thrust_n, turn_n))
             self.combat_logger.log(ctx, (fire_n, mine_n))
+
 
         # Return final controls to the game
         return float(thrust), float(turn_rate), bool(fire), bool(drop_mine)

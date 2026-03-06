@@ -12,6 +12,14 @@ from fuzzy_aggressive_controller import AggressiveFuzzyController
 
 # Build the list of scenarios in the order you want to play them
 SCENARIOS = [
+    sc.phase_shift_grid(),
+    sc.s_curve_chokepoint(),
+    sc.corner_shockwaves(),
+    sc.diagonal_grid_fast(),
+    sc.wrap_pincer(),
+    sc.pinch_chamber(),
+    sc.double_orbit_with_darts(),
+    sc.moving_maze_right(),
     sc.donut_ring(),
     sc.vertical_wall_left(),
     sc.stock_scenario(),
@@ -21,7 +29,6 @@ SCENARIOS = [
     sc.giants_with_kamikaze(),
     sc.donut_ring_closing(),
     sc.rotating_cross(),
-    sc.moving_maze_right(),
 ]
 
 game_settings = {
