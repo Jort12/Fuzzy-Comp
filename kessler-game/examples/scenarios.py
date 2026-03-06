@@ -14,7 +14,7 @@ from kesslergame import Scenario
 
 
 def _mk_ship(team=1, pos=(400, 400), angle=0, mines=3):
-    return {'position': pos, 'angle': angle, 'lives': 3, 'team': team, "mines_remaining": mines}
+    return {'position': pos, 'angle': angle, 'lives': 99, 'team': team, "mines_remaining": mines}
 
 def _get_asteroid_list(scenario):
 
@@ -409,7 +409,7 @@ def donut_ring_closing(map_size=(1200, 900), *,
     W, H = map_size
     cx, cy = W * 0.5, H * 0.5
 
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (cx, cy), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
 
     # Convert radius ratio to actual pixels
     r = min(W, H) * start_radius_ratio
@@ -456,7 +456,7 @@ def rotating_cross(map_size=(1400, 1000), *,
     cx, cy = W * 0.5, H * 0.5
 
     # Player far left
-    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
 
     ast_states = []
 
@@ -531,9 +531,7 @@ def moving_maze_right(map_size=(1000, 800), *,
     Moving maze tuned specifically for a 1000x800 map.
     A clear, wide tunnel snakes from left to right.
     Asteroids fill the rest of the space but never block the tunnel.
-    """
-
-    import math  # ensure math is available
+    """ 
 
     W, H = map_size
 
@@ -541,7 +539,7 @@ def moving_maze_right(map_size=(1000, 800), *,
     ship = {
         'position': (W * 0.10, H * 0.50),
         'angle': 0,
-        'lives': 3,
+        'lives': 99,
         'team': 1,
         'mines_remaining': 3
     }
@@ -609,3 +607,430 @@ def moving_maze_right(map_size=(1000, 800), *,
         ammo_limit_multiplier=0,
         stop_if_no_ammo=False,
     )
+
+# ------------------------------------------------------------
+# PINCH CHAMBER: top + bottom walls slide inward
+# ------------------------------------------------------------
+
+def _ship_center(map_size, *, lives=3, angle=0, mines=3):
+    W, H = map_size
+    return {'position': (W * 0.5, H * 0.5), 'angle': angle, 'lives': lives, 'team': 1, 'mines_remaining': mines}
+
+def pinch_chamber(map_size=(1200, 900), *,
+                  wall_count=14,
+                  wall_speed=130.0,
+                  diagonal_count=10,
+                  diagonal_speed=220.0,
+                  size_wall=3,
+                  size_diag=1,
+                  gap_ratio=0.20,
+                  time_limit=75):
+
+    W, H = map_size
+    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+
+    ast_states = []
+
+    # Walls start near top and bottom and move toward center
+    gap_half = (H * gap_ratio) * 0.5
+    top_y = gap_half * 0.5
+    bot_y = H - gap_half * 0.5
+
+    # Evenly spaced X positions
+    left = W * 0.08
+    right = W * 0.92
+    dx = (right - left) / max(1, wall_count - 1)
+
+    for i in range(wall_count):
+        x = left + i * dx
+        # Top wall moves down (angle 90)
+        ast_states.append({
+            'position': (x, top_y),
+            'size': int(size_wall),
+            'angle': 90.0,
+            'speed': float(wall_speed),
+        })
+        # Bottom wall moves up (angle 270)
+        ast_states.append({
+            'position': (x, bot_y),
+            'size': int(size_wall),
+            'angle': 270.0,
+            'speed': float(wall_speed),
+        })
+
+    # Diagonal cutters (both directions)
+    # Spawn them away from center so the first seconds aren't an instant collision
+    y0 = H * 0.15
+    y1 = H * 0.85
+    for k in range(diagonal_count):
+        t = k / max(1, diagonal_count - 1)
+        x = W * (0.15 + 0.70 * t)
+        ast_states.append({'position': (x, y0), 'size': int(size_diag), 'angle': 225.0, 'speed': float(diagonal_speed)})
+        ast_states.append({'position': (x, y1), 'size': int(size_diag), 'angle': 135.0, 'speed': float(diagonal_speed)})
+
+    return Scenario(
+        name="Pinch Chamber (Walls + Diagonal Cutters)",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+# ------------------------------------------------------------
+# WRAP PINCER: spawns just offscreen so they wrap and hit quickly
+# ------------------------------------------------------------
+def wrap_pincer(map_size=(1000, 800), *,
+                per_side=8,
+                speed=260.0,
+                size_class=2,
+                offscreen=40.0,
+                time_limit=60):
+
+    W, H = map_size
+    ship = {'position': (W * 0.5, H * 0.55), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+
+    ast_states = []
+
+    # Left and right pincer: start slightly off-map
+    dy = (H * 0.80) / max(1, per_side - 1)
+    y_start = H * 0.10
+
+    for i in range(per_side):
+        y = y_start + i * dy
+
+        # From left going right
+        ast_states.append({
+            'position': (-offscreen, y),
+            'size': int(size_class),
+            'angle': 0.0,
+            'speed': float(speed)
+        })
+
+        # From right going left
+        ast_states.append({
+            'position': (W + offscreen, y),
+            'size': int(size_class),
+            'angle': 180.0,
+            'speed': float(speed)
+        })
+
+    # Vertical
+    for i in range(max(2, per_side // 2)):
+        x = W * (0.20 + 0.60 * (i / max(1, (max(2, per_side // 2) - 1))))
+        ast_states.append({'position': (x, -offscreen), 'size': 1, 'angle': 90.0, 'speed': float(speed * 0.85)})
+        ast_states.append({'position': (x, H + offscreen), 'size': 1, 'angle': 270.0, 'speed': float(speed * 0.85)})
+
+    return Scenario(
+        name="Wrap Pincer (Edge Wrap Pressure)",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+# ------------------------------------------------------------
+# DOUBLE ORBIT + DARTS: two rings rotate opposite directions + inward darts
+# ------------------------------------------------------------
+def double_orbit_with_darts(map_size=(1400, 1000), *,
+                            ring1_count=18,
+                            ring2_count=26,
+                            r1_ratio=0.22,
+                            r2_ratio=0.38,
+                            ring1_speed=95.0,     # was 140
+                            ring2_speed=115.0,    # was 180
+                            dart_count=10,
+                            dart_speed=210.0,     # slightly reduced too
+                            time_limit=80,
+                            seed=7):
+
+    import math
+    import random
+    from kesslergame import Scenario
+
+    rng = random.Random(seed)
+    W, H = map_size
+    cx, cy = W * 0.5, H * 0.5
+
+    ship = {
+        'position': (cx, cy),
+        'angle': 0,
+        'lives': 99,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = []
+
+    def inward_ring(count, r_ratio, speed, size_cycle):
+        r = min(W, H) * r_ratio
+
+        for i in range(count):
+            theta = 2.0 * math.pi * (i / count)
+            x = cx + r * math.cos(theta)
+            y = cy + r * math.sin(theta)
+
+            heading = math.degrees(math.atan2(cy - y, cx - x))
+
+            ast_states.append({
+                'position': (x, y),
+                'size': int(size_cycle[i % len(size_cycle)]),
+                'angle': float(heading),
+                'speed': float(speed)
+            })
+
+    inward_ring(ring1_count, r1_ratio, ring1_speed, size_cycle=(3, 2, 2))
+    inward_ring(ring2_count, r2_ratio, ring2_speed, size_cycle=(2, 2, 1, 1))
+
+    for _ in range(dart_count):
+        side = rng.choice(['L', 'R', 'T', 'B'])
+        if side == 'L':
+            x, y = 0.0, rng.uniform(0, H)
+        elif side == 'R':
+            x, y = float(W), rng.uniform(0, H)
+        elif side == 'T':
+            x, y = rng.uniform(0, W), 0.0
+        else:
+            x, y = rng.uniform(0, W), float(H)
+
+        heading = math.degrees(math.atan2(cy - y, cx - x)) + rng.uniform(-12, 12)
+
+        ast_states.append({
+            'position': (x, y),
+            'size': 1,
+            'angle': float(heading),
+            'speed': float(dart_speed)
+        })
+
+    return Scenario(
+        name="Double Orbit → Slow Center Collapse + Darts",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+# ------------------------------------------------------------
+# DIAGONAL GRID (FAST): criss-cross diagonal lanes
+# ------------------------------------------------------------
+def diagonal_grid_fast(map_size=(1200, 900), *,
+                       stripes=8,
+                       per_stripe=7,
+                       speed=320.0,
+                       size_class=2,
+                       time_limit=65):
+
+    W, H = map_size
+    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+
+    ast_states = []
+
+    # Two diagonals
+    # Place a grid of spawn points so their paths intersect near the center.
+    x_min, x_max = W * 0.10, W * 0.90
+    y_min, y_max = H * 0.10, H * 0.90
+
+    dx = (x_max - x_min) / max(1, per_stripe - 1)
+    dy = (y_max - y_min) / max(1, stripes - 1)
+
+    for s in range(stripes):
+        y = y_min + s * dy
+        for k in range(per_stripe):
+            x = x_min + k * dx
+            ast_states.append({'position': (x, y), 'size': int(size_class), 'angle': 45.0, 'speed': float(speed)})
+            ast_states.append({'position': (x, y), 'size': int(size_class), 'angle': 135.0, 'speed': float(speed)})
+
+    return Scenario(
+        name="Diagonal Grid (Fast Criss-Cross)",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+# ------------------------------------------------------------
+# CORNER SHOCKWAVES: four corners send staggered diagonals toward center
+# ------------------------------------------------------------
+def corner_shockwaves(map_size=(1200, 900), *,
+                      waves=5,
+                      per_wave=4,
+                      base_speed=180.0,
+                      speed_step=30.0,
+                      size_cycle=(3, 2, 1),
+                      time_limit=75):
+
+    W, H = map_size
+    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+
+    corners = [(0.0, 0.0), (float(W), 0.0), (0.0, float(H)), (float(W), float(H))]
+    center = (W * 0.5, H * 0.5)
+
+    ast_states = []
+    idx = 0
+
+    # Each wave: a little further "behind" the corner so wraps create weird timing
+    for w in range(waves):
+        spd = base_speed + w * speed_step
+        offset = w * 35.0
+        for (cx, cy) in corners:
+            # spawn slightly off-corner along both axes (can be negative / >W/H)
+            sx = cx + ( -offset if cx <= 0.0 else offset )
+            sy = cy + ( -offset if cy <= 0.0 else offset )
+
+            # multiple per wave: slight angular spread
+            base_heading = math.degrees(math.atan2(center[1] - sy, center[0] - sx))
+            for j in range(per_wave):
+                spread = (j - (per_wave - 1) * 0.5) * 6.0
+                ast_states.append({
+                    'position': (sx, sy),
+                    'size': int(size_cycle[idx % len(size_cycle)]),
+                    'angle': float(base_heading + spread),
+                    'speed': float(spd)
+                })
+                idx += 1
+
+    return Scenario(
+        name="Corner Shockwaves",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+
+# ------------------------------------------------------------
+# S-CURVE CHOKEPOINT: a narrow “tunnel” but with crossing sentries
+# ------------------------------------------------------------
+def s_curve_chokepoint(map_size=(1200, 900), *,
+                       rows=12,
+                       cols=22,
+                       margin_ratio=0.06,
+                       field_speed=155.0,
+                       waves=2.8,
+                       amplitude_ratio=0.26,
+                       corridor_width_ratio=0.20,
+                       sentry_pairs=10,
+                       sentry_speed=260.0,
+                       time_limit=95):
+
+    W, H = map_size
+    ship = {'position': (W * 0.12, H * 0.50), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
+
+    margin_x = int(W * margin_ratio)
+    margin_y = int(H * margin_ratio)
+    usable_h = H - 2 * margin_y
+
+    amplitude = usable_h * amplitude_ratio
+    corridor_half = (usable_h * corridor_width_ratio) * 0.5
+
+    min_center_y = margin_y + corridor_half
+    max_center_y = H - margin_y - corridor_half
+
+    def center_y(x: float) -> float:
+        raw = (H * 0.5 + amplitude * math.sin(2.0 * math.pi * waves * (x / max(1.0, W))))
+        return max(min_center_y, min(max_center_y, raw))
+
+    # Field asteroids moving right, but keep a narrow corridor open
+    dx = (W - 2 * margin_x) / max(1, cols - 1)
+    dy = (H - 2 * margin_y) / max(1, rows - 1)
+
+    ast_states = []
+    idx = 0
+    for r in range(rows):
+        y = margin_y + r * dy
+        for c in range(cols):
+            x = margin_x + c * dx
+            yc = center_y(x)
+            if abs(y - yc) <= corridor_half:
+                continue
+            ast_states.append({
+                'position': (x + (dx * 0.18 if r % 2 else 0.0), y),
+                'size': int((2, 2, 3)[idx % 3]),
+                'angle': 0.0,
+                'speed': float(field_speed)
+            })
+            idx += 1
+
+    # Add crossing sentries inside/near the corridor to create “timed gates”
+    for i in range(sentry_pairs):
+        t = i / max(1, sentry_pairs - 1)
+        x = W * (0.25 + 0.60 * t)
+        yc = center_y(x)
+        ast_states.append({'position': (x, yc - corridor_half * 0.75), 'size': 1, 'angle': 90.0, 'speed': float(sentry_speed)})
+        ast_states.append({'position': (x, yc + corridor_half * 0.75), 'size': 1, 'angle': 270.0, 'speed': float(sentry_speed)})
+
+    return Scenario(
+        name="S-Curve Chokepoint (Narrow Tunnel + Sentries)",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+def phase_shift_grid(map_size=(1300, 950), *,
+                     rows=8,
+                     cols=10,
+                     slow_speed=90.0,
+                     fast_speed=210.0,
+                     size_class=2,
+                     time_limit=80):
+
+    W, H = map_size
+    ship = _mk_ship(pos=(W * 0.15, H * 0.50), angle=0)
+
+    ast_states = []
+
+    dx = W / (cols + 1)
+    dy = H / (rows + 1)
+
+    # Horizontal movers (left)
+    for r in range(rows):
+        y = dy * (r + 1)
+        for c in range(cols):
+            x = dx * (c + 1)
+            ast_states.append({
+                'position': (x, y),
+                'size': size_class,
+                'angle': 180.0,
+                'speed': slow_speed
+            })
+
+    # Vertical movers (down)
+    for c in range(cols):
+        x = dx * (c + 1)
+        for r in range(rows):
+            y = dy * (r + 1)
+            ast_states.append({
+                'position': (x, y),
+                'size': size_class,
+                'angle': 90.0,
+                'speed': fast_speed
+            })
+
+    return Scenario(
+        name="Phase Shift Grid (Intersecting Velocity Fields)",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
