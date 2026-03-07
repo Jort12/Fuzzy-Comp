@@ -4,16 +4,6 @@ Docstring for kessler-game.examples.ActorCriticAgro.TSK
 Brief: A modified version of fuzzy_system.py for Actor-Critic. Mainly changing the evaluate function
 Authors: 85% Kyle Nyguyen and 15% Justin Ortega
 """
-from .TSK_Helper import *
-
-MF_REGISTRY = {
-    "ttc": mu_ttc,
-    "dist": mu_dist,
-    "threat_angle": mu_threat_angle,
-    "approach_speed": mu_approach,
-    "threat_density": mu_threat_density,
-    "heading_err": mu_heading_err
-}
 
 def rule_strength(mus, mode="prod"):
     #mus: list of membership values in [0,1]
@@ -34,55 +24,63 @@ class SugenoSystem:
     def __init__(self, rules=None, mode="prod"): #rules are list of SugenoRule
         self.rules = rules if rules else []
         self.mode = mode  #"prod" or "min", product or minimum for AND operation
+
+        self.last_firing_strengths = []
+        self.last_total_firing = {}
+
     def add_rule(self,rule): 
         self.rules.append(rule)
-    def evaluate(self, inputs: dict):  
-        results = {}#{output_name: [numerator, denominator]}
+    def evaluate(self, inputs: dict):
+        results = {}
+        firing_strengths = []
 
+        '''
+        print("RAW inputs:", {k: inputs.get(k) for k in ["dist", "ttc", "heading_err"]})
+        
+        if "dist" in inputs:
+            dist_mus = MF_REGISTRY["dist"](inputs["dist"])
+            print("dist mus:", dist_mus, "max:", max(dist_mus.values()) if dist_mus else None)
 
-        for rule in self.rules:
-            #rule strength
+        if "ttc" in inputs:
+            ttc_mus = MF_REGISTRY["ttc"](inputs["ttc"])
+            print("ttc mus:", ttc_mus, "max:", max(ttc_mus.values()) if ttc_mus else None)
+        '''
+
+        for rule_idx, rule in enumerate(self.rules):
             mus = []
-            for (fuzzy_set_name, membership_func) in rule.antecedents:
-                if fuzzy_set_name in inputs:
-                    mu = membership_func(inputs[fuzzy_set_name])
-                    mus.append(mu)
-                    for (var, membership_func) in rule.antecedents:
-                        x = inputs.get(var, None)
-                        if x is None:
-                            mu = 0.0
-                            print(f"Mu: {var} = 0.0 (missing input)")
-                        else:
-                            mu = membership_func(x)
-                            print(f"Mu: {var} = {mu}")
-                    
-                    print("end of antecedents")
-                else:
-                    mus.append(0.0)
-            w = rule_strength(mus, self.mode) * rule.weight
+            for (var, mf) in rule.antecedents:
+                x = inputs.get(var, None)
+                mu = float(mf(x)) if x is not None else 0.0
+                mus.append(mu)
 
-            #handle consequents (support dicts and lists)
-            if isinstance(rule.consequents, dict):
-                consequents_iter = rule.consequents.items()
-            else:
-                consequents_iter = rule.consequents
+            strength = rule_strength(mus, self.mode)
+            firing_strengths.append(strength)
+            w = strength * rule.weight
+
+            if w != 0.0:
+                print(f"[FIRE] rule {rule_idx} w={w} mus={mus}")
+
+            consequents_iter = rule.consequents.items() if isinstance(rule.consequents, dict) else rule.consequents
 
             for output_name, output_value in consequents_iter:
-                print(f"Output Name:{output_name}, Output Value:{output_value(inputs)}")
-                # first order: function of crisp inputs
-                if callable(output_value):
-                    y_i = float(output_value(inputs))
-                else:
-                    y_i = float(output_value)
+                y_i = float(output_value(inputs)) if callable(output_value) else float(output_value)
 
                 if output_name not in results:
                     results[output_name] = [0.0, 0.0]
-                results[output_name][0] += w * y_i #numerator
-                results[output_name][1] += w #denominator
+                results[output_name][0] += w * y_i
+                results[output_name][1] += w
 
-        #Defuzzify (weighted average)
+        print("--- DENOMINATORS ---")
+        for name, (num, den) in results.items():
+            print(f"{name}: den={den}, num={num}")
+
         outputs = {}
         for name, (num, den) in results.items():
-            outputs[name] = num / den if den != 0 else 0.0
+            outputs[name] = (num / den) if den != 0 else (30.0 if name == "thrust" else 0.0)
 
+        print("OUTPUTS:", outputs)
+
+        #Store for learning
+        self.last_firing_strengths = firing_strengths
+        self.last_total_firing = {name: den for name, (num, den) in results.items()}
         return outputs

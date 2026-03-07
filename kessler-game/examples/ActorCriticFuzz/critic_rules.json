@@ -1,0 +1,1889 @@
+{
+  "mode": "prod",
+  "profiles": {
+    "critical_danger": {
+      "weight": 2.0,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": -20.0,
+          "weights": {
+            "dist_norm": 0.1,
+            "ttc": -2.0,
+            "threat_density": -3.0
+          }
+        }
+      }
+    },
+    "high_threat": {
+      "weight": 1.8,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": -10.0,
+          "weights": {
+            "dist_norm": 0.08,
+            "approach_speed": -0.3,
+            "threat_density": -2.0
+          }
+        }
+      }
+    },
+    "moderate_risk": {
+      "weight": 1.5,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": -5.0,
+          "weights": {
+            "dist_norm": 0.05,
+            "ttc": -1.0,
+            "threat_angle": -0.1
+          }
+        }
+      }
+    },
+    "safe_positioning": {
+      "weight": 1.3,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": 8.0,
+          "weights": {
+            "dist_norm": 0.03,
+            "threat_density": -1.5
+          }
+        }
+      }
+    },
+    "clear_space": {
+      "weight": 1.0,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": 12.0,
+          "weights": {
+            "dist_norm": 0.02,
+            "threat_density": -1.0
+          }
+        }
+      }
+    },
+    "neutral_state": {
+      "weight": 0.3,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": 2.0,
+          "weights": {
+            "dist_norm": 0.01,
+            "ttc": -0.3
+          }
+        }
+      }
+    },
+    "aligned_state": {
+      "weight": 0.5,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": 5.0,
+          "weights": {
+            "dist_norm": 0.015,
+            "heading_norm": -0.05
+          }
+        }
+      }
+    },
+    "baseline": {
+      "weight": 0.2,
+      "out": {
+        "value": {
+          "type": "linear",
+          "bias": 0.0,
+          "weights": {
+            "dist_norm": 0.01
+          }
+        }
+      }
+    }
+  },
+  "rules": [
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "left_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "left_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "left_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "left_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "ahead",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "ahead",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "ahead",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "ahead",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "right_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "right_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "right_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "right_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "left_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "left_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "left_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "left_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "ahead",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "ahead",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "ahead",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "ahead",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "right_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "right_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "right_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "critical_danger",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "right_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "left_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "left_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "left_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "left_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "ahead",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "ahead",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "ahead",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "ahead",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "right_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "right_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "right_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "right_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "left_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "left_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "left_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "left_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "ahead",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "ahead",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "ahead",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "ahead",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "right_side",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "right_side",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "right_side",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "right_side",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "away",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "away",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "away",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "away",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "stable",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "stable",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "stable",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "stable",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "approaching",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "approaching",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "approaching",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "approaching",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "fast_approaching",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "fast_approaching",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "fast_approaching",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "fast_approaching",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "very_fast_approaching",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "very_fast_approaching",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "very_fast_approaching",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "approach_speed": "very_fast_approaching",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "left_side"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "ahead"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "imminent",
+        "threat_angle": "right_side"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "left_side"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "ahead"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "soon",
+        "threat_angle": "right_side"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "left_side"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "ahead"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "ttc": "later",
+        "threat_angle": "right_side"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "left_side"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "ahead"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "ttc": "far_future",
+        "threat_angle": "right_side"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "clear",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "clear",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "clear",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "clear",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "low",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "low",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "low",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "safe_positioning",
+      "if": {
+        "threat_density": "low",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "threat_density": "moderate",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "threat_density": "moderate",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "threat_density": "moderate",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "threat_density": "moderate",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "threat_density": "dense",
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "threat_density": "dense",
+        "dist": "close"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "threat_density": "dense",
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "threat_density": "dense",
+        "dist": "far"
+      }
+    },
+    {
+      "use": "clear_space",
+      "if": {
+        "threat_density": "clear"
+      }
+    },
+    {
+      "use": "clear_space",
+      "if": {
+        "threat_density": "low"
+      }
+    },
+    {
+      "use": "moderate_risk",
+      "if": {
+        "threat_density": "moderate"
+      }
+    },
+    {
+      "use": "high_threat",
+      "if": {
+        "threat_density": "dense"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "neutral_state",
+      "if": {
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_left",
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "left",
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_left",
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "straight",
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "slight_right",
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "right",
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "very_close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "very_close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "very_close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "very_close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "close",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "close",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "close",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "close",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "medium",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "medium",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "medium",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "medium",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "far",
+        "ttc": "imminent"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "far",
+        "ttc": "soon"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "far",
+        "ttc": "later"
+      }
+    },
+    {
+      "use": "aligned_state",
+      "if": {
+        "heading_err": "sharp_right",
+        "dist": "far",
+        "ttc": "far_future"
+      }
+    },
+    {
+      "use": "baseline",
+      "if": {
+        "dist": "very_close"
+      }
+    },
+    {
+      "use": "baseline",
+      "if": {
+        "dist": "close"
+      }
+    },
+    {
+      "use": "baseline",
+      "if": {
+        "dist": "medium"
+      }
+    },
+    {
+      "use": "baseline",
+      "if": {
+        "dist": "far"
+      }
+    }
+  ]
+}
