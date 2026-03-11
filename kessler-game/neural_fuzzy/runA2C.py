@@ -4,7 +4,6 @@ from Actor_Critic import ActorCriticController
 import time
 from hybrid_fuzzy import hybrid_controller
 from kesslergame import KesslerGame, GraphicsType
-from nf_controller import NFController
 import scenarios as sc
 from human_xbox_controller import HumanXboxController
 from dagger_controller import DAggerController
@@ -42,7 +41,7 @@ train_scenarios = [
     sc.moving_maze_right()
 ]
 
-for ep in range(15):
+for ep in range(5):
     scenario = train_scenarios[ep % len(train_scenarios)]
     score, perf_data = game.run(
         scenario=scenario,

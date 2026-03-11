@@ -44,7 +44,7 @@ train_scenarios = [
     sc.spiral_arms(),
 ]
 
-for ep in range(200):
+for ep in range(20):
     scenario = train_scenarios[ep % len(train_scenarios)]
     score, perf_data = game.run(
         scenario=scenario,
