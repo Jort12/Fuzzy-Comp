@@ -247,30 +247,42 @@ class hybrid_controller(KesslerController):
             if self.debug_counter % 30 == 0:
                 print("MODE: FAR APPROACH (cruisin')")
 
-        if closest_distance > 100:
-            ix, iy = intercept_point((sx, sy), (svx, svy),
-                                    best_asteroid.position, best_asteroid.velocity)
-            dx_i, dy_i = ix - sx, iy - sy
-            desired_heading = math.degrees(math.atan2(dy_i, dx_i)) #take the angle to the intercept point and turn into a heading
-            heading_err = wrap180(desired_heading - heading)
-            target_distance = math.hypot(dx_i, dy_i)
+        ix, iy = intercept_point(
+            (sx, sy),
+            (svx, svy),
+            best_asteroid.position,
+            getattr(best_asteroid, "velocity", (0.0, 0.0))
+        )
 
-            #rv check
-            bx, by = best_asteroid.position
-            bvx, bvy = getattr(best_asteroid, "velocity", (0.0, 0.0)) #best  asteroid velocity
-            rel_vx, rel_vy = bvx - svx, bvy - svy #sv: ship velocity
-            rel_dx, rel_dy = bx - sx, by - sy
-            dist_now = math.hypot(rel_dx, rel_dy) or 1.0
-            closing_speed = (rel_vx * rel_dx + rel_vy * rel_dy) / dist_now
+        dx_i, dy_i = ix - sx, iy - sy
+        desired_heading = math.degrees(math.atan2(dy_i, dx_i))
+        heading_err = wrap180(desired_heading - heading)
+        target_distance = math.hypot(dx_i, dy_i)
 
-            fire =(
+        bx, by = best_asteroid.position
+        bvx, bvy = getattr(best_asteroid, "velocity", (0.0, 0.0))
+        rel_vx, rel_vy = bvx - svx, bvy - svy
+        rel_dx, rel_dy = bx - sx, by - sy
+        dist_now = math.hypot(rel_dx, rel_dy) or 1.0
+        closing_speed = (rel_vx * rel_dx + rel_vy * rel_dy) / dist_now
+
+        # softer close-range firing logic
+        if closest_distance < 80:
+            fire = (
+                abs(heading_err) < 10 and
+                closing_speed > 20
+            )
+        elif closest_distance < 140:
+            fire = (
+                abs(heading_err) < 14 and
+                closing_speed > 5
+            )
+        else:
+            fire = (
                 abs(heading_err) < 20 and
                 target_distance < 700 and
-                closing_speed > 0)
-        else:
-            fire = False
-
-
+                closing_speed > 0
+            )
         asteroid_size = getattr(closest_asteroid, "size", 2)
         drop_mine = (closest_distance < 60 and asteroid_size >= 3 and approaching_speed > 80)
 

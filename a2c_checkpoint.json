@@ -1,0 +1,4711 @@
+{
+  "params": {
+    "actor_rule0_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule0_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule1_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule1_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule2_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule2_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule3_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule3_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule4_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule4_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule5_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule5_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule6_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule6_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule7_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule7_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule8_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule8_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule9_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule9_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule10_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule10_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule11_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule11_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule12_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule12_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule13_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule13_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule14_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule14_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule15_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule15_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule16_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule16_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule17_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule17_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule18_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule18_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule19_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule19_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule20_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule20_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule21_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule21_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule22_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule22_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule23_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule23_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule24_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule24_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule25_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule25_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule26_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule26_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule27_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule27_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule28_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule28_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule29_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule29_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule30_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule30_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule31_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule31_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule32_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule32_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule33_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule33_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule34_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule34_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule35_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule35_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule36_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule36_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule37_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule37_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule38_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule38_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule39_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule39_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule40_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule40_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule41_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule41_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule42_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule42_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule43_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule43_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule44_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule44_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule45_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule45_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule46_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule46_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule47_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule47_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule48_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule48_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule49_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule49_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule50_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule50_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule51_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule51_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule52_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule52_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule53_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule53_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule54_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule54_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule55_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule55_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule56_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule56_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule57_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule57_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule58_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule58_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule59_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule59_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule60_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule60_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule61_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule61_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule62_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule62_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule63_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule63_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule64_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule64_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule65_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule65_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule66_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule66_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule67_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule67_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule68_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule68_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule69_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule69_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule70_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule70_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule71_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule71_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule72_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule72_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule73_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule73_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule74_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule74_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule75_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule75_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule76_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule76_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule77_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule77_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule78_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule78_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule79_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule79_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule80_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule80_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule81_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule81_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule82_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule82_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule83_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule83_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule84_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule84_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule85_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule85_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule86_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule86_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule87_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule87_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule88_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule88_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule89_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule89_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule90_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule90_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule91_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule91_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule92_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule92_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule93_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule93_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule94_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule94_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule95_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule95_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": -180.0
+      }
+    },
+    "actor_rule96_thrust": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule96_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "escape_x": 120.0
+      }
+    },
+    "actor_rule97_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule97_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule98_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule98_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule99_thrust": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule99_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "escape_x": NaN
+      }
+    },
+    "actor_rule100_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule100_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule101_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule101_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule102_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule102_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule103_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule103_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule104_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule104_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule105_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule105_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule106_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule106_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule107_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule107_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule108_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule108_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule109_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule109_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule110_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule110_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule111_thrust": {
+      "bias": 100.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule111_turn_rate": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule112_thrust": {
+      "bias": 100.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule112_turn_rate": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule113_thrust": {
+      "bias": 100.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule113_turn_rate": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule114_thrust": {
+      "bias": 100.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule114_turn_rate": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule115_thrust": {
+      "bias": 100.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule115_turn_rate": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "actor_rule116_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule116_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule117_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule117_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule118_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule118_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule119_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule119_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule120_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule120_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule121_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule121_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule122_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule122_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule123_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule123_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule124_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule124_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule125_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule125_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule126_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule126_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule127_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule127_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule128_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule128_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule129_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule129_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule130_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule130_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule131_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule131_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule132_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule132_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule133_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule133_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule134_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule134_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule135_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule135_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule136_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule136_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule137_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule137_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule138_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule138_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule139_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule139_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule140_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule140_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule141_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule141_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule142_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule142_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule143_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule143_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule144_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule144_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule145_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule145_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule146_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule146_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule147_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule147_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule148_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule148_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule149_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule149_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule150_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule150_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule151_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule151_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule152_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule152_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule153_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule153_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule154_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule154_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule155_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule155_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule156_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule156_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule157_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule157_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule158_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule158_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule159_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule159_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule160_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule160_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule161_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule161_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule162_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule162_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule163_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule163_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule164_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule164_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule165_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule165_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule166_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule166_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule167_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule167_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule168_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule168_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule169_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule169_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule170_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule170_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule171_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule171_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule172_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule172_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule173_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule173_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule174_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule174_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule175_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule175_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule176_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule176_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule177_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule177_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule178_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule178_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule179_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule179_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule180_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule180_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule181_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule181_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule182_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule182_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule183_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule183_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule184_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule184_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule185_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule185_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule186_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule186_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule187_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule187_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule188_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule188_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule189_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule189_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule190_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule190_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule191_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule191_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule192_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule192_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule193_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule193_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule194_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule194_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule195_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule195_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule196_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule196_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule197_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule197_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule198_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule198_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule199_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule199_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule200_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule200_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule201_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule201_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule202_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule202_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule203_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule203_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule204_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule204_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule205_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule205_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule206_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule206_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule207_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule207_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule208_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule208_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule209_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule209_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule210_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule210_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule211_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule211_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule212_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule212_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule213_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule213_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule214_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule214_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule215_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule215_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule216_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule216_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule217_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule217_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule218_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule218_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule219_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule219_turn_rate": {
+      "bias": NaN,
+      "weights": {
+        "heading_norm": NaN
+      }
+    },
+    "actor_rule220_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule220_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule221_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule221_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule222_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule222_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule223_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule223_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule224_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule224_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule225_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule225_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule226_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule226_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule227_thrust": {
+      "bias": 80.0,
+      "weights": {
+        "dist_norm": 40.0
+      }
+    },
+    "actor_rule227_turn_rate": {
+      "bias": 0.0,
+      "weights": {
+        "heading_norm": 90.0
+      }
+    },
+    "actor_rule228_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule228_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule229_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule229_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule230_thrust": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "actor_rule230_turn_rate": {
+      "bias": NaN,
+      "weights": {}
+    },
+    "actor_rule231_thrust": {
+      "bias": 60.0,
+      "weights": {
+        "dist_norm": 20.0
+      }
+    },
+    "actor_rule231_turn_rate": {
+      "bias": 0.0,
+      "weights": {}
+    },
+    "critic_rule0_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule1_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule2_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule3_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule4_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule5_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule6_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule7_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule8_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule9_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule10_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule11_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule12_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule13_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule14_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule15_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule16_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule17_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule18_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule19_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule20_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule21_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule22_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule23_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule24_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule25_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule26_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule27_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule28_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule29_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule30_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule31_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule32_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule33_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule34_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule35_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule36_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule37_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule38_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule39_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule40_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule41_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule42_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule43_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule44_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule45_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule46_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule47_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule48_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule49_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule50_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule51_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule52_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule53_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule54_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule55_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule56_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule57_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule58_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule59_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule60_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule61_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule62_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule63_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule64_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule65_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule66_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule67_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule68_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule69_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule70_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule71_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule72_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule73_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule74_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule75_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule76_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule77_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule78_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule79_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule80_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule81_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule82_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule83_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule84_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule85_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule86_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule87_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule88_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule89_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule90_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule91_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule92_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule93_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule94_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule95_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule96_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule97_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule98_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN,
+        "threat_angle": NaN
+      }
+    },
+    "critic_rule99_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "approach_speed": NaN,
+        "threat_density": NaN
+      }
+    },
+    "critic_rule100_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule101_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule102_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule103_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule104_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule105_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule106_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule107_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule108_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule109_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule110_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule111_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule112_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule113_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule114_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule115_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "ttc": NaN
+      }
+    },
+    "critic_rule116_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule117_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule118_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule119_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule120_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule121_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule122_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule123_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule124_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule125_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule126_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule127_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule128_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule129_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule130_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule131_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule132_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule133_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule134_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule135_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule136_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule137_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule138_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule139_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule140_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule141_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule142_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule143_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule144_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule145_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule146_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule147_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule148_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule149_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule150_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule151_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule152_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule153_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule154_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule155_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule156_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule157_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule158_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule159_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule160_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule161_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule162_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule163_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule164_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule165_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule166_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule167_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule168_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule169_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule170_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule171_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule172_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule173_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule174_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule175_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule176_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule177_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule178_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule179_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule180_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule181_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule182_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule183_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule184_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule185_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule186_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule187_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule188_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule189_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule190_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule191_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule192_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule193_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule194_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule195_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule196_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule197_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule198_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule199_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule200_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule201_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule202_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule203_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule204_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule205_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule206_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule207_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule208_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule209_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule210_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule211_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule212_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule213_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule214_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule215_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule216_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule217_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule218_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule219_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule220_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule221_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule222_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule223_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule224_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule225_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule226_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule227_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN,
+        "heading_norm": NaN
+      }
+    },
+    "critic_rule228_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "critic_rule229_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "critic_rule230_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    },
+    "critic_rule231_value": {
+      "bias": NaN,
+      "weights": {
+        "dist_norm": NaN
+      }
+    }
+  },
+  "actor_rule_weights": [
+    0.01,
+    0.01,
+    0.01,
+    2.0,
+    0.01,
+    0.01,
+    0.01,
+    2.0,
+    0.01,
+    0.01,
+    2.0,
+    2.0,
+    0.01,
+    0.01,
+    0.01,
+    2.0,
+    0.01,
+    0.01,
+    0.01,
+    2.0,
+    0.01,
+    0.01,
+    2.0,
+    2.0,
+    0.01,
+    0.01,
+    0.01,
+    2.0,
+    0.01,
+    0.01,
+    0.01,
+    2.0,
+    0.01,
+    0.01,
+    0.01,
+    2.0,
+    0.01,
+    0.01,
+    2.0,
+    2.0,
+    0.01,
+    0.01,
+    2.0,
+    2.0,
+    0.01,
+    0.01,
+    2.0,
+    2.0,
+    1.8,
+    1.8,
+    1.8,
+    1.8,
+    0.01,
+    0.01,
+    1.8,
+    1.8,
+    0.01,
+    0.01,
+    0.01,
+    1.8,
+    0.01,
+    0.01,
+    1.8,
+    1.8,
+    0.01,
+    0.01,
+    1.8,
+    1.8,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    1.3,
+    1.3,
+    1.3,
+    1.3,
+    0.01,
+    0.01,
+    1.3,
+    1.3,
+    0.01,
+    0.01,
+    1.3,
+    1.3,
+    0.01,
+    0.01,
+    1.3,
+    1.3,
+    1.0,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.01,
+    0.01,
+    0.01,
+    0.2
+  ],
+  "critic_rule_weights": [
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01,
+    0.01
+  ]
+}

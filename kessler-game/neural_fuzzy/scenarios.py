@@ -542,7 +542,7 @@ def moving_maze_right(map_size=(1800, 1000), *,
     cx, cy = W * 0.5, H * 0.5
 
     # Ship starts near left edge inside the corridor, pointing right
-    ship = {'position': (W * 0.10, H * 0.50), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (W * 0.10, H * 0.50), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     # Corridor geometry (sinusoidal centerline across X)
     A = min(W, H) * amplitude_ratio
