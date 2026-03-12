@@ -40,23 +40,18 @@ class StochasticManeuverPolicy(nn.Module):
         return means, stds
 
     def get_action(self, x):
-        """
-        Sample an action and return (action, log_prob).
-        action[:,0] = thrust_norm (tanh → [-1, 1])
-        action[:,1] = turn_norm   (tanh → [-1, 1])
-        """
         means, stds = self.forward(x)
         dist = D.Normal(means, stds)
-        raw_sample = dist.rsample() # reparameterized sample
-
-        # Squash through tanh to bound actions to [-1, 1]
+        raw_sample = dist.rsample()
         action = torch.tanh(raw_sample)
 
-        # Log-prob with tanh correction (1e-4 prevents extreme log-prob
-        # when tanh saturates near ±1, capping correction at ~9.2/dim)
-        log_prob = dist.log_prob(raw_sample) - torch.log(1 - action.pow(2) + 1e-4)
-        log_prob = log_prob.sum(dim=-1) # sum of action dims
+        # Amplify thrust (index 0) so small means produce real movement
+        thrust_a = action[:, 0:1] * 1.5
+        thrust_a = thrust_a.clamp(-1.0, 1.0)
+        action = torch.cat([thrust_a, action[:, 1:2]], dim=1)
 
+        log_prob = dist.log_prob(raw_sample) - torch.log(1 - torch.tanh(raw_sample).pow(2) + 1e-4)
+        log_prob = log_prob.sum(dim=-1)
         return action, log_prob, raw_sample
 
     def evaluate_action(self, x, raw_sample):
@@ -140,10 +135,10 @@ def warm_start_maneuver(policy: StochasticManeuverPolicy, bundle_path: str):
 
     if "thrust" in heads:
         policy.thrust_net.load_state_dict(heads["thrust"]["state_dict"])
-        print(f"  ✓ Loaded thrust weights from {bundle_path}")
+        print(f"Loaded thrust weights from {bundle_path}")
     if "turn_rate" in heads:
         policy.turn_net.load_state_dict(heads["turn_rate"]["state_dict"])
-        print(f"  ✓ Loaded turn_rate weights from {bundle_path}")
+        print(f"Loaded turn_rate weights from {bundle_path}")
 
     # Also return normalization stats
     info = heads.get("thrust", heads.get("turn_rate", {}))

@@ -410,7 +410,7 @@ def main():
     value_net = ValueNet(num_inputs).to(device)
 
     # Kill dropout in every SugenoNet for RL. Dropout makes forward()
-    # stochastic w.r.t. the network — old_logp and new_logp diverge even
+    # stochastic w.r.t. the network old_logp and new_logp diverge even
     # before any gradient step because different masks produce different
     # outputs from the same input, breaking PPO importance sampling.
     # Identity swap is permanent and can't be undone by an accidental .train().
@@ -436,9 +436,9 @@ def main():
             "dist", "ttc", "heading_err", "approach_speed",
             "ammo", "mines", "threat_density", "threat_angle",
         ]
-    if args.eval:
+    """if args.eval:
         with torch.no_grad():
-            maneuver_policy.log_std[:] = math.log(0.08)
+            maneuver_policy.log_std[:] = math.log(0.08)"""
     if os.path.exists(combat_path):
         mu_c, sd_c = warm_start_combat(combat_policy, combat_path)
         print("Warm-started combat policy from expert.")
@@ -481,7 +481,7 @@ def main():
 
     game_settings = {
         "perf_tracker": True,
-        "graphics_type": GraphicsType.Tkinter,
+        "graphics_type": GraphicsType.NoGraphics,
         "realtime_multiplier":0.0,
         "graphics_obj": None,
         "frequency": 30,
@@ -505,7 +505,7 @@ def main():
         controller = RLController(
             maneuver_policy, combat_policy,
             mu=mu, sd=sd,
-            deterministic=args.eval,
+            deterministic= args.eval,  # deterministic actions during evaluation
         )
         controller.reset()
 
@@ -549,7 +549,7 @@ def main():
 
             # Anneal log_std: allow less noise as training progresses
             progress = ep / args.episodes
-            max_log_std = -0.5 * (1 - progress) + -1.5 * progress  # -0.5 → -1.5
+            max_log_std = -0.5 * (1 - progress) + -3.0 * progress
             with torch.no_grad():
                 maneuver_policy.log_std.clamp_(-2.0, max_log_std)
 
@@ -600,6 +600,8 @@ def main():
             )
 
         # Save best checkpoint whenever a new best episode appears
+        print(f"DEBUG: ep_reward={ep_reward:.2f}, best_reward={best_reward:.2f}")
+
         if ep_reward > best_reward:
             best_reward = ep_reward
             save_bundle(

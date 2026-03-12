@@ -79,15 +79,16 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
         desired = math.degrees(math.atan2(dy, dx))
         err = abs(wrap180(desired - ship_state.heading))
         
-        if err < 5:
-            reward += 0.50 * dt  # "Perfect" lock
-        elif err < 15:
-            reward += 0.20 * dt  # "Good" alignment
+        if err < 4:
+            reward += 0.30 * dt
+        elif err < 10:
+            reward += 0.10 * dt
+
             
         # Proximity Reward: Scaled to encourage getting closer
         dist = math.hypot(dx, dy)
-        if dist < 300:
-            reward += 0.15 * (1.0 - dist/300.0) * dt
+        if dist < 220:
+            reward += 0.08 * (1.0 - dist / 220.0) * dt
 
     # 4. Firing Encouragement
     # If the agent is pointing at a target, give a tiny reward for firing 
@@ -322,14 +323,15 @@ class RLController(KesslerController):
         if self.deterministic:
             with torch.no_grad():
                 means, _ = self.maneuver_policy(xb)
-                # Use the mean passed through tanh, identical to training's
-                # squashing, just without the stochastic sample.
-                action_m = torch.tanh(means)
-                thrust_norm = action_m[0, 0].item()
-                turn_norm = action_m[0, 1].item()
+                # Small fixed eval noise — means are good but need a nudge
+                eval_noise = 0.15 * torch.randn_like(means)
+                action = torch.tanh(means + eval_noise)
+                thrust_norm = action[0, 0].item()
+                turn_norm = action[0, 1].item()
 
                 log_prob_m = torch.tensor(0.0, device=self.device)
                 raw_sample_m = means
+
         else:
             action_m, log_prob_m, raw_sample_m = self.maneuver_policy.get_action(xb)
             thrust_norm = action_m[0, 0].item()
@@ -337,10 +339,11 @@ class RLController(KesslerController):
 
         thrust = thrust_norm * 150.0
         turn_rate = turn_norm * 180.0
+        
         if self.deterministic:
             fire_logit, mine_logit = self.combat_policy(xb)
-            fire = bool(torch.sigmoid(fire_logit).item() > 0.5)
-            mine = bool(torch.sigmoid(mine_logit).item() > 0.5)
+            fire = bool(torch.sigmoid(fire_logit).item() > 0.4)
+            mine = bool(torch.sigmoid(mine_logit).item() > 0.4)
             log_prob_c = torch.tensor(0.0, device=self.device)
             fire_a = torch.tensor(1.0 if fire else 0.0, device=self.device)
             mine_a = torch.tensor(1.0 if mine else 0.0, device=self.device)
@@ -359,7 +362,7 @@ class RLController(KesslerController):
         max_err = 14.0 if ammo > 10 else 8.0
         max_dist = 450.0 if ammo > 10 else 320.0
         max_ttc = 2.5 if ammo > 10 else 1.8
-        min_closing = 5.0
+        min_closing = 1.0
 
         good_shot = (
             abs_err <= max_err and
