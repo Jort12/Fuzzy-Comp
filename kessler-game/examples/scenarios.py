@@ -14,7 +14,7 @@ from kesslergame import Scenario
 
 
 def _mk_ship(team=1, pos=(400, 400), angle=0, mines=3):
-    return {'position': pos, 'angle': angle, 'lives': 99, 'team': team, "mines_remaining": mines}
+    return {'position': pos, 'angle': angle, 'lives': 3, 'team': team, "mines_remaining": mines}
 
 def _get_asteroid_list(scenario):
 
@@ -409,7 +409,7 @@ def donut_ring_closing(map_size=(1200, 900), *,
     W, H = map_size
     cx, cy = W * 0.5, H * 0.5
 
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     # Convert radius ratio to actual pixels
     r = min(W, H) * start_radius_ratio
@@ -456,7 +456,7 @@ def rotating_cross(map_size=(1400, 1000), *,
     cx, cy = W * 0.5, H * 0.5
 
     # Player far left
-    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     ast_states = []
 
@@ -539,7 +539,7 @@ def moving_maze_right(map_size=(1000, 800), *,
     ship = {
         'position': (W * 0.10, H * 0.50),
         'angle': 0,
-        'lives': 99,
+        'lives': 3,
         'team': 1,
         'mines_remaining': 3
     }
@@ -627,7 +627,7 @@ def pinch_chamber(map_size=(1200, 900), *,
                   time_limit=75):
 
     W, H = map_size
-    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+    ship = _ship_center(map_size, lives=3, angle=0, mines=3)
 
     ast_states = []
 
@@ -690,7 +690,7 @@ def wrap_pincer(map_size=(1000, 800), *,
                 time_limit=60):
 
     W, H = map_size
-    ship = {'position': (W * 0.5, H * 0.55), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (W * 0.5, H * 0.55), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     ast_states = []
 
@@ -760,7 +760,7 @@ def double_orbit_with_darts(map_size=(1400, 1000), *,
     ship = {
         'position': (cx, cy),
         'angle': 0,
-        'lives': 99,
+        'lives': 3,
         'team': 1,
         'mines_remaining': 3
     }
@@ -828,7 +828,7 @@ def diagonal_grid_fast(map_size=(1200, 900), *,
                        time_limit=65):
 
     W, H = map_size
-    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+    ship = _ship_center(map_size, lives=3, angle=0, mines=3)
 
     ast_states = []
 
@@ -870,7 +870,7 @@ def corner_shockwaves(map_size=(1200, 900), *,
                       time_limit=75):
 
     W, H = map_size
-    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+    ship = _ship_center(map_size, lives=3, angle=0, mines=3)
 
     corners = [(0.0, 0.0), (float(W), 0.0), (0.0, float(H)), (float(W), float(H))]
     center = (W * 0.5, H * 0.5)
