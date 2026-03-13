@@ -61,10 +61,10 @@ def ppo_update(
     optimizer,
     trajectory,
     clip_eps=0.2,
-    entropy_coef=0.01,
+    entropy_coef=0.03,
     value_coef=0.25,
-    epochs=1,
-    mini_batch_size=512,
+    epochs=2,
+    mini_batch_size=32,
     gamma=0.99,
     lam=0.95,
 ):
@@ -129,10 +129,13 @@ def ppo_update(
             entropy = entropy_m + entropy_c
 
             log_ratio = new_logp - mb_old_logp
-            # Skip updates where ratio is too large, which indicates the policy has drifted too far and the batch is no longer representative of the current policy's behavior.
-            # This can help stabilize training in early stages when the policy is changing rapidly, hopefully
-            log_ratio = log_ratio.clamp(-4.0, 4.0)
 
+            # Skip mini-batch if any sample has drifted too far.
+            # With ±4 combat clamp + 1e-4 tanh epsilon, legitimate
+            # single-step log-ratios stay well within ±5.
+            if log_ratio.max().item() > 5.0 or log_ratio.min().item() < -5.0:
+                skipped_batches += 1
+                continue
 
             ratio = torch.exp(log_ratio)
 
@@ -157,6 +160,8 @@ def ppo_update(
 
             optimizer.step()
 
+            # log_std clamping moved to training loop (annealed there)
+
             total_loss_sum += float(loss.item())
             policy_loss_sum += float(policy_loss.item())
             value_loss_sum += float(value_loss.item())
@@ -165,7 +170,7 @@ def ppo_update(
             ratio_count += 1
 
         # Early stop remaining epochs if policy has drifted too far
-        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.15:
+        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.2:
             break
 
     denom = max(ratio_count, 1)
@@ -181,8 +186,9 @@ def ppo_update(
 
 def ppo_update_pooled(
     maneuver_policy, combat_policy, value_net, optimizer,
-    episode_pool, clip_eps=0.2, entropy_coef=0.01, value_coef=0.25,
-    epochs=1, mini_batch_size=512, gamma=0.99, lam=0.95,):
+    episode_pool, clip_eps=0.2, entropy_coef=0.03, value_coef=0.25,
+    epochs=2, mini_batch_size=32, gamma=0.99, lam=0.95,
+):
     """PPO update from multiple episodes. Computes GAE per-episode to avoid
     bootstrapping across episode boundaries, then concatenates for minibatch SGD."""
     device = next(maneuver_policy.parameters()).device
@@ -256,8 +262,9 @@ def ppo_update_pooled(
             entropy = entropy_m + entropy_c
 
             log_ratio = new_logp - old_logp[mb]
-            log_ratio = log_ratio.clamp(-4.0, 4.0)
-
+            if log_ratio.max().item() > 5.0 or log_ratio.min().item() < -5.0:
+                skipped_batches += 1
+                continue
 
             ratio = torch.exp(log_ratio)
             surr1 = ratio * adv_t[mb]
@@ -286,7 +293,7 @@ def ppo_update_pooled(
             ratio_sum += float(ratio.mean().item())
             ratio_count += 1
 
-        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.15:
+        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.3:
             break
 
     denom = max(ratio_count, 1)
@@ -371,19 +378,18 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--episodes", type=int, default=300)
     p.add_argument("--scenario", type=str, default="all")
-    p.add_argument("--num_mfs", type=int, default=2,
-                   help="Must match the warm-start model")
-    p.add_argument("--lr", type=float, default=5e-5)
+    p.add_argument("--num_mfs", type=int, default=2)
+    p.add_argument("--lr", type=float, default=1e-4)
     p.add_argument("--gamma", type=float, default=0.99)
-    p.add_argument("--ppo_epochs", type=int, default=1)
+    p.add_argument("--ppo_epochs", type=int, default=2)
     p.add_argument("--clip_eps", type=float, default=0.2)
-    p.add_argument("--entropy_coef", type=float, default=0.01)
+    p.add_argument("--entropy_coef", type=float, default=0.005)
     p.add_argument("--save_every", type=int, default=25)
     p.add_argument("--eval", action="store_true")
-    p.add_argument("--init_log_std", type=float, default=-1.0,
+    p.add_argument("--init_log_std", type=float, default=-0.7,
                    help="Initial exploration noise (log scale). "
                         "-0.5 ≈ std=0.6, -1.0 ≈ std=0.37, -2.0 ≈ std=0.14")
-    p.add_argument("--mini_batch_size", type=int, default=512)
+    p.add_argument("--mini_batch_size", type=int, default=256)
     p.add_argument("--resume", action="store_true",
                    help="Resume training from rl_checkpoint.pt")
     args = p.parse_args()
@@ -431,7 +437,9 @@ def main():
             "dist", "ttc", "heading_err", "approach_speed",
             "ammo", "mines", "threat_density", "threat_angle",
         ]
-
+    """if args.eval:
+        with torch.no_grad():
+            maneuver_policy.log_std[:] = math.log(0.08)"""
     if os.path.exists(combat_path):
         mu_c, sd_c = warm_start_combat(combat_policy, combat_path)
         print("Warm-started combat policy from expert.")
@@ -485,7 +493,7 @@ def main():
     rng = np.random.default_rng()
     episode_pool = []       # list of trajectories (each is a list of dicts)
     pool_steps = 0
-    MIN_POOL_STEPS = 4096    # don't update PPO until this many steps
+    MIN_POOL_STEPS = 2048    # don't update PPO until this many steps
     train_start = time.perf_counter()
 
     for ep in range(start_ep, args.episodes + 1):
@@ -541,12 +549,11 @@ def main():
                 gamma=args.gamma,
             )
 
-            # Anneal log_std gently — with a hard floor
-            # exp(-0.7) ≈ 0.50 at start, exp(-1.8) ≈ 0.17 at end
+            # Anneal log_std: allow less noise as training progresses
             progress = ep / args.episodes
-            max_log_std = -0.7 * (1 - progress) + -1.8 * progress
+            max_log_std = -1.0 * (1 - progress) + -3.0 * progress
             with torch.no_grad():
-                maneuver_policy.log_std.clamp_(-1.8, max_log_std)
+                maneuver_policy.log_std.clamp_(-3.0, max_log_std)
 
             episode_pool = []
             pool_steps = 0
@@ -587,7 +594,7 @@ def main():
                 sd,
                 feature_cols,
                 args.num_mfs,
-                os.path.join(model_dir, "maneuver_rl.pt"),
+                os.path.join(model_dir, "maneuver.pt"),
             )
             save_rl_checkpoint(
                 maneuver_policy, combat_policy, value_net, optimizer,
@@ -615,13 +622,15 @@ def main():
         save_bundle(
             maneuver_policy, combat_policy,
             mu, sd, feature_cols, args.num_mfs,
-            os.path.join(model_dir, "maneuver_rl.pt"),
+            os.path.join(model_dir, "maneuver.pt"),
         )
         save_rl_checkpoint(
             maneuver_policy, combat_policy, value_net, optimizer,
             args.episodes, best_reward, rl_ckpt_path,
         )
         print("\nDone. Models saved to models/")
+        print("To resume: python rl_train.py --resume --episodes 600")
+        print("To evaluate: python rl_train.py --eval --scenario all")
     total_time = time.perf_counter() - train_start
     minutes = total_time / 60
     print(f"\nTotal training time: {minutes:.1f} min ({total_time:.0f}s)")

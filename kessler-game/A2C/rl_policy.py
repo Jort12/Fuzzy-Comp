@@ -45,12 +45,12 @@ class StochasticManeuverPolicy(nn.Module):
         raw_sample = dist.rsample()
         action = torch.tanh(raw_sample)
 
-        # Amplify thrust (index 0) so small means produce real movement
-        thrust_a = action[:, 0:1] * 1.5
-        thrust_a = thrust_a.clamp(-1.0, 1.0)
-        action = torch.cat([thrust_a, action[:, 1:2]], dim=1)
+        # FIX: removed 1.5x thrust amplification that was causing
+        # get_action() and evaluate_action() to disagree, inflating
+        # PPO importance sampling ratios. Let the network learn to
+        # output larger thrust means through the normal tanh space.
 
-        log_prob = dist.log_prob(raw_sample) - torch.log(1 - torch.tanh(raw_sample).pow(2) + 1e-4)
+        log_prob = dist.log_prob(raw_sample) - torch.log(1 - action.pow(2) + 1e-4)
         log_prob = log_prob.sum(dim=-1)
         return action, log_prob, raw_sample
 

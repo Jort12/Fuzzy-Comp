@@ -54,28 +54,25 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
     new_deaths = max(0, current_deaths - prev_deaths)
 
     # 1. High-Value Sparse Rewards
-    reward += 8.0 * new_kills  # Slightly increased from 7.0
-    reward += -6.0 * new_deaths # Increased penalty to discourage "tanking" hits
+    reward += 8.0 * new_kills
+    reward += -6.0 * new_deaths
 
     # 2. Movement & Engagement (The "Search" part)
     speed = math.hypot(*getattr(ship_state, "velocity", (0.0, 0.0)))
     if speed < 20.0:
-        # Harsher penalty for low speed to force exploration
         reward -= 0.40 * dt 
     elif speed > 100.0:
-        # Small bonus for active movement
         reward += 0.05 * dt
 
     # 3. Dense Targeting Rewards (The "Destroy" part)
     asteroids = getattr(game_state, "asteroids", [])
+    err = 180.0  # default: not aimed at anything
     if asteroids:
         sx, sy = ship_state.position
-        # Find the priority threat using your existing logic
         closest = min(asteroids, key=lambda a: math.hypot(*toro_dx_dy(sx, sy, a.position[0], a.position[1], map_size)))
         ax, ay = closest.position
         dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
         
-        # Heading Reward: Much tighter and more rewarding
         desired = math.degrees(math.atan2(dy, dx))
         err = abs(wrap180(desired - ship_state.heading))
         
@@ -84,15 +81,11 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
         elif err < 10:
             reward += 0.10 * dt
 
-            
-        # Proximity Reward: Scaled to encourage getting closer
         dist = math.hypot(dx, dy)
         if dist < 220:
             reward += 0.08 * (1.0 - dist / 220.0) * dt
 
     # 4. Firing Encouragement
-    # If the agent is pointing at a target, give a tiny reward for firing 
-    # to help the RL "discover" that the fire button does something.
     if prev_fire and err < 20:
         reward += 0.02 * dt
 
@@ -131,10 +124,7 @@ def find_priority_threat(asteroids, ship_state, map_size):
         avx, avy = getattr(a, "velocity", (0.0, 0.0))
         rel_vx, rel_vy = avx - svx, avy - svy
 
-        # positive = moving toward the ship
         approach_speed = (rel_vx * dx + rel_vy * dy) / max(center, 1.0)
-
-        # only reward closing motion, not receding motion
         closing = max(approach_speed, 0.0)
 
         ttc = gap / max(closing, 1e-6)
@@ -142,7 +132,6 @@ def find_priority_threat(asteroids, ship_state, map_size):
 
         size = getattr(a, "size", 2)
 
-        # higher score = more dangerous / more worth focusing on
         score = (
             2.5 / max(gap, 20.0) +
             1.5 / max(ttc, 0.25) +
@@ -266,10 +255,6 @@ class RLController(KesslerController):
         self._pending = None
         self.prev_danger = 0.0
 
-    """
-    Flush the last pending transition. If score is available, recover final kill/death deltas so the last step
-    does not silently lose terminal sparse reward.
-    """
     def finalize_episode(self, score=None):
         if self._pending is None:
             return
@@ -281,7 +266,6 @@ class RLController(KesslerController):
             terminal_reward += HIT_REWARD * max(0, final_hits - self.prev_asteroids_hit)
             terminal_reward += DEATH_PENALTY * max(0, final_deaths - self.prev_deaths)
 
-            # Penalize passive full episodes with no meaningful engagement
             if final_hits == 0 and final_deaths == 0:
                 terminal_reward -= 6.0
 
@@ -303,7 +287,6 @@ class RLController(KesslerController):
 
         # Finish previous transition reward using the current state
         if self._pending is not None:
-            # Retrieve whether the agent fired in the previous step
             prev_fire = bool(self._pending["fire_action"].item() > 0.5)
 
             reward, self.prev_asteroids_hit, self.prev_deaths, self.prev_danger = compute_reward(
@@ -312,20 +295,18 @@ class RLController(KesslerController):
                 self.prev_asteroids_hit,
                 self.prev_deaths,
                 self.prev_danger,
-                prev_fire=prev_fire,                     # <-- pass fire flag
+                prev_fire=prev_fire,
             )
             self._pending["reward"] = reward
             self.trajectory.append(self._pending)
             self._pending = None
 
-        # Current action — same tanh + scaling path for both modes so
-        # eval exactly matches the action space PPO was trained on.
+        # Current action
         if self.deterministic:
             with torch.no_grad():
                 means, _ = self.maneuver_policy(xb)
-                # Small fixed eval noise — means are good but need a nudge
-                eval_noise = 0.15 * torch.randn_like(means)
-                action = torch.tanh(means + eval_noise)
+                # Truly deterministic eval — no noise
+                action = torch.tanh(means)
                 thrust_norm = action[0, 0].item()
                 turn_norm = action[0, 1].item()
 
@@ -337,8 +318,14 @@ class RLController(KesslerController):
             thrust_norm = action_m[0, 0].item()
             turn_norm = action_m[0, 1].item()
 
-        thrust = thrust_norm * 150.0
-        turn_rate = turn_norm * 180.0
+        # FIX: apply gains AFTER sampling so log_prob stays clean.
+        # Matches nf_infer.py GAIN=1.5 and TURN_GAIN=1.2.
+        # This is part of the environment interface, not the policy distribution.
+        thrust_scaled = max(-1.0, min(1.0, thrust_norm * 1.5))
+        thrust = thrust_scaled * 150.0
+
+        turn_scaled = max(-1.0, min(1.0, turn_norm * 1.2))
+        turn_rate = turn_scaled * 180.0
         
         if self.deterministic:
             fire_logit, mine_logit = self.combat_policy(xb)
@@ -352,26 +339,25 @@ class RLController(KesslerController):
             fire = bool(fire_a.item())
             mine = bool(mine_a.item())
 
-        abs_err = abs(ctx["heading_err"])
-        dist = ctx["dist"]
-        ttc = ctx["ttc"]
-        closing = max(ctx["approach_speed"], 0.0)
-        ammo = getattr(ship_state, "ammo", 0)
-
-        # tighter firing discipline when ammo is low
-        max_err = 14.0 if ammo > 10 else 8.0
-        max_dist = 450.0 if ammo > 10 else 320.0
-        max_ttc = 2.5 if ammo > 10 else 1.8
-        min_closing = 1.0
-
-        good_shot = (
-            abs_err <= max_err and
-            dist <= max_dist and
-            ttc <= max_ttc and
-            closing >= min_closing
-        )
-
-        fire_a = torch.tensor(1.0 if fire else 0.0, device=self.device)
+        # TODO: re-enable good_shot filter once agent is reliably hitting targets
+        # abs_err = abs(ctx["heading_err"])
+        # dist = ctx["dist"]
+        # ttc = ctx["ttc"]
+        # closing = max(ctx["approach_speed"], 0.0)
+        # ammo = getattr(ship_state, "ammo", 0)
+        # max_err = 14.0 if ammo > 10 else 8.0
+        # max_dist = 450.0 if ammo > 10 else 320.0
+        # max_ttc = 2.5 if ammo > 10 else 1.8
+        # min_closing = 1.0
+        # good_shot = (
+        #     abs_err <= max_err and
+        #     dist <= max_dist and
+        #     ttc <= max_ttc and
+        #     closing >= min_closing
+        # )
+        # if not good_shot:
+        #     fire = False
+        #     fire_a = torch.tensor(0.0, device=self.device)
 
         # Recompute combat log_prob to match the (possibly overridden) actions,
         # so the stored old_logp is consistent with the stored fire_a / mine_a.
