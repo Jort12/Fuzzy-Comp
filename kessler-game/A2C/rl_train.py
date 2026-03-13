@@ -499,7 +499,7 @@ def main():
         controller = RLController(
             maneuver_policy, combat_policy,
             mu=mu, sd=sd,
-            deterministic= args.eval,  # deterministic actions during evaluation
+            deterministic= False  # deterministic actions during evaluation
         )
         controller.reset()
 
