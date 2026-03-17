@@ -1,6 +1,5 @@
 # kessler-game/examples/scenario_test.py
 import time
-from git import Actor
 from kesslergame import KesslerGame, GraphicsType
 from ActorCriticFuzz.Actor_Critic import ActorCriticController 
 import scenarios as sc  
