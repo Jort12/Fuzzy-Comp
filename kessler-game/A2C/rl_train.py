@@ -126,7 +126,7 @@ def ppo_update(
             entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
 
             new_logp = new_logp_m + new_logp_c
-            entropy = entropy_m + entropy_c
+            entropy = entropy_c  # only discrete combat entropy (see pooled version)
 
             log_ratio = new_logp - mb_old_logp
             # Skip updates where ratio is too large, which indicates the policy has drifted too far and the batch is no longer representative of the current policy's behavior.
@@ -253,7 +253,11 @@ def ppo_update_pooled(
             entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
 
             new_logp = new_logp_m + new_logp_c
-            entropy = entropy_m + entropy_c
+            # Only apply entropy bonus to discrete combat policy.
+            # For the continuous maneuver policy, log_std already controls
+            # exploration — the entropy bonus on tanh-Gaussian pulls means
+            # toward zero (maximum-entropy region), causing mean collapse.
+            entropy = entropy_c
 
             log_ratio = new_logp - old_logp[mb]
             log_ratio = log_ratio.clamp(-4.0, 4.0)
@@ -314,6 +318,9 @@ def save_bundle(maneuver_policy, combat_policy, mu, sd, feature_cols, num_mfs, p
             "num_inputs": len(feature_cols),
             "num_mfs": num_mfs,
         }
+
+    # Preserve the trained log_std so eval can reload it
+    bundle["log_std"] = maneuver_policy.log_std.detach().cpu().tolist()
 
     torch.save(bundle, path)
     print(f"Saved maneuver bundle → {path}")
@@ -424,6 +431,12 @@ def main():
     mu, sd, feature_cols = None, None, None
     if os.path.exists(maneuver_path):
         mu, sd, feature_cols = warm_start_maneuver(maneuver_policy, maneuver_path)
+        # Restore trained log_std if available in the bundle
+        _bundle = torch.load(maneuver_path, map_location="cpu")
+        if "log_std" in _bundle:
+            with torch.no_grad():
+                maneuver_policy.log_std.copy_(torch.tensor(_bundle["log_std"]))
+            print(f"Restored log_std: {maneuver_policy.log_std.data.tolist()}")
         print("Warm-started maneuver policy from expert.")
     else:
         print("No maneuver.pt found — training from scratch!")
@@ -499,7 +512,7 @@ def main():
         controller = RLController(
             maneuver_policy, combat_policy,
             mu=mu, sd=sd,
-            deterministic= False  # deterministic actions during evaluation
+            deterministic=args.eval,  # deterministic during evaluation
         )
         controller.reset()
 
@@ -595,20 +608,34 @@ def main():
             )
 
         # Save best checkpoint whenever a new best episode appears
-        print(f"DEBUG: ep_reward={ep_reward:.2f}, best_reward={best_reward:.2f}")
-
-        if ep_reward > best_reward:
-            best_reward = ep_reward
-            save_bundle(
-                maneuver_policy,
-                combat_policy,
-                mu,
-                sd,
-                feature_cols,
-                args.num_mfs,
-                os.path.join(model_dir, "maneuver_best.pt"),
+        # Run a deterministic eval episode periodically to select best checkpoint
+        # based on actual greedy performance, not stochastic luck.
+        if ep % args.save_every == 0:
+            eval_scenario = scenario_map["stock"]()
+            eval_ctrl = RLController(
+                maneuver_policy, combat_policy,
+                mu=mu, sd=sd, deterministic=True,
             )
-            print(f"New best: {best_reward:.2f}")
+            eval_ctrl.reset()
+            eval_score, _ = game.run(scenario=eval_scenario, controllers=[eval_ctrl])
+            eval_ctrl.finalize_episode(eval_score)
+            det_reward = sum(t["reward"] for t in eval_ctrl.trajectory)
+            det_hits = sum(t.asteroids_hit for t in eval_score.teams)
+            det_deaths = sum(t.deaths for t in eval_score.teams)
+            print(f"  [DET-EVAL] R={det_reward:.1f} hits={det_hits} deaths={det_deaths}")
+
+            if det_reward > best_reward:
+                best_reward = det_reward
+                save_bundle(
+                    maneuver_policy,
+                    combat_policy,
+                    mu,
+                    sd,
+                    feature_cols,
+                    args.num_mfs,
+                    os.path.join(model_dir, "maneuver_best.pt"),
+                )
+                print(f"  New best (deterministic): {best_reward:.2f}")
 
     if not args.eval:
         #Final save
