@@ -20,8 +20,7 @@ Example row:
     "turn_rate": -0.1
 }
 """
-import csv, os
-from pathlib import Path
+import csv, os, atexit
 
 
 FEATURES = [
@@ -53,6 +52,7 @@ class Logger:
         self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames)
         if not file_exists or os.path.getsize(filepath) == 0:
             self.writer.writeheader()
+        atexit.register(self.close) # close file on exit even if nobody calls .close()
             
     def log(self, ctx, actions):
         row = {name: ctx.get(name, "") for name in self.features}
@@ -62,4 +62,5 @@ class Logger:
         self.file.flush()
         
     def close(self):
-        self.file.close()
+        if not self.file.closed:
+            self.file.close()

@@ -17,16 +17,15 @@ from kesslergame import Scenario, KesslerGame, GraphicsType
 from hybrid_fuzzy import hybrid_controller
 from nf_controller import NFController
 import scenarios as sc
-from human_controller import HumanController
 #SCENARIO = sc.donut_ring()
 #SCENARIO = sc.vertical_wall_left()
-#SCENARIO = sc.stock_scenario()
+SCENARIO = sc.stock_scenario()
 #SCENARIO = sc.spiral_arms()
 #SCENARIO = sc.sniper_practice()
 #SCENARIO = sc.crossing_lanes()
 #SCENARIO = sc.asteroid_rain()
 #SCENARIO = sc.giants_with_kamikaze()
-SCENARIO = sc.donut_ring_closing()
+#SCENARIO = sc.donut_ring_closing()
 #SCENARIO = sc.four_corner()
 
 
@@ -41,7 +40,7 @@ game_settings = {
 
 game = KesslerGame(settings=game_settings)
 pre = time.perf_counter()
-score, perf_data = game.run(scenario=SCENARIO, controllers=[hybrid_controller()])
+score, perf_data = game.run(scenario=SCENARIO, controllers=[NFController()])
 print('Scenario eval time:', time.perf_counter() - pre)
 print(score.stop_reason)
 print('Asteroids hit:', [team.asteroids_hit for team in score.teams])

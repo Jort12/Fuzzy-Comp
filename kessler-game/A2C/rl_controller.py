@@ -8,7 +8,7 @@ import math
 import torch
 import numpy as np
 from kesslergame.controller import KesslerController
-from util import wrap180
+from util import wrap180, toro_dx_dy, SHIP_RADIUS
 from rl_policy import (StochasticManeuverPolicy,StochasticCombatPolicy,)
 
 FEATURE_COLS = [
@@ -16,25 +16,10 @@ FEATURE_COLS = [
     "ammo", "mines", "threat_density", "threat_angle",
 ]
 
-SHIP_RADIUS = 20.0
-
 # Reward coefficients (tunable)
 HIT_REWARD = 7.0
 DEATH_PENALTY = -4.0
-IDLE_PENALTY_PER_SEC = -0.005 # applied when agent does not fire
-PROXIMITY_COEFF = 0.05 # max additional reward per second when very close
-MAX_PROXIMITY_RANGE = 400.0 # beyond this, no proximity reward
-STEP_REWARD = 0.20 # base per‑second survival reward
 
-def wrap_delta(d, size):
-    d = d % size
-    if d > size / 2:
-        d -= size
-    return d
-
-def toro_dx_dy(sx, sy, ax, ay, map_size):
-    w, h = map_size
-    return wrap_delta(ax - sx, w), wrap_delta(ay - sy, h)
 
 def team_hits_and_deaths(game_or_score):
     hits = 0
@@ -91,18 +76,16 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
 
     return reward, current_hits, current_deaths, compute_min_danger(ship_state, game_state)
 
-def find_closest_threat(asteroids, ship_pos, map_size):
-    closest_gap = float("inf")
-    closest = None
-    for a in asteroids:
-        ax, ay = a.position
-        dx, dy = toro_dx_dy(ship_pos[0], ship_pos[1], ax, ay, map_size)
-        center = math.hypot(dx, dy)
-        gap = center - getattr(a, "radius", 0.0) - SHIP_RADIUS
-        if gap < closest_gap:
-            closest_gap = gap
-            closest = a
-    return closest, max(closest_gap, 1.0)
+
+# shared scoring formula, used by both find_priority_threat and compute_min_danger
+def _threat_score(gap, ttc, closing, size):
+    return (
+        2.5 / max(gap, 20.0) +
+        1.5 / max(ttc, 0.25) +
+        0.015 * closing +
+        0.20 * (5 - size)
+    )
+
 
 def find_priority_threat(asteroids, ship_state, map_size):
     sx, sy = ship_state.position
@@ -132,12 +115,7 @@ def find_priority_threat(asteroids, ship_state, map_size):
 
         size = getattr(a, "size", 2)
 
-        score = (
-            2.5 / max(gap, 20.0) +
-            1.5 / max(ttc, 0.25) +
-            0.015 * closing +
-            0.20 * (5 - size)
-        )
+        score = _threat_score(gap, ttc, closing, size)
 
         if score > best_score:
             best_score = score
@@ -146,7 +124,9 @@ def find_priority_threat(asteroids, ship_state, map_size):
 
     return best, max(best_gap, 1.0)
 
+
 def compute_min_danger(ship_state, game_state):
+    #returns the highest threat score across all asteroids
     asteroids = getattr(game_state, "asteroids", [])
     map_size = getattr(game_state, "map_size", (1000, 800))
 
@@ -175,13 +155,7 @@ def compute_min_danger(ship_state, game_state):
         ttc = min(gap / max(closing, 1e-6), 100.0)
         size = getattr(a, "size", 2)
 
-        score = (
-            2.5 / max(gap, 20.0) +
-            1.5 / max(ttc, 0.25) +
-            0.015 * closing +
-            0.20 * (5 - size)
-        )
-
+        score = _threat_score(gap, ttc, closing, size)
         best_score = max(best_score, score)
 
     return best_score
@@ -338,26 +312,6 @@ class RLController(KesslerController):
             fire_a, mine_a, log_prob_c = self.combat_policy.get_action(xb)
             fire = bool(fire_a.item())
             mine = bool(mine_a.item())
-
-        # TODO: re-enable good_shot filter once agent is reliably hitting targets
-        # abs_err = abs(ctx["heading_err"])
-        # dist = ctx["dist"]
-        # ttc = ctx["ttc"]
-        # closing = max(ctx["approach_speed"], 0.0)
-        # ammo = getattr(ship_state, "ammo", 0)
-        # max_err = 14.0 if ammo > 10 else 8.0
-        # max_dist = 450.0 if ammo > 10 else 320.0
-        # max_ttc = 2.5 if ammo > 10 else 1.8
-        # min_closing = 1.0
-        # good_shot = (
-        #     abs_err <= max_err and
-        #     dist <= max_dist and
-        #     ttc <= max_ttc and
-        #     closing >= min_closing
-        # )
-        # if not good_shot:
-        #     fire = False
-        #     fire_a = torch.tensor(0.0, device=self.device)
 
         # Recompute combat log_prob to match the (possibly overridden) actions,
         # so the stored old_logp is consistent with the stored fire_a / mine_a.

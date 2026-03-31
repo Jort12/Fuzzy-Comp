@@ -16,24 +16,7 @@ from kesslergame import Scenario
 def _mk_ship(team=1, pos=(400, 400), angle=0, mines=3):
     return {'position': pos, 'angle': angle, 'lives': 3, 'team': team, "mines_remaining": mines}
 
-def _get_asteroid_list(scenario):
-
-    try:
-        fn = getattr(scenario, "asteroids", None)
-        if callable(fn):
-            lst = fn()
-            if isinstance(lst, list):
-                return lst
-        lst = getattr(scenario, "asteroids", None)
-        if isinstance(lst, list):
-            return lst
-    except Exception:
-        pass
-    return []
-
-# ------------------------------------------------------------
-# A general baseline: random asteroids
-# ------------------------------------------------------------
+# a general baseline: random asteroids
 def stock_scenario(map_size=(1000, 800)):
     random.seed(42)
     return Scenario(

@@ -16,7 +16,6 @@ Usage:
 import argparse
 import os
 import time
-import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -54,130 +53,6 @@ def compute_gae(rewards, values, gamma=0.99, lam=0.95):
     return advantages, returns
 
 
-def ppo_update(
-    maneuver_policy,
-    combat_policy,
-    value_net,
-    optimizer,
-    trajectory,
-    clip_eps=0.2,
-    entropy_coef=0.01,
-    value_coef=0.25,
-    epochs=1,
-    mini_batch_size=512,
-    gamma=0.99,
-    lam=0.95,
-):
-    device = next(maneuver_policy.parameters()).device
-
-    features = torch.cat([t["features"] for t in trajectory], dim=0).to(device)
-    raw_m = torch.cat([t["raw_sample_m"] for t in trajectory], dim=0).to(device)
-    fire_acts = torch.stack([t["fire_action"] for t in trajectory]).to(device)
-    mine_acts = torch.stack([t["mine_action"] for t in trajectory]).to(device)
-    old_logp = torch.stack([t["log_prob"] for t in trajectory]).to(device).squeeze(-1)
-    rewards = [t["reward"] for t in trajectory]
-
-    with torch.no_grad():
-        old_values = value_net(features)
-        values_np = old_values.detach().cpu().numpy()
-
-    advantages, returns = compute_gae(rewards, values_np, gamma, lam)
-
-    adv_t = torch.tensor(advantages, dtype=torch.float32, device=device)
-    ret_t = torch.tensor(returns, dtype=torch.float32, device=device)
-
-    # Normalize only advantages
-    if adv_t.std() > 1e-8:
-        adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
-
-    N = len(trajectory)
-
-    total_loss_sum = 0.0
-    policy_loss_sum = 0.0
-    value_loss_sum = 0.0
-    entropy_sum = 0.0
-    ratio_sum = 0.0
-    ratio_count = 0
-    skipped_batches = 0
-
-    for _ in range(epochs):
-        idxs = torch.randperm(N, device=device)
-
-        for start in range(0, N, mini_batch_size):
-            end = min(start + mini_batch_size, N)
-            mb = idxs[start:end]
-
-            mb_features = features[mb]
-            mb_raw_m = raw_m[mb]
-            mb_fire = fire_acts[mb]
-            mb_mine = mine_acts[mb]
-            mb_old_logp = old_logp[mb]
-            mb_adv = adv_t[mb]
-            mb_ret = ret_t[mb]
-
-            new_logp_m, entropy_m = maneuver_policy.evaluate_action(mb_features, mb_raw_m)
-            new_logp_c, entropy_c = combat_policy.evaluate_action(
-                mb_features, mb_fire, mb_mine
-            )
-
-            new_logp_m = new_logp_m.squeeze(-1)
-            new_logp_c = new_logp_c.squeeze(-1)
-            entropy_m = entropy_m.squeeze(-1) if entropy_m.dim() > 1 else entropy_m
-            entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
-
-            new_logp = new_logp_m + new_logp_c
-            entropy = entropy_c  # only discrete combat entropy (see pooled version)
-
-            log_ratio = new_logp - mb_old_logp
-            # Skip updates where ratio is too large, which indicates the policy has drifted too far and the batch is no longer representative of the current policy's behavior.
-            # This can help stabilize training in early stages when the policy is changing rapidly, hopefully
-            log_ratio = log_ratio.clamp(-4.0, 4.0)
-
-
-            ratio = torch.exp(log_ratio)
-
-            surr1 = ratio * mb_adv
-            surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * mb_adv
-            policy_loss = -torch.min(surr1, surr2).mean()
-
-            v_pred = value_net(mb_features)
-            value_loss = nn.SmoothL1Loss()(v_pred, mb_ret)
-
-            loss = policy_loss + value_coef * value_loss - entropy_coef * entropy.mean()
-
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-
-            nn.utils.clip_grad_norm_(
-                list(maneuver_policy.parameters())
-                + list(combat_policy.parameters())
-                + list(value_net.parameters()),
-                max_norm=0.5,
-            )
-
-            optimizer.step()
-
-            total_loss_sum += float(loss.item())
-            policy_loss_sum += float(policy_loss.item())
-            value_loss_sum += float(value_loss.item())
-            entropy_sum += float(entropy.mean().item())
-            ratio_sum += float(ratio.mean().item())
-            ratio_count += 1
-
-        # Early stop remaining epochs if policy has drifted too far
-        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.15:
-            break
-
-    denom = max(ratio_count, 1)
-    return {
-        "total_loss": total_loss_sum / denom,
-        "policy_loss": policy_loss_sum / denom,
-        "value_loss": value_loss_sum / denom,
-        "entropy": entropy_sum / denom,
-        "ratio": ratio_sum / denom,
-        "skipped": skipped_batches,
-    }
-#  Save model in existing bundle format 
 
 def ppo_update_pooled(
     maneuver_policy, combat_policy, value_net, optimizer,
@@ -344,9 +219,9 @@ def save_bundle(maneuver_policy, combat_policy, mu, sd, feature_cols, num_mfs, p
 
 def save_rl_checkpoint(
     maneuver_policy, combat_policy, value_net, optimizer,
-    episode, best_reward, path,
+    episode, best_reward, total_episodes, path,
 ):
-    """Save full RL training state so training can be resumed exactly."""
+    #saves everything needed to resume training, including total_episodes for annealing
     torch.save({
         "maneuver_policy": maneuver_policy.state_dict(),
         "combat_policy": combat_policy.state_dict(),
@@ -354,6 +229,7 @@ def save_rl_checkpoint(
         "optimizer": optimizer.state_dict(),
         "episode": episode,
         "best_reward": best_reward,
+        "total_episodes": total_episodes,
     }, path)
     print(f"Saved RL checkpoint (ep {episode}) → {path}")
 
@@ -361,7 +237,7 @@ def save_rl_checkpoint(
 def load_rl_checkpoint(
     maneuver_policy, combat_policy, value_net, optimizer, path, device,
 ):
-    """Restore full RL training state. Returns (start_episode, best_reward)."""
+    #restores full training state, returns (episode, best_reward, total_episodes)
     ckpt = torch.load(path, map_location=device)
     maneuver_policy.load_state_dict(ckpt["maneuver_policy"])
     combat_policy.load_state_dict(ckpt["combat_policy"])
@@ -369,8 +245,9 @@ def load_rl_checkpoint(
     optimizer.load_state_dict(ckpt["optimizer"])
     ep = ckpt.get("episode", 0)
     best = ckpt.get("best_reward", -float("inf"))
+    total_ep = ckpt.get("total_episodes", None) # None if old checkpoint
     print(f"Resumed RL checkpoint from ep {ep}, best_reward={best:.2f}")
-    return ep, best
+    return ep, best, total_ep
 
 
 
@@ -462,13 +339,16 @@ def main():
     # Resume from RL checkpoint if requested
     start_ep = 1
     best_reward = -float("inf")
+    total_episodes = args.episodes # save the original training horizon for annealing
     rl_ckpt_path = os.path.join(model_dir, "rl_checkpoint.pt")
     if args.resume and os.path.exists(rl_ckpt_path):
-        start_ep, best_reward = load_rl_checkpoint(
+        start_ep, best_reward, saved_total = load_rl_checkpoint(
             maneuver_policy, combat_policy, value_net, optimizer,
             rl_ckpt_path, device,
         )
         start_ep += 1  # resume from the next episode
+        if saved_total is not None:
+            total_episodes = saved_total # keep the original schedule
 
     scenario_map = {
         "stock": sc.stock_scenario,
@@ -556,7 +436,7 @@ def main():
 
             # Anneal log_std gently — with a hard floor
             # exp(-0.7) ≈ 0.50 at start, exp(-1.8) ≈ 0.17 at end
-            progress = ep / args.episodes
+            progress = ep / total_episodes # use original horizon so resume doesn't reset the schedule
             max_log_std = -0.7 * (1 - progress) + -1.8 * progress
             with torch.no_grad():
                 maneuver_policy.log_std.clamp_(-1.8, max_log_std)
@@ -604,7 +484,7 @@ def main():
             )
             save_rl_checkpoint(
                 maneuver_policy, combat_policy, value_net, optimizer,
-                ep, best_reward, rl_ckpt_path,
+                ep, best_reward, total_episodes, rl_ckpt_path,
             )
 
         # Save best checkpoint whenever a new best episode appears
@@ -646,7 +526,7 @@ def main():
         )
         save_rl_checkpoint(
             maneuver_policy, combat_policy, value_net, optimizer,
-            args.episodes, best_reward, rl_ckpt_path,
+            args.episodes, best_reward, total_episodes, rl_ckpt_path,
         )
         print("\nDone. Models saved to models/")
     total_time = time.perf_counter() - train_start

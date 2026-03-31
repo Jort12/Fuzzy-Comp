@@ -5,68 +5,8 @@
 import math
 import os
 from kesslergame.controller import KesslerController
-from util import wrap180, triag, intercept_point
+from util import wrap180, triag, intercept_point,toro_dx_dy, toro_dist, SHIP_RADIUS, find_closest_threat, calculate_threat_priority
 from data_log import Logger, FEATURES
-
-SHIP_RADIUS = 20.0  # from API docs
-
-def wrap_delta(d, size):
-    """Shortest signed delta on a wrapping axis."""
-    d = d % size
-    if d > size / 2:
-        d -= size
-    return d
-
-def toro_dx_dy(sx, sy, ax, ay, map_size):
-    """Shortest dx, dy from ship to asteroid on toroidal map."""
-    w, h = map_size
-    return wrap_delta(ax - sx, w), wrap_delta(ay - sy, h)
-
-def toro_dist(sx, sy, ax, ay, map_size):
-    dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
-    return math.hypot(dx, dy)
-
-
-
-
-# threat priority calculation for targeting
-"""A higher score means a more threatening asteroid,
-calculate relative speed, factor in size and distance. """
-def calculate_threat_priority(asteroid, ship_pos, ship_vel):
-    ax, ay = asteroid.position
-    dx, dy = ax - ship_pos[0], ay - ship_pos[1]
-    #hypot gives sqrt(dx*dx + dy*dy)
-    distance = math.hypot(dx, dy)#hypot is very very nice
-    
-    avx, avy = getattr(asteroid, "velocity", (0.0, 0.0))
-    closing_speed = ((avx - ship_vel[0]) * dx + (avy - ship_vel[1]) * dy) / max(distance, 1)
-    
-    size = getattr(asteroid, "size", 2)
-    
-    """(1000 / distance) → closer asteroids = higher priority.
-(max(closing_speed, 0) / 50) → if the asteroid is rushing toward you, add danger. If moving away, ignore it (max(...,0)).
-(5 - size) -> smaller asteroids add to priority (maybe theyare harder to hit or dodge).
-
-"""
-
-
-    priority = (1000.0 / distance) + max(closing_speed, 0) / 50.0 + (5 - size)#give priority to smaller asteroids
-    return priority
-
-def find_closest_threat(asteroids, ship_pos, map_size):
-    closest_dist = float('inf')
-    closest_asteroid = None
-    
-    for asteroid in asteroids:
-        ax, ay = asteroid.position
-        center_dist = toro_dist(ship_pos[0], ship_pos[1], ax, ay, map_size)
-        # Collision gap = center distance minus BOTH radii
-        gap = center_dist - getattr(asteroid, "radius", 0.0) - SHIP_RADIUS
-        if gap < closest_dist:
-            closest_dist = gap
-            closest_asteroid = asteroid
-    
-    return closest_asteroid, max(closest_dist, 1.0)
 
 
 def rear_clearance(ship_pos, heading_deg, asteroids, map_size, check_range=200.0, safety=40.0):
@@ -140,8 +80,6 @@ class hybrid_controller(KesslerController):
 
     def actions(self, ship_state, game_state):
         self.debug_counter += 1
-        """for b in game_state.bullets:
-            print("Bullet speed:", math.hypot(b.vx, b.vy))""" #checking bullet speed
         ctx = self.context(ship_state, game_state)
 
         asteroids = getattr(game_state, "asteroids", [])
@@ -178,7 +116,7 @@ class hybrid_controller(KesslerController):
 
         #Danger is high if very close, or close and approaching fast
         danger_level = max(very_close, min(close, max(fast_approach, slow_approach)))
-        best_asteroid = max(asteroids, key=lambda a: calculate_threat_priority(a, (sx,sy), (svx,svy)))
+        best_asteroid = max(asteroids, key=lambda a: calculate_threat_priority(a, (sx,sy), (svx,svy), map_size))
 
         if self.debug_counter % 30 == 0:
             print(f"gap={closest_distance:.0f}, center={center_dist:.0f}, approach={approaching_speed:.0f}, danger={danger_level:.2f}")
@@ -229,7 +167,6 @@ class hybrid_controller(KesslerController):
                 perp2 = (dy, -dx)
                 vectors_to_asteroids = [toro_dx_dy(sx, sy, a.position[0], a.position[1], map_size) for a in asteroids]
                 #Score how many asteroids are on each side
-                """NOTE: Not very good, very far asteroids still count, should only count within a certain range"""
                 score1 = sum(vx * perp1[0] + vy * perp1[1] for (vx, vy) in vectors_to_asteroids)
                 score2 = sum(vx * perp2[0] + vy * perp2[1] for (vx, vy) in vectors_to_asteroids)
                 perp = perp1 if score1 > score2 else perp2
@@ -245,8 +182,10 @@ class hybrid_controller(KesslerController):
             thrust = 80.0
             if best_asteroid:
                 
-                #bullet_speed = 800.0
-                ix, iy = intercept_point((sx, sy), (svx, svy),best_asteroid.position, getattr(best_asteroid, "velocity", (0.0, 0.0)))    
+                ix, iy = intercept_point((sx, sy), (svx, svy),
+                                         best_asteroid.position,
+                                         getattr(best_asteroid, "velocity", (0.0, 0.0)),
+                                         map_size)
                 dx_i, dy_i = toro_dx_dy(sx, sy, ix, iy, map_size)
 
                 desired_heading = math.degrees(math.atan2(dy_i, dx_i))
@@ -268,7 +207,8 @@ class hybrid_controller(KesslerController):
 
         if closest_distance > 100:
             ix, iy = intercept_point((sx, sy), (svx, svy),
-                                    best_asteroid.position, best_asteroid.velocity)
+                                     best_asteroid.position, best_asteroid.velocity,
+                                     map_size)
             dx_i, dy_i = toro_dx_dy(sx, sy, ix, iy, map_size)
             desired_heading = math.degrees(math.atan2(dy_i, dx_i))
             heading_err = wrap180(desired_heading - heading)
@@ -293,7 +233,7 @@ class hybrid_controller(KesslerController):
         asteroid_size = getattr(closest_asteroid, "size", 2)
         drop_mine = False  # disabled — mines kill us more than asteroids
 
-        # clamp into ship’s limits so it doesn’t freak out
+        # clamp into ship's limits so it doesn't freak out
         if hasattr(ship_state, "thrust_range"):
             lo, hi = ship_state.thrust_range
             thrust = max(lo, min(hi, thrust))

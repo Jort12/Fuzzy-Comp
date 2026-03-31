@@ -1,29 +1,18 @@
 import os
 import math
-from util import wrap180
+from kesslergame.controller import KesslerController
+from util import wrap180, toro_dx_dy, find_closest_threat
 from nf_infer import NFPolicy
 import torch
 from data_log import Logger, FEATURES, TARGET
-
-
-def find_closest_threat(asteroids, ship_pos):
-    closest_dist = float('inf')
-    closest_asteroid = None
-    
-    for asteroid in asteroids:
-        ax, ay = asteroid.position
-        distance = math.hypot(ax - ship_pos[0], ay - ship_pos[1])
-        if distance < closest_dist:
-            closest_dist = distance
-            closest_asteroid = asteroid
-    
-    return closest_asteroid, closest_dist
 
 
 def calculate_context(ship_state, game_state):
     sx, sy = ship_state.position
     heading = ship_state.heading
     asteroids = getattr(game_state, "asteroids", [])
+    map_size = getattr(game_state, "map_size", (1000, 800))
+
     if not asteroids:
         return {
             "dist": 1000.0,
@@ -36,16 +25,20 @@ def calculate_context(ship_state, game_state):
             "threat_angle": 0.0
         }
 
-    closest, dist = find_closest_threat(asteroids, (sx, sy))
+    # uses the shared wrapping version from util now
+    closest, dist = find_closest_threat(asteroids, (sx, sy), map_size)
     ax, ay = closest.position
+    dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size) # wrap aware deltas
+
     avx, avy = getattr(closest, "velocity", (0.0, 0.0))
     svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
     rel_vx, rel_vy = avx - svx, avy - svy
-    approach_speed = (rel_vx * (ax - sx) + rel_vy * (ay - sy)) / max(dist, 1)
+    raw_dist = math.hypot(dx, dy)
+    approach_speed = (rel_vx * dx + rel_vy * dy) / max(raw_dist, 1)
 
     ttc = dist / max(abs(approach_speed), 1e-6)
     ttc = min(ttc, 100.0)  
-    heading_err = wrap180(math.degrees(math.atan2(ay - sy, ax - sx)) - heading)
+    heading_err = wrap180(math.degrees(math.atan2(dy, dx)) - heading)
     density = len(asteroids) / 10.0
 
     return {
@@ -56,11 +49,11 @@ def calculate_context(ship_state, game_state):
         "ammo": getattr(ship_state, "ammo", 0),
         "mines": getattr(ship_state, "mines", 0),
         "threat_density": density,
-        "threat_angle": math.degrees(math.atan2(ay - sy, ax - sx))
+        "threat_angle": math.degrees(math.atan2(dy, dx))
     }
 
 
-class NFController:
+class NFController(KesslerController): # now inherits KesslerController like the others
     name = "NFController"
     def __init__(self):
         self.input_buffer = None
