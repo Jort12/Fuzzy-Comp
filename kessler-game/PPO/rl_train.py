@@ -497,7 +497,7 @@ def main():
     game_settings = {
         "perf_tracker": True,
         "graphics_type": GraphicsType.NoGraphics if not args.eval else GraphicsType.Tkinter,
-        "realtime_multiplier":0.0,
+        "realtime_multiplier":1.0 if args.eval else 0.0,
         "graphics_obj": None,
         "frequency": 30,
     }

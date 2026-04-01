@@ -38,18 +38,18 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
     new_kills = max(0, current_hits - prev_hits)
     new_deaths = max(0, current_deaths - prev_deaths)
 
-    # 1. High-Value Sparse Rewards
+    #High-Value Sparse Rewards
     reward += 8.0 * new_kills
     reward += -6.0 * new_deaths
 
-    # 2. Movement & Engagement (The "Search" part)
+    # Movement & Engagement (The "Search" part)
     speed = math.hypot(*getattr(ship_state, "velocity", (0.0, 0.0)))
     if speed < 20.0:
         reward -= 0.40 * dt 
     elif speed > 100.0:
         reward += 0.05 * dt
 
-    # 3. Dense Targeting Rewards (The "Destroy" part)
+    #Dense Targeting Rewards
     # continuous aiming reward so the agent always has a gradient toward the target
     # old version only rewarded err < 4 and err < 10, which gave zero signal
     # when the agent was 90 degrees off and needed to turn
@@ -75,11 +75,16 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
         if dist < 220:
             reward += 0.08 * (1.0 - dist / 220.0) * dt
 
-    # 4. Firing: reward good shots, punish spraying into empty space
-    if prev_fire and err < 20:
-        reward += 0.02 * dt
-    if prev_fire and err > 30:
-        reward -= 0.15 * dt
+    # Firing: reward good shots, punish spraying into empty space
+    if prev_fire and err < 8:
+        reward += 0.14 * dt   # very good shot
+    elif prev_fire and err < 15:
+        reward += 0.08 * dt   # decent shot
+    elif prev_fire and err < 22:
+        reward += 0.03 * dt   # still acceptable
+
+    if prev_fire and err > 35:
+        reward -= 0.12 * dt   # bad spray
 
     return reward, current_hits, current_deaths, compute_min_danger(ship_state, game_state)
 
