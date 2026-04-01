@@ -304,6 +304,33 @@ def ppo_update_pooled(
     }
 
 
+
+def anneal_log_std_(maneuver_policy, ep, total_episodes, warmup_episodes):
+    """
+    Actively shrink exploration after warmup.
+
+    The old code only clamped an upper bound on log_std. If gradients did not
+    move log_std downward, std could sit near the same value for hundreds of
+    episodes. This helper moves log_std toward a scheduled target each PPO update.
+
+    Right after warmup: target log_std ~= -1.10 (std ~ 0.33)
+    End of training:   target log_std ~= -2.30 (std ~ 0.10)
+    """
+    if ep <= warmup_episodes:
+        return
+
+    denom = max(total_episodes - warmup_episodes, 1)
+    progress = (ep - warmup_episodes) / denom
+    progress = max(0.0, min(1.0, progress))
+
+    target_log_std = -1.10 * (1.0 - progress) + -2.30 * progress
+
+    with torch.no_grad():
+        target = torch.full_like(maneuver_policy.log_std, target_log_std)
+        maneuver_policy.log_std.lerp_(target, 0.25)
+        maneuver_policy.log_std.clamp_(-2.30, -0.90)
+
+
 def save_bundle(maneuver_policy, combat_policy, mu, sd, feature_cols, num_mfs, path):
     """Save in the same format as nf_train.py so nf_infer.py can load it."""
     bundle = {"task": "rl", "heads": {}}
@@ -497,7 +524,7 @@ def main():
     game_settings = {
         "perf_tracker": True,
         "graphics_type": GraphicsType.NoGraphics if not args.eval else GraphicsType.Tkinter,
-        "realtime_multiplier":1.0 if args.eval else 0.0,
+        "realtime_multiplier":0.0,
         "graphics_obj": None,
         "frequency": 30,
     }
@@ -584,14 +611,13 @@ def main():
                 gamma=args.gamma,
             )
 
-            # Anneal log_std gently — with a hard floor
-            # exp(-0.7) ≈ 0.50 at start, exp(-1.8) ≈ 0.17 at end
-            # skip during warmup since the policy is frozen anyway
-            if not policy_frozen:
-                progress = ep / total_episodes # use original horizon so resume doesn't reset the schedule
-                max_log_std = -0.7 * (1 - progress) + -1.8 * progress
-                with torch.no_grad():
-                    maneuver_policy.log_std.clamp_(-1.8, max_log_std)
+            # Actively cool exploration after warmup.
+            anneal_log_std_(
+                maneuver_policy,
+                ep,
+                total_episodes,
+                args.warmup_episodes,
+            )
 
             episode_pool = []
             pool_steps = 0
@@ -609,6 +635,7 @@ def main():
 
         #Logging 
         log_std_val = maneuver_policy.log_std.exp().mean().item()
+        log_std_raw = maneuver_policy.log_std.detach().cpu().tolist()
         skip_str = f" skip={stats['skipped']}" if stats["skipped"] > 0 else ""
         warmup_str = " [WARMUP]" if policy_frozen else ""
         print(
@@ -620,6 +647,7 @@ def main():
             f"v={stats['value_loss']:.4f} "
             f"H={stats['entropy']:.4f} "
             f"ratio={stats['ratio']:.3f}{skip_str}{warmup_str} "
+            f"log_std_raw={log_std_raw} "
             f"({dt:.1f}s, elapsed={((time.perf_counter()-train_start)/60):.1f}m)"
         )
 

@@ -29,7 +29,7 @@ def team_hits_and_deaths(game_or_score):
         deaths += getattr(t, "deaths", 0)
     return hits, deaths
 
-def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, prev_fire=False):
+def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, prev_fire=False, locked_target=None):
     reward = 0.0
     dt = float(getattr(game_state, "delta_time", 1 / 30))
     map_size = getattr(game_state, "map_size", (1000, 800))
@@ -51,15 +51,15 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
 
     #Dense Targeting Rewards
     # continuous aiming reward so the agent always has a gradient toward the target
-    # old version only rewarded err < 4 and err < 10, which gave zero signal
-    # when the agent was 90 degrees off and needed to turn
-    # uses find_priority_threat so the reward targets the same asteroid
-    # that calculate_context puts into the policy features
+    # uses locked_target if provided so reward and features target the same asteroid
     asteroids = getattr(game_state, "asteroids", [])
     err = 180.0  # default: not aimed at anything
     if asteroids:
         sx, sy = ship_state.position
-        target, _ = find_priority_threat(asteroids, ship_state, map_size)
+        if locked_target is not None:
+            target = locked_target
+        else:
+            target, _ = find_priority_threat(asteroids, ship_state, map_size)
         ax, ay = target.position
         dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
         
@@ -172,7 +172,7 @@ def compute_min_danger(ship_state, game_state):
 
     return best_score
 
-def calculate_context(ship_state, game_state):
+def calculate_context(ship_state, game_state, locked_target=None):
     sx, sy = ship_state.position
     heading = ship_state.heading
     asteroids = getattr(game_state, "asteroids", [])
@@ -181,9 +181,17 @@ def calculate_context(ship_state, game_state):
     if not asteroids:
         return {k: 0.0 for k in FEATURE_COLS}
 
-    priority, dist = find_priority_threat(asteroids, ship_state, map_size)
-    ax, ay = priority.position
-    dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
+    if locked_target is not None:
+        priority = locked_target
+        ax, ay = priority.position
+        dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
+        center = math.hypot(dx, dy)
+        radius = getattr(priority, "radius", 0.0)
+        dist = max(center - radius - SHIP_RADIUS, 1.0)
+    else:
+        priority, dist = find_priority_threat(asteroids, ship_state, map_size)
+        ax, ay = priority.position
+        dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
 
     avx, avy = getattr(priority, "velocity", (0.0, 0.0))
     svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
@@ -212,6 +220,9 @@ def calculate_context(ship_state, game_state):
 class RLController(KesslerController):
     name = "RLController"
 
+    # how many frames to hold a target before re-evaluating
+    TARGET_LOCK_FRAMES = 10
+
     def __init__(
         self,
         maneuver_policy: StochasticManeuverPolicy,
@@ -234,12 +245,20 @@ class RLController(KesslerController):
         self.prev_deaths = 0
         self._pending = None
 
+        # target-sticking state
+        self._locked_target = None
+        self._locked_pos = None
+        self._lock_frames_left = 0
+
     def reset(self):
         self.trajectory = []
         self.prev_asteroids_hit = 0
         self.prev_deaths = 0
         self._pending = None
         self.prev_danger = 0.0
+        self._locked_target = None
+        self._locked_pos = None
+        self._lock_frames_left = 0
 
     def finalize_episode(self, score=None):
         if self._pending is None:
@@ -267,8 +286,58 @@ class RLController(KesslerController):
             x = (x - self.mu) / sd
         return torch.tensor(x, dtype=torch.float32, device=self.device).unsqueeze(0)
 
+    def _get_locked_target(self, ship_state, game_state):
+        """
+        Returns a stable target asteroid, holding the same one for
+        TARGET_LOCK_FRAMES before re-evaluating. This prevents the
+        priority target from flickering between equidistant asteroids
+        in symmetric scenarios (donut_ring, four_corner), which was
+        causing heading_err to jump wildly and preventing the maneuver
+        head from learning a consistent turn direction.
+        """
+        asteroids = getattr(game_state, "asteroids", [])
+        map_size = getattr(game_state, "map_size", (1000, 800))
+
+        if not asteroids:
+            self._locked_target = None
+            self._locked_pos = None
+            self._lock_frames_left = 0
+            return None
+
+        # check if current lock is still valid
+        still_alive = False
+        if self._locked_target is not None and self._lock_frames_left > 0:
+            # look for an asteroid at the locked position (destroyed asteroids
+            # get removed from the list, so we match by position)
+            lx, ly = self._locked_pos
+            for a in asteroids:
+                ax, ay = a.position
+                # tolerance of 15 handles fast-moving asteroids (~7 units/frame)
+                # while still being tight enough to not match a different asteroid
+                dx, dy = toro_dx_dy(lx, ly, ax, ay, map_size)
+                if math.hypot(dx, dy) < 15.0:
+                    # found it, update reference in case the object changed
+                    self._locked_target = a
+                    self._locked_pos = (ax, ay)
+                    still_alive = True
+                    break
+
+        if still_alive:
+            self._lock_frames_left -= 1
+            return self._locked_target
+
+        # lock expired or target destroyed — pick a new one
+        target, _ = find_priority_threat(asteroids, ship_state, map_size)
+        self._locked_target = target
+        self._locked_pos = tuple(target.position)
+        self._lock_frames_left = self.TARGET_LOCK_FRAMES
+        return target
+
     def actions(self, ship_state, game_state):
-        ctx = calculate_context(ship_state, game_state)
+        # get a stable target for this frame
+        locked = self._get_locked_target(ship_state, game_state)
+
+        ctx = calculate_context(ship_state, game_state, locked_target=locked)
         xb = self._normalize(ctx)
 
         # Finish previous transition reward using the current state
@@ -282,6 +351,7 @@ class RLController(KesslerController):
                 self.prev_deaths,
                 self.prev_danger,
                 prev_fire=prev_fire,
+                locked_target=locked,
             )
             self._pending["reward"] = reward
             self.trajectory.append(self._pending)
