@@ -50,29 +50,36 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
         reward += 0.05 * dt
 
     # 3. Dense Targeting Rewards (The "Destroy" part)
+    # continuous aiming reward so the agent always has a gradient toward the target
+    # old version only rewarded err < 4 and err < 10, which gave zero signal
+    # when the agent was 90 degrees off and needed to turn
+    # uses find_priority_threat so the reward targets the same asteroid
+    # that calculate_context puts into the policy features
     asteroids = getattr(game_state, "asteroids", [])
     err = 180.0  # default: not aimed at anything
     if asteroids:
         sx, sy = ship_state.position
-        closest = min(asteroids, key=lambda a: math.hypot(*toro_dx_dy(sx, sy, a.position[0], a.position[1], map_size)))
-        ax, ay = closest.position
+        target, _ = find_priority_threat(asteroids, ship_state, map_size)
+        ax, ay = target.position
         dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
         
         desired = math.degrees(math.atan2(dy, dx))
         err = abs(wrap180(desired - ship_state.heading))
         
-        if err < 4:
-            reward += 0.30 * dt
-        elif err < 10:
-            reward += 0.10 * dt
+        # smooth reward: 0 at 180 degrees, ramps up to 0.30 at 0 degrees
+        # squaring makes it pull harder as you get close to on-target
+        aim_reward = 0.30 * (1.0 - err / 180.0) ** 2
+        reward += aim_reward * dt
 
         dist = math.hypot(dx, dy)
         if dist < 220:
             reward += 0.08 * (1.0 - dist / 220.0) * dt
 
-    # 4. Firing Encouragement
+    # 4. Firing: reward good shots, punish spraying into empty space
     if prev_fire and err < 20:
         reward += 0.02 * dt
+    if prev_fire and err > 30:
+        reward -= 0.15 * dt
 
     return reward, current_hits, current_deaths, compute_min_danger(ship_state, game_state)
 

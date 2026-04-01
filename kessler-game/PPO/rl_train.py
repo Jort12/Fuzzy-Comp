@@ -16,6 +16,7 @@ Usage:
 import argparse
 import os
 import time
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -53,6 +54,130 @@ def compute_gae(rewards, values, gamma=0.99, lam=0.95):
     return advantages, returns
 
 
+def ppo_update(
+    maneuver_policy,
+    combat_policy,
+    value_net,
+    optimizer,
+    trajectory,
+    clip_eps=0.2,
+    entropy_coef=0.01,
+    value_coef=0.25,
+    epochs=1,
+    mini_batch_size=512,
+    gamma=0.99,
+    lam=0.95,
+):
+    device = next(maneuver_policy.parameters()).device
+
+    features = torch.cat([t["features"] for t in trajectory], dim=0).to(device)
+    raw_m = torch.cat([t["raw_sample_m"] for t in trajectory], dim=0).to(device)
+    fire_acts = torch.stack([t["fire_action"] for t in trajectory]).to(device)
+    mine_acts = torch.stack([t["mine_action"] for t in trajectory]).to(device)
+    old_logp = torch.stack([t["log_prob"] for t in trajectory]).to(device).squeeze(-1)
+    rewards = [t["reward"] for t in trajectory]
+
+    with torch.no_grad():
+        old_values = value_net(features)
+        values_np = old_values.detach().cpu().numpy()
+
+    advantages, returns = compute_gae(rewards, values_np, gamma, lam)
+
+    adv_t = torch.tensor(advantages, dtype=torch.float32, device=device)
+    ret_t = torch.tensor(returns, dtype=torch.float32, device=device)
+
+    # Normalize only advantages
+    if adv_t.std() > 1e-8:
+        adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
+
+    N = len(trajectory)
+
+    total_loss_sum = 0.0
+    policy_loss_sum = 0.0
+    value_loss_sum = 0.0
+    entropy_sum = 0.0
+    ratio_sum = 0.0
+    ratio_count = 0
+    skipped_batches = 0
+
+    for _ in range(epochs):
+        idxs = torch.randperm(N, device=device)
+
+        for start in range(0, N, mini_batch_size):
+            end = min(start + mini_batch_size, N)
+            mb = idxs[start:end]
+
+            mb_features = features[mb]
+            mb_raw_m = raw_m[mb]
+            mb_fire = fire_acts[mb]
+            mb_mine = mine_acts[mb]
+            mb_old_logp = old_logp[mb]
+            mb_adv = adv_t[mb]
+            mb_ret = ret_t[mb]
+
+            new_logp_m, entropy_m = maneuver_policy.evaluate_action(mb_features, mb_raw_m)
+            new_logp_c, entropy_c = combat_policy.evaluate_action(
+                mb_features, mb_fire, mb_mine
+            )
+
+            new_logp_m = new_logp_m.squeeze(-1)
+            new_logp_c = new_logp_c.squeeze(-1)
+            entropy_m = entropy_m.squeeze(-1) if entropy_m.dim() > 1 else entropy_m
+            entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
+
+            new_logp = new_logp_m + new_logp_c
+            entropy = entropy_c  # only discrete combat entropy (see pooled version)
+
+            log_ratio = new_logp - mb_old_logp
+            # Skip updates where ratio is too large, which indicates the policy has drifted too far and the batch is no longer representative of the current policy's behavior.
+            # This can help stabilize training in early stages when the policy is changing rapidly, hopefully
+            log_ratio = log_ratio.clamp(-4.0, 4.0)
+
+
+            ratio = torch.exp(log_ratio)
+
+            surr1 = ratio * mb_adv
+            surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * mb_adv
+            policy_loss = -torch.min(surr1, surr2).mean()
+
+            v_pred = value_net(mb_features)
+            value_loss = nn.SmoothL1Loss()(v_pred, mb_ret)
+
+            loss = policy_loss + value_coef * value_loss - entropy_coef * entropy.mean()
+
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+
+            nn.utils.clip_grad_norm_(
+                list(maneuver_policy.parameters())
+                + list(combat_policy.parameters())
+                + list(value_net.parameters()),
+                max_norm=0.5,
+            )
+
+            optimizer.step()
+
+            total_loss_sum += float(loss.item())
+            policy_loss_sum += float(policy_loss.item())
+            value_loss_sum += float(value_loss.item())
+            entropy_sum += float(entropy.mean().item())
+            ratio_sum += float(ratio.mean().item())
+            ratio_count += 1
+
+        # Early stop remaining epochs if policy has drifted too far
+        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.15:
+            break
+
+    denom = max(ratio_count, 1)
+    return {
+        "total_loss": total_loss_sum / denom,
+        "policy_loss": policy_loss_sum / denom,
+        "value_loss": value_loss_sum / denom,
+        "entropy": entropy_sum / denom,
+        "ratio": ratio_sum / denom,
+        "skipped": skipped_batches,
+    }
+#  Save model in existing bundle format 
 
 def ppo_update_pooled(
     maneuver_policy, combat_policy, value_net, optimizer,
@@ -268,6 +393,9 @@ def main():
                    help="Initial exploration noise (log scale). "
                         "-0.5 ≈ std=0.6, -1.0 ≈ std=0.37, -2.0 ≈ std=0.14")
     p.add_argument("--mini_batch_size", type=int, default=512)
+    p.add_argument("--warmup_episodes", type=int, default=0,
+                   help="Freeze policy for this many episodes, only train value_net. "
+                        "Lets the critic catch up to the warm-started actor.")
     p.add_argument("--resume", action="store_true",
                    help="Resume training from rl_checkpoint.pt")
     args = p.parse_args()
@@ -358,6 +486,7 @@ def main():
         "crossing_lanes": sc.crossing_lanes,
         "asteroid_rain": sc.asteroid_rain,
         "four_corner": sc.four_corner,
+        "sniper_practice": sc.sniper_practice, # static targets, trains aiming
     }
 
     if args.scenario.lower() == "all":
@@ -381,7 +510,28 @@ def main():
     MIN_POOL_STEPS = 4096    # don't update PPO until this many steps
     train_start = time.perf_counter()
 
+    # critic warmup: freeze policy params so only value_net trains
+    # this lets the critic learn what states are worth before PPO starts
+    # pushing the actor around with bad advantage estimates
+    policy_frozen = False
+    if args.warmup_episodes > 0 and not args.eval:
+        for p in maneuver_policy.parameters():
+            p.requires_grad = False
+        for p in combat_policy.parameters():
+            p.requires_grad = False
+        policy_frozen = True
+        print(f"Policy frozen for first {args.warmup_episodes} episodes (critic warmup)")
+
     for ep in range(start_ep, args.episodes + 1):
+        # unfreeze policy once warmup is done
+        if policy_frozen and ep > args.warmup_episodes:
+            for p in maneuver_policy.parameters():
+                p.requires_grad = True
+            for p in combat_policy.parameters():
+                p.requires_grad = True
+            policy_frozen = False
+            print(f"Policy unfrozen at episode {ep} (critic warmup done)")
+
         if args.eval:
             scenario_name = scenario_names[(ep - 1) % len(scenario_names)]
         else:
@@ -436,10 +586,12 @@ def main():
 
             # Anneal log_std gently — with a hard floor
             # exp(-0.7) ≈ 0.50 at start, exp(-1.8) ≈ 0.17 at end
-            progress = ep / total_episodes # use original horizon so resume doesn't reset the schedule
-            max_log_std = -0.7 * (1 - progress) + -1.8 * progress
-            with torch.no_grad():
-                maneuver_policy.log_std.clamp_(-1.8, max_log_std)
+            # skip during warmup since the policy is frozen anyway
+            if not policy_frozen:
+                progress = ep / total_episodes # use original horizon so resume doesn't reset the schedule
+                max_log_std = -0.7 * (1 - progress) + -1.8 * progress
+                with torch.no_grad():
+                    maneuver_policy.log_std.clamp_(-1.8, max_log_std)
 
             episode_pool = []
             pool_steps = 0
@@ -458,6 +610,7 @@ def main():
         #Logging 
         log_std_val = maneuver_policy.log_std.exp().mean().item()
         skip_str = f" skip={stats['skipped']}" if stats["skipped"] > 0 else ""
+        warmup_str = " [WARMUP]" if policy_frozen else ""
         print(
             f"[{ep:04d}/{args.episodes}] {scenario_name:20s} | "
             f"R={ep_reward:7.2f} hits={hits} deaths={deaths} steps={ep_steps:4d} "
@@ -466,7 +619,7 @@ def main():
             f"pi={stats['policy_loss']:.4f} "
             f"v={stats['value_loss']:.4f} "
             f"H={stats['entropy']:.4f} "
-            f"ratio={stats['ratio']:.3f}{skip_str} "
+            f"ratio={stats['ratio']:.3f}{skip_str}{warmup_str} "
             f"({dt:.1f}s, elapsed={((time.perf_counter()-train_start)/60):.1f}m)"
         )
 
@@ -487,25 +640,44 @@ def main():
                 ep, best_reward, total_episodes, rl_ckpt_path,
             )
 
-        # Save best checkpoint whenever a new best episode appears
-        # Run a deterministic eval episode periodically to select best checkpoint
-        # based on actual greedy performance, not stochastic luck.
+        # Run deterministic eval across ALL scenarios to pick best checkpoint.
+        # Single-scenario eval was misleading because a policy good at one
+        # scenario but bad at others could look much better or worse than it
+        # really is overall.
         if ep % args.save_every == 0:
-            eval_scenario = scenario_map["stock"]()
-            eval_ctrl = RLController(
-                maneuver_policy, combat_policy,
-                mu=mu, sd=sd, deterministic=True,
-            )
-            eval_ctrl.reset()
-            eval_score, _ = game.run(scenario=eval_scenario, controllers=[eval_ctrl])
-            eval_ctrl.finalize_episode(eval_score)
-            det_reward = sum(t["reward"] for t in eval_ctrl.trajectory)
-            det_hits = sum(t.asteroids_hit for t in eval_score.teams)
-            det_deaths = sum(t.deaths for t in eval_score.teams)
-            print(f"  [DET-EVAL] R={det_reward:.1f} hits={det_hits} deaths={det_deaths}")
+            total_det_reward = 0.0
+            total_det_hits = 0
+            total_det_deaths = 0
+            eval_details = []
 
-            if det_reward > best_reward:
-                best_reward = det_reward
+            for eval_name in scenario_names:
+                eval_scenario = scenario_map[eval_name]()
+                eval_ctrl = RLController(
+                    maneuver_policy, combat_policy,
+                    mu=mu, sd=sd, deterministic=True,
+                )
+                eval_ctrl.reset()
+                eval_score, _ = game.run(scenario=eval_scenario, controllers=[eval_ctrl])
+                eval_ctrl.finalize_episode(eval_score)
+
+                det_reward = sum(t["reward"] for t in eval_ctrl.trajectory)
+                det_hits = sum(t.asteroids_hit for t in eval_score.teams)
+                det_deaths = sum(t.deaths for t in eval_score.teams)
+
+                total_det_reward += det_reward
+                total_det_hits += det_hits
+                total_det_deaths += det_deaths
+                eval_details.append(f"{eval_name}={det_reward:.0f}")
+
+            avg_det_reward = total_det_reward / len(scenario_names)
+            print(
+                f"  [DET-EVAL] avg={avg_det_reward:.1f} "
+                f"total_hits={total_det_hits} total_deaths={total_det_deaths}"
+            )
+            print(f"    {', '.join(eval_details)}")
+
+            if avg_det_reward > best_reward:
+                best_reward = avg_det_reward
                 save_bundle(
                     maneuver_policy,
                     combat_policy,
@@ -515,7 +687,7 @@ def main():
                     args.num_mfs,
                     os.path.join(model_dir, "maneuver_best.pt"),
                 )
-                print(f"  New best (deterministic): {best_reward:.2f}")
+                print(f"  New best (deterministic avg): {best_reward:.2f}")
 
     if not args.eval:
         #Final save
