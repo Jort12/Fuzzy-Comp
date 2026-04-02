@@ -13,12 +13,10 @@ import torch.distributions as D
 import numpy as np
 from sugeno_nn import SugenoNet
 
-
+#Wraps a SugenoNet for thrust and turn_rate as a Gaussian policy.
+# The network outputs the mean, and we have a learnable log_std parameter for exploration noise. Actions are sampled from the Gaussian and squashed with tanh to keep them in [-1, 1]. Log probabilities are computed with the tanh correction for PPO updates.
 class StochasticManeuverPolicy(nn.Module):
-    """
-    Wraps a SugenoNet for thrust + turn_rate as a Gaussian policy.
-    The SugenoNet outputs the mean, we add a learnable log_std.
-    """
+
     def __init__(self, num_inputs, num_mfs, init_log_std=-1.0):
         super().__init__()
         self.thrust_net = SugenoNet(num_inputs=num_inputs, num_mfs=num_mfs, num_outputs=1)
@@ -38,22 +36,21 @@ class StochasticManeuverPolicy(nn.Module):
 
         stds = self.log_std.exp().unsqueeze(0).expand_as(means)  # (B, 2)
         return means, stds
-
+    
+    # Sample actions with tanh squashing and compute log probabilities with correction for PPO updates.
     def get_action(self, x):
         means, stds = self.forward(x)
         dist = D.Normal(means, stds)
         raw_sample = dist.rsample()
         action = torch.tanh(raw_sample)
 
-        # FIX: removed 1.5x thrust amplification that was causing
-        # get_action() and evaluate_action() to disagree, inflating
-        # PPO importance sampling ratios. Let the network learn to
-        # output larger thrust means through the normal tanh space.
+        # FIX: removed 1.5x thrust amplification that was causing get_action() and evaluate_action() to disagree, inflating
+        # PPO importance sampling ratios. Let the network learn to output larger thrust means through the normal tanh space.
 
         log_prob = dist.log_prob(raw_sample) - torch.log(1 - action.pow(2) + 1e-4)
         log_prob = log_prob.sum(dim=-1)
         return action, log_prob, raw_sample
-
+    # Evaluate log probabilities of given actions (for PPO updates). Inverse tanh to get raw action, compute log_prob with correction.
     def evaluate_action(self, x, raw_sample):
         means, stds = self.forward(x)
         dist = D.Normal(means, stds)
@@ -62,9 +59,8 @@ class StochasticManeuverPolicy(nn.Module):
         return log_prob.sum(dim=-1), dist.entropy().sum(dim=-1)
 
 
-#Wraps a SugenoNet for fire + drop_mine as Bernoulli policy.
+#Wraps a SugenoNet for fire + drop_mine as Bernoulli policy. Outputs are logits for each action, sampled independently. Log probabilities are computed for PPO updates.
 class StochasticCombatPolicy(nn.Module):
-
     def __init__(self, num_inputs, num_mfs):
         super().__init__()
         self.fire_net = SugenoNet(num_inputs=num_inputs, num_mfs=num_mfs, num_outputs=1)
@@ -79,13 +75,13 @@ class StochasticCombatPolicy(nn.Module):
         mine_logit = torch.nan_to_num(mine_logit, nan=0.0, posinf=4.0, neginf=-4.0)
 
         # Clamp to keep both actions with meaningful probability mass.
-        # At ±4, sigmoid ≈ 98%/2%, bounding worst-case log-ratio to ~8
+        # At +-4, sigmoid ~ 98%/2%, bounding worst case log ratio to ~8
         # per action instead of ~40 with the old ±20.
         fire_logit = torch.clamp(fire_logit, -4.0, 4.0)
         mine_logit = torch.clamp(mine_logit, -4.0, 4.0)
 
         return fire_logit, mine_logit
-
+    # Sample binary actions and compute log probabilities for PPO updates.
     def get_action(self, x):
         fire_logit, mine_logit = self.forward(x)
         fire_dist = D.Bernoulli(logits=fire_logit)
@@ -94,7 +90,7 @@ class StochasticCombatPolicy(nn.Module):
         mine_action = mine_dist.sample()
         log_prob = fire_dist.log_prob(fire_action) + mine_dist.log_prob(mine_action)
         return fire_action, mine_action, log_prob
-
+    # Evaluate log probabilities of given actions (for PPO updates).
     def evaluate_action(self, x, fire_action, mine_action):
         fire_logit, mine_logit = self.forward(x)
         fire_dist = D.Bernoulli(logits=fire_logit)
@@ -124,12 +120,9 @@ class ValueNet(nn.Module):
 
 
 #helpers
-"""
-Load weights from nf_train.py bundle into the stochastic policy.
-The bundle has heads["thrust"] and heads["turn_rate"] with state_dicts.
-"""
-def warm_start_maneuver(policy: StochasticManeuverPolicy, bundle_path: str):
 
+#Load weights from maneuver bundle, and return normalization stats and feature columns for input preparation.
+def warm_start_maneuver(policy: StochasticManeuverPolicy, bundle_path: str):
     bundle = torch.load(bundle_path, map_location="cpu")
     heads = bundle["heads"]
 

@@ -36,10 +36,13 @@ from rl_policy import (
 from rl_controller import RLController
 
 
-#  PPO update 
 
+# Number of scenarios in the fixed scenario map. Used to size the
+# critic's one-hot context input. Must match the scenario_map in main().
+NUM_SCENARIOS = 8
+
+#Generalized Advantage Estimation.
 def compute_gae(rewards, values, gamma=0.99, lam=0.95):
-    #Generalized Advantage Estimation.
     T = len(rewards)
     advantages = np.zeros(T, dtype=np.float32)
     returns = np.zeros(T, dtype=np.float32)
@@ -54,43 +57,107 @@ def compute_gae(rewards, values, gamma=0.99, lam=0.95):
     return advantages, returns
 
 
-def ppo_update(
-    maneuver_policy,
-    combat_policy,
-    value_net,
-    optimizer,
-    trajectory,
-    clip_eps=0.2,
-    entropy_coef=0.01,
-    value_coef=0.25,
-    epochs=1,
-    mini_batch_size=512,
-    gamma=0.99,
-    lam=0.95,
-):
+"""
+Experimental
+PPO update from multiple episodes.
+
+Computes GAE per episode, concatenates everything, then does minibatch SGD.
+This version adds real safety checks so a warm-started policy does not get
+shoved too far in one update.
+"""
+def ppo_update_pooled(
+    maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
+    episode_pool, clip_eps=0.2, entropy_coef=0.01, value_coef=0.25,
+    epochs=1, mini_batch_size=512, gamma=0.99, lam=0.95,
+    max_steps_per_episode=None, num_scenarios=NUM_SCENARIOS):
+
     device = next(maneuver_policy.parameters()).device
 
-    features = torch.cat([t["features"] for t in trajectory], dim=0).to(device)
-    raw_m = torch.cat([t["raw_sample_m"] for t in trajectory], dim=0).to(device)
-    fire_acts = torch.stack([t["fire_action"] for t in trajectory]).to(device)
-    mine_acts = torch.stack([t["mine_action"] for t in trajectory]).to(device)
-    old_logp = torch.stack([t["log_prob"] for t in trajectory]).to(device).squeeze(-1)
-    rewards = [t["reward"] for t in trajectory]
+    all_features, all_raw_m, all_fire, all_mine, all_old_logp = [], [], [], [], []
+    all_adv, all_ret = [], []
+    all_scenario_ctx = []  # one-hot scenario context for critic only
+    raw_adv_stds = []  # diagnostic: track pre-normalization advantage spread
 
-    with torch.no_grad():
-        old_values = value_net(features)
-        values_np = old_values.detach().cpu().numpy()
+    for traj in episode_pool:
+        if len(traj) == 0:
+            continue
 
-    advantages, returns = compute_gae(rewards, values_np, gamma, lam)
+        features = torch.cat([t["features"] for t in traj], dim=0).to(device)
+        raw_m = torch.cat([t["raw_sample_m"] for t in traj], dim=0).to(device)
+        fire_acts = torch.stack([t["fire_action"] for t in traj]).to(device)
+        mine_acts = torch.stack([t["mine_action"] for t in traj]).to(device)
+        old_logp = torch.stack([t["log_prob"] for t in traj]).to(device).squeeze(-1)
+        rewards = [t["reward"] for t in traj]
 
-    adv_t = torch.tensor(advantages, dtype=torch.float32, device=device)
-    ret_t = torch.tensor(returns, dtype=torch.float32, device=device)
+        # Build scenario one-hot for critic context (policy doesn't see this).
+        # This lets the critic learn separate value scales per scenario instead
+        # of averaging across maps with very different reward dynamics.
+        sc_id = traj[0].get("scenario_id", 0)
+        sc_onehot = torch.zeros(features.shape[0], num_scenarios, device=device)
+        sc_onehot[:, sc_id] = 1.0
 
-    # Normalize only advantages
-    if adv_t.std() > 1e-8:
-        adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
+        with torch.no_grad():
+            value_features = torch.cat([features, sc_onehot], dim=1)
+            values_np = value_net(value_features).cpu().numpy()
 
-    N = len(trajectory)
+        advantages, returns = compute_gae(rewards, values_np, gamma, lam)
+
+        #Per-episode advantage normalization
+        # Normalize advantages within each episode BEFORE concatenating.
+        # This prevents high-reward scenarios (crossing_lanes) from drowning out low-reward ones (sniper_practice) after global
+        # normalization, which was causing the scenario tug-of-war.
+        adv_ep = torch.tensor(advantages, dtype=torch.float32, device=device)
+        ret_ep = torch.tensor(returns, dtype=torch.float32, device=device)
+        raw_adv_stds.append(float(adv_ep.std()) if adv_ep.numel() > 1 else 0.0)
+        if adv_ep.numel() > 1 and adv_ep.std() > 1e-8:
+            adv_ep = (adv_ep - adv_ep.mean()) / (adv_ep.std() + 1e-8)
+
+        #Truncate AFTER GAE so boundary advantages have correct bootstraps
+        #before: runcation happened before GAE, which forced the last step of a mid-episode window to bootstrap with V=0 (as if the episode ended).
+        #Now GAE sees the full episode, and we slice the result.
+        T = features.shape[0]
+        cap = max_steps_per_episode or 0
+        if cap > 0 and T > cap:
+            start = int(torch.randint(0, T - cap + 1, (1,)).item())
+            sl = slice(start, start + cap)
+            features  = features[sl]
+            raw_m     = raw_m[sl]
+            fire_acts = fire_acts[sl]
+            mine_acts = mine_acts[sl]
+            old_logp  = old_logp[sl]
+            adv_ep    = adv_ep[sl]
+            ret_ep    = ret_ep[sl]
+            sc_onehot = sc_onehot[sl]
+
+        all_features.append(features)
+        all_raw_m.append(raw_m)
+        all_fire.append(fire_acts)
+        all_mine.append(mine_acts)
+        all_old_logp.append(old_logp)
+        all_adv.append(adv_ep)
+        all_ret.append(ret_ep)
+        all_scenario_ctx.append(sc_onehot)
+
+    if not all_features:
+        return {
+            "total_loss": 0.0,
+            "policy_loss": 0.0,
+            "value_loss": 0.0,
+            "entropy": 0.0,
+            "ratio": 1.0,
+            "skipped": 0,
+        }
+
+    features = torch.cat(all_features, dim=0)#Concatenate all episodes into one big batch for PPO updates. We already normalized advantages per episode, so we can just concat and go.
+    raw_m = torch.cat(all_raw_m, dim=0)#Concatenate all episodes into one big batch for PPO updates. We already normalized advantages per episode, so we can just concat and go.
+    fire_acts = torch.cat(all_fire, dim=0)#Concatenate all episodes into one big batch for PPO updates. We already normalized advantages per episode, so we can just concat and go.
+    mine_acts = torch.cat(all_mine, dim=0)#Concatenate all episodes into one big batch for PPO updates. We already normalized advantages per episode, so we can just concat and go.
+    old_logp = torch.cat(all_old_logp, dim=0)
+    adv_t = torch.cat(all_adv, dim=0)
+    ret_t = torch.cat(all_ret, dim=0)
+    scenario_ctx = torch.cat(all_scenario_ctx, dim=0)  # (N, num_scenarios)
+
+    N = features.shape[0]
 
     total_loss_sum = 0.0
     policy_loss_sum = 0.0
@@ -99,9 +166,14 @@ def ppo_update(
     ratio_sum = 0.0
     ratio_count = 0
     skipped_batches = 0
+    #Kullback–Leibler divergence: a measure of how much the new policy diverged from the old one. Used for early stopping to prevent destructive updates.
+    # KL target for early stopping. Relaxed from 0.02 because we already
+    # have ratio-skip guards, grad clipping, and conservative clip_eps.
+    target_kl = 0.05
 
-    for _ in range(epochs):
+    for _ in range(epochs): # multiple epochs over the pooled episodes
         idxs = torch.randperm(N, device=device)
+        stop_early = False
 
         for start in range(0, N, mini_batch_size):
             end = min(start + mini_batch_size, N)
@@ -126,46 +198,67 @@ def ppo_update(
             entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
 
             new_logp = new_logp_m + new_logp_c
-            entropy = entropy_c  # only discrete combat entropy (see pooled version)
+            # Combat entropy dominates; small maneuver term gives the
+            # continuous head some exploration pressure without the
+            # mean-collapse issues seen at full weight.
+            entropy = entropy_c + 0.25 * entropy_m
 
             log_ratio = new_logp - mb_old_logp
-            # Skip updates where ratio is too large, which indicates the policy has drifted too far and the batch is no longer representative of the current policy's behavior.
-            # This can help stabilize training in early stages when the policy is changing rapidly, hopefully
             log_ratio = log_ratio.clamp(-4.0, 4.0)
-
-
             ratio = torch.exp(log_ratio)
+
+            mean_ratio = float(ratio.mean().item())
+            approx_kl = float((mb_old_logp - new_logp).mean().abs().item())
+
+            # Real batch skip. If the batch is already too far off-policy,
+            # don't apply a destructive update.
+            if mean_ratio > 1.5 or mean_ratio < 0.67:
+                skipped_batches += 1
+                continue
 
             surr1 = ratio * mb_adv
             surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * mb_adv
             policy_loss = -torch.min(surr1, surr2).mean()
 
-            v_pred = value_net(mb_features)
+            mb_vf = torch.cat([mb_features, scenario_ctx[mb]], dim=1)
+            v_pred = value_net(mb_vf)
             value_loss = nn.SmoothL1Loss()(v_pred, mb_ret)
 
             loss = policy_loss + value_coef * value_loss - entropy_coef * entropy.mean()
 
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
+            # critic step always runs
+            opt_critic.zero_grad(set_to_none=True)
+            critic_obj = value_coef * value_loss
 
-            nn.utils.clip_grad_norm_(
-                list(maneuver_policy.parameters())
-                + list(combat_policy.parameters())
-                + list(value_net.parameters()),
-                max_norm=0.5,
-            )
+            # only run policy backward if policy params are unfrozen
+            policy_params = list(maneuver_policy.parameters()) + list(combat_policy.parameters())
+            policy_trainable = any(p.requires_grad for p in policy_params)
 
-            optimizer.step()
+            if policy_trainable:
+                opt_policy.zero_grad(set_to_none=True)
+                policy_obj = policy_loss - entropy_coef * entropy.mean()
+                policy_obj.backward(retain_graph=True)
+
+                nn.utils.clip_grad_norm_(policy_params, max_norm=0.5)
+                opt_policy.step()
+
+            critic_obj.backward()
+            nn.utils.clip_grad_norm_(value_net.parameters(), max_norm=0.5)
+            opt_critic.step()
 
             total_loss_sum += float(loss.item())
             policy_loss_sum += float(policy_loss.item())
             value_loss_sum += float(value_loss.item())
             entropy_sum += float(entropy.mean().item())
-            ratio_sum += float(ratio.mean().item())
+            ratio_sum += mean_ratio
             ratio_count += 1
 
-        # Early stop remaining epochs if policy has drifted too far
-        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.15:
+            # Early stop this PPO pass if policy moved too much.
+            if approx_kl > target_kl:
+                stop_early = True
+                break
+
+        if stop_early:
             break
 
     denom = max(ratio_count, 1)
@@ -176,147 +269,13 @@ def ppo_update(
         "entropy": entropy_sum / denom,
         "ratio": ratio_sum / denom,
         "skipped": skipped_batches,
-    }
-#  Save model in existing bundle format 
-
-def ppo_update_pooled(
-    maneuver_policy, combat_policy, value_net, optimizer,
-    episode_pool, clip_eps=0.2, entropy_coef=0.01, value_coef=0.25,
-    epochs=1, mini_batch_size=512, gamma=0.99, lam=0.95,):
-    """PPO update from multiple episodes. Computes GAE per-episode to avoid
-    bootstrapping across episode boundaries, then concatenates for minibatch SGD."""
-    device = next(maneuver_policy.parameters()).device
-
-    all_features, all_raw_m, all_fire, all_mine, all_old_logp = [], [], [], [], []
-    all_adv, all_ret = [], []
-
-    for traj in episode_pool:
-        if len(traj) == 0:
-            continue
-        features = torch.cat([t["features"] for t in traj], dim=0).to(device)
-        raw_m = torch.cat([t["raw_sample_m"] for t in traj], dim=0).to(device)
-        fire_acts = torch.stack([t["fire_action"] for t in traj]).to(device)
-        mine_acts = torch.stack([t["mine_action"] for t in traj]).to(device)
-        old_logp = torch.stack([t["log_prob"] for t in traj]).to(device).squeeze(-1)
-        rewards = [t["reward"] for t in traj]
-
-        with torch.no_grad():
-            values_np = value_net(features).cpu().numpy()
-
-        advantages, returns = compute_gae(rewards, values_np, gamma, lam)
-
-        all_features.append(features)
-        all_raw_m.append(raw_m)
-        all_fire.append(fire_acts)
-        all_mine.append(mine_acts)
-        all_old_logp.append(old_logp)
-        all_adv.append(torch.tensor(advantages, dtype=torch.float32, device=device))
-        all_ret.append(torch.tensor(returns, dtype=torch.float32, device=device))
-
-    if not all_features:
-        return {"total_loss": 0, "policy_loss": 0, "value_loss": 0,
-                "entropy": 0, "ratio": 1.0, "skipped": 0}
-
-    features = torch.cat(all_features, dim=0)
-    raw_m = torch.cat(all_raw_m, dim=0)
-    fire_acts = torch.cat(all_fire, dim=0)
-    mine_acts = torch.cat(all_mine, dim=0)
-    old_logp = torch.cat(all_old_logp, dim=0)
-    adv_t = torch.cat(all_adv, dim=0)
-    ret_t = torch.cat(all_ret, dim=0)
-
-    # Normalize advantages across all pooled data
-    if adv_t.std() > 1e-8:
-        adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
-
-    N = features.shape[0]
-    total_loss_sum = 0.0
-    policy_loss_sum = 0.0
-    value_loss_sum = 0.0
-    entropy_sum = 0.0
-    ratio_sum = 0.0
-    ratio_count = 0
-    skipped_batches = 0
-
-    for _ in range(epochs):
-        idxs = torch.randperm(N, device=device)
-        for start in range(0, N, mini_batch_size):
-            end = min(start + mini_batch_size, N)
-            mb = idxs[start:end]
-
-            new_logp_m, entropy_m = maneuver_policy.evaluate_action(features[mb], raw_m[mb])
-            new_logp_c, entropy_c = combat_policy.evaluate_action(features[mb], fire_acts[mb], mine_acts[mb])
-
-            new_logp_m = new_logp_m.squeeze(-1)
-            new_logp_c = new_logp_c.squeeze(-1)
-            entropy_m = entropy_m.squeeze(-1) if entropy_m.dim() > 1 else entropy_m
-            entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
-
-            new_logp = new_logp_m + new_logp_c
-            # Only apply entropy bonus to discrete combat policy.
-            # For the continuous maneuver policy, log_std already controls
-            # exploration — the entropy bonus on tanh-Gaussian pulls means
-            # toward zero (maximum-entropy region), causing mean collapse.
-            entropy = entropy_c
-
-            log_ratio = new_logp - old_logp[mb]
-            log_ratio = log_ratio.clamp(-4.0, 4.0)
-
-
-            ratio = torch.exp(log_ratio)
-            surr1 = ratio * adv_t[mb]
-            surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * adv_t[mb]
-            policy_loss = -torch.min(surr1, surr2).mean()
-
-            v_pred = value_net(features[mb])
-            value_loss = nn.SmoothL1Loss()(v_pred, ret_t[mb])
-
-            loss = policy_loss + value_coef * value_loss - entropy_coef * entropy.mean()
-
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            nn.utils.clip_grad_norm_(
-                list(maneuver_policy.parameters()) +
-                list(combat_policy.parameters()) +
-                list(value_net.parameters()),
-                max_norm=0.5,
-            )
-            optimizer.step()
-
-            total_loss_sum += float(loss.item())
-            policy_loss_sum += float(policy_loss.item())
-            value_loss_sum += float(value_loss.item())
-            entropy_sum += float(entropy.mean().item())
-            ratio_sum += float(ratio.mean().item())
-            ratio_count += 1
-
-        if ratio_count > 0 and abs(ratio_sum / ratio_count - 1.0) > 0.15:
-            break
-
-    denom = max(ratio_count, 1)
-    return {
-        "total_loss": total_loss_sum / denom,
-        "policy_loss": policy_loss_sum / denom,
-        "value_loss": value_loss_sum / denom,
-        "entropy": entropy_sum / denom,
-        "ratio": ratio_sum / denom,
-        "skipped": skipped_batches,
+        "n_episodes": len(raw_adv_stds),
+        "adv_std_spread": max(raw_adv_stds) / max(min(raw_adv_stds), 1e-8) if raw_adv_stds else 0.0,
     }
 
 
 
 
-def truncate_episode_for_pool(ep_buf, max_steps_per_episode):
-    """
-    Prevent one very long episode from dominating the pooled PPO update.
-    We keep the last chunk because it usually reflects the more settled behavior
-    after the initial approach/setup phase.
-    """
-    if max_steps_per_episode is None or max_steps_per_episode <= 0:
-        return ep_buf
-    if len(ep_buf) <= max_steps_per_episode:
-        return ep_buf
-    return ep_buf[-max_steps_per_episode:]
 
 def anneal_log_std_(maneuver_policy, ep, total_episodes, warmup_episodes):
     """
@@ -383,7 +342,7 @@ def save_bundle(maneuver_policy, combat_policy, mu, sd, feature_cols, num_mfs, p
 
 
 def save_rl_checkpoint(
-    maneuver_policy, combat_policy, value_net, optimizer,
+    maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
     episode, best_reward, total_episodes, path,
 ):
     #saves everything needed to resume training, including total_episodes for annealing
@@ -391,7 +350,8 @@ def save_rl_checkpoint(
         "maneuver_policy": maneuver_policy.state_dict(),
         "combat_policy": combat_policy.state_dict(),
         "value_net": value_net.state_dict(),
-        "optimizer": optimizer.state_dict(),
+        "opt_policy": opt_policy.state_dict(),
+        "opt_critic": opt_critic.state_dict(),
         "episode": episode,
         "best_reward": best_reward,
         "total_episodes": total_episodes,
@@ -400,14 +360,30 @@ def save_rl_checkpoint(
 
 
 def load_rl_checkpoint(
-    maneuver_policy, combat_policy, value_net, optimizer, path, device,
+    maneuver_policy, combat_policy, value_net, opt_policy, opt_critic, path, device,
 ):
     #restores full training state, returns (episode, best_reward, total_episodes)
     ckpt = torch.load(path, map_location=device)
     maneuver_policy.load_state_dict(ckpt["maneuver_policy"])
     combat_policy.load_state_dict(ckpt["combat_policy"])
-    value_net.load_state_dict(ckpt["value_net"])
-    optimizer.load_state_dict(ckpt["optimizer"])
+    # Value net input size may have changed (e.g. added scenario context).
+    # If shapes don't match, skip loading and let the critic reinitialize.
+    try:
+        value_net.load_state_dict(ckpt["value_net"])
+        critic_reloaded = True
+    except RuntimeError as e:
+        if "size mismatch" in str(e):
+            print(f"  (value_net shape changed — reinitializing critic from scratch)")
+            critic_reloaded = False
+        else:
+            raise
+    # Support loading from old single-optimizer checkpoints
+    if "opt_policy" in ckpt:
+        opt_policy.load_state_dict(ckpt["opt_policy"])
+        if critic_reloaded:
+            opt_critic.load_state_dict(ckpt["opt_critic"])
+    elif "optimizer" in ckpt:
+        print("  (old single-optimizer checkpoint — skipping optimizer state)")
     ep = ckpt.get("episode", 0)
     best = ckpt.get("best_reward", -float("inf"))
     total_ep = ckpt.get("total_episodes", None) # None if old checkpoint
@@ -423,6 +399,8 @@ def main():
     p.add_argument("--num_mfs", type=int, default=2,
                    help="Must match the warm-start model")
     p.add_argument("--lr", type=float, default=5e-5)
+    p.add_argument("--critic_lr", type=float, default=3e-4,
+                   help="Learning rate for value network (higher than policy LR)")
     p.add_argument("--gamma", type=float, default=0.99)
     p.add_argument("--ppo_epochs", type=int, default=1)
     p.add_argument("--clip_eps", type=float, default=0.2)
@@ -452,7 +430,9 @@ def main():
         num_inputs, args.num_mfs, init_log_std=args.init_log_std
     ).to(device)
     combat_policy = StochasticCombatPolicy(num_inputs, args.num_mfs).to(device)
-    value_net = ValueNet(num_inputs).to(device)
+    # ValueNet gets scenario context as extra one-hot input so it can learn
+    # different value scales per scenario. Policy networks stay at num_inputs.
+    value_net = ValueNet(num_inputs + NUM_SCENARIOS).to(device)
 
     # Kill dropout in every SugenoNet for RL. Dropout makes forward()
     # stochastic w.r.t. the network old_logp and new_logp diverge even
@@ -482,7 +462,7 @@ def main():
             print(f"Restored log_std: {maneuver_policy.log_std.data.tolist()}")
         print("Warm-started maneuver policy from expert.")
     else:
-        print("No maneuver.pt found — training from scratch!")
+        print("No maneuver.pt found — training from scratch")
         feature_cols = [
             "dist", "ttc", "heading_err", "approach_speed",
             "ammo", "mines", "threat_density", "threat_angle",
@@ -492,15 +472,20 @@ def main():
         mu_c, sd_c = warm_start_combat(combat_policy, combat_path)
         print("Warm-started combat policy from expert.")
     else:
-        print("No combat.pt found — training from scratch!")
+        print("No combat.pt found — training from scratch")
 
-    #Optimizer (all params together) 
-    optimizer = optim.Adam(
-        list(maneuver_policy.parameters()) +
-        list(combat_policy.parameters()) +
-        list(value_net.parameters()),
-        lr=args.lr,
+    # Separate optimizers: critic needs a higher LR to keep up with
+    # the changing policy across diverse scenarios.
+    # Exclude log_std from the policy optimizer — it is controlled
+    # entirely by anneal_log_std_() on a schedule. Having it in both
+    # the optimizer (pulled up by entropy bonus) and the annealer
+    # (pulled down) creates a tug-of-war that prevents clean decay.
+    policy_params = (
+        [p for n, p in maneuver_policy.named_parameters() if "log_std" not in n]
+        + list(combat_policy.parameters())
     )
+    opt_policy = optim.Adam(policy_params, lr=args.lr)
+    opt_critic = optim.Adam(value_net.parameters(), lr=args.critic_lr)
 
     # Resume from RL checkpoint if requested
     start_ep = 1
@@ -509,7 +494,7 @@ def main():
     rl_ckpt_path = os.path.join(model_dir, "rl_checkpoint.pt")
     if args.resume and os.path.exists(rl_ckpt_path):
         start_ep, best_reward, saved_total = load_rl_checkpoint(
-            maneuver_policy, combat_policy, value_net, optimizer,
+            maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
             rl_ckpt_path, device,
         )
         start_ep += 1  # resume from the next episode
@@ -527,10 +512,31 @@ def main():
         "sniper_practice": sc.sniper_practice, # static targets, trains aiming
     }
 
+    # Fixed mapping so checkpoint dimensions are stable regardless of --scenario flag.
+    # The critic sees a one-hot of this as extra context; the policy does not.
+    scenario_to_idx = {name: i for i, name in enumerate(scenario_map.keys())}
+    num_scenarios = len(scenario_map)
+    assert num_scenarios == NUM_SCENARIOS, (
+        f"scenario_map has {num_scenarios} entries but NUM_SCENARIOS={NUM_SCENARIOS}"
+    )
+
     if args.scenario.lower() == "all":
-        scenario_names = list(scenario_map.keys())
+        # Training set: leave sniper out for now
+        train_scenario_names = [
+            "stock",
+            "donut_ring",
+            "vertical_wall_left",
+            "spiral_arms",
+            "crossing_lanes",
+            "asteroid_rain",
+            "four_corner",
+        ]
+
+        # Eval set: keep sniper so we can still monitor it
+        eval_scenario_names = list(scenario_map.keys())
     else:
-        scenario_names = [args.scenario]
+        train_scenario_names = [args.scenario]
+        eval_scenario_names = [args.scenario]
 
     game_settings = {
         "perf_tracker": True,
@@ -545,7 +551,7 @@ def main():
     rng = np.random.default_rng()
     episode_pool = []       # list of trajectories (each is a list of dicts)
     pool_steps = 0
-    MIN_POOL_STEPS = 4096    # don't update PPO until this many steps
+    MIN_POOL_STEPS = 2048    # don't update PPO until this many steps
     train_start = time.perf_counter()
 
     # critic warmup: freeze policy params so only value_net trains
@@ -571,9 +577,9 @@ def main():
             print(f"Policy unfrozen at episode {ep} (critic warmup done)")
 
         if args.eval:
-            scenario_name = scenario_names[(ep - 1) % len(scenario_names)]
+            scenario_name = eval_scenario_names[(ep - 1) % len(eval_scenario_names)]
         else:
-            scenario_name = rng.choice(scenario_names)
+            scenario_name = rng.choice(train_scenario_names)
         
         scenario = scenario_map[scenario_name]()
 
@@ -603,8 +609,18 @@ def main():
 
         # Add episode to pool (keep separate for correct GAE)
         if ep_steps > 0:
+            # Tag every step with the scenario index so the critic
+            # can receive scenario context during PPO updates.
+            sc_idx = scenario_to_idx[scenario_name]
+            for step in traj:
+                step["scenario_id"] = sc_idx
             episode_pool.append(traj)
-            pool_steps += ep_steps
+            # Count capped steps for pool-size gating (actual truncation
+            # happens inside ppo_update_pooled AFTER GAE is computed on
+            # the full episode, so the bootstrap at the slice boundary
+            # is correct instead of being forced to zero).
+            cap = args.max_steps_per_episode or len(traj)
+            pool_steps += min(len(traj), cap)
 
         # PPO Update — only when pool is large enough
         stats = None
@@ -613,13 +629,17 @@ def main():
                 maneuver_policy,
                 combat_policy,
                 value_net,
-                optimizer,
+                opt_policy,
+                opt_critic,
                 episode_pool,
                 clip_eps=args.clip_eps,
                 entropy_coef=args.entropy_coef,
+                value_coef=1.0,
                 epochs=args.ppo_epochs,
                 mini_batch_size=args.mini_batch_size,
                 gamma=args.gamma,
+                max_steps_per_episode=args.max_steps_per_episode,
+                num_scenarios=num_scenarios,
             )
 
             # Actively cool exploration after warmup.
@@ -649,6 +669,9 @@ def main():
         log_std_raw = maneuver_policy.log_std.detach().cpu().tolist()
         skip_str = f" skip={stats['skipped']}" if stats["skipped"] > 0 else ""
         warmup_str = " [WARMUP]" if policy_frozen else ""
+        diag_str = ""
+        if "n_episodes" in stats and stats["n_episodes"] > 0:
+            diag_str = f" pool={stats['n_episodes']}ep adv_spread={stats['adv_std_spread']:.1f}x"
         print(
             f"[{ep:04d}/{args.episodes}] {scenario_name:20s} | "
             f"R={ep_reward:7.2f} hits={hits} deaths={deaths} steps={ep_steps:4d} "
@@ -657,7 +680,7 @@ def main():
             f"pi={stats['policy_loss']:.4f} "
             f"v={stats['value_loss']:.4f} "
             f"H={stats['entropy']:.4f} "
-            f"ratio={stats['ratio']:.3f}{skip_str}{warmup_str} "
+            f"ratio={stats['ratio']:.3f}{skip_str}{diag_str}{warmup_str} "
             f"log_std_raw={log_std_raw} "
             f"({dt:.1f}s, elapsed={((time.perf_counter()-train_start)/60):.1f}m)"
         )
@@ -675,7 +698,7 @@ def main():
                 os.path.join(model_dir, "maneuver_rl.pt"),
             )
             save_rl_checkpoint(
-                maneuver_policy, combat_policy, value_net, optimizer,
+                maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
                 ep, best_reward, total_episodes, rl_ckpt_path,
             )
 
@@ -689,7 +712,7 @@ def main():
             total_det_deaths = 0
             eval_details = []
 
-            for eval_name in scenario_names:
+            for eval_name in eval_scenario_names:
                 eval_scenario = scenario_map[eval_name]()
                 eval_ctrl = RLController(
                     maneuver_policy, combat_policy,
@@ -708,7 +731,7 @@ def main():
                 total_det_deaths += det_deaths
                 eval_details.append(f"{eval_name}={det_reward:.0f}")
 
-            avg_det_reward = total_det_reward / len(scenario_names)
+            avg_det_reward = total_det_reward / len(eval_scenario_names)
             print(
                 f"  [DET-EVAL] avg={avg_det_reward:.1f} "
                 f"total_hits={total_det_hits} total_deaths={total_det_deaths}"
@@ -736,7 +759,7 @@ def main():
             os.path.join(model_dir, "maneuver_rl.pt"),
         )
         save_rl_checkpoint(
-            maneuver_policy, combat_policy, value_net, optimizer,
+            maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
             args.episodes, best_reward, total_episodes, rl_ckpt_path,
         )
         print("\nDone. Models saved to models/")

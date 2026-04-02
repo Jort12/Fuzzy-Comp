@@ -16,11 +16,14 @@ FEATURE_COLS = [
     "ammo", "mines", "threat_density", "threat_angle",
 ]
 
-# Reward coefficients (tunable)
+
+
+# Reward coefficients
 HIT_REWARD = 7.0
 DEATH_PENALTY = -4.0
 
 
+#Extracts total hits and deaths from the game score for reward calculation.
 def team_hits_and_deaths(game_or_score):
     hits = 0
     deaths = 0
@@ -29,16 +32,19 @@ def team_hits_and_deaths(game_or_score):
         deaths += getattr(t, "deaths", 0)
     return hits, deaths
 
+
+
+#calculate the reward for the current state, including sparse rewards for kills/deaths and dense shaping rewards for movement, aiming, and firing quality. 
 def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, prev_fire=False, locked_target=None):
     reward = 0.0
-    dt = float(getattr(game_state, "delta_time", 1 / 30))
-    map_size = getattr(game_state, "map_size", (1000, 800))
+    dt = float(getattr(game_state, "delta_time", 1 / 30))#Time delta since last frame, used to make rewards per-second consistent regardless of frame rate.
+    map_size = getattr(game_state, "map_size", (1000, 800))#Map size is needed for wrap-aware calculations in the reward function, and also passed to calculate_context to ensure the same wrapping logic is used for features and rewards. ___>>> THIS IS WHY IT WAS BREAKING!!!!!
 
     current_hits, current_deaths = team_hits_and_deaths(game_state)
-    new_kills = max(0, current_hits - prev_hits)
-    new_deaths = max(0, current_deaths - prev_deaths)
+    new_kills = max(0, current_hits - prev_hits) #New kills since last step, used for sparse kill rewards.
+    new_deaths = max(0, current_deaths - prev_deaths)#New deaths since last step, used for sparse death penalties.
 
-    #High-Value Sparse Rewards
+    #High Value Sparse Rewards
     reward += 8.0 * new_kills
     reward += -6.0 * new_deaths
 
@@ -50,10 +56,10 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, 
         reward += 0.05 * dt
 
     #Dense Targeting Rewards
-    # continuous aiming reward so the agent always has a gradient toward the target
+    #continuous aiming reward so the agent always has a gradient toward the target
     # uses locked_target if provided so reward and features target the same asteroid
     asteroids = getattr(game_state, "asteroids", [])
-    err = 180.0  # default: not aimed at anything
+    err = 180.0  # default to max error if no asteroids
     if asteroids:
         sx, sy = ship_state.position
         if locked_target is not None:
@@ -98,7 +104,7 @@ def _threat_score(gap, ttc, closing, size):
         0.20 * (5 - size)
     )
 
-
+#Find the highest-scoring threat based on a combination of distance, time-to-collision, closing speed, and size. This is used for both targeting and reward calculation, so it uses the same scoring formula as compute_min_danger.
 def find_priority_threat(asteroids, ship_state, map_size):
     sx, sy = ship_state.position
     svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
@@ -112,11 +118,11 @@ def find_priority_threat(asteroids, ship_state, map_size):
         dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
         center = math.hypot(dx, dy)
 
-        radius = getattr(a, "radius", 0.0)
+        radius = getattr(a, "radius", 0.0) #The radius of the asteroid, used to calculate the gap between the ship and the asteroid's surface, which is more relevant for collision risk than center distance.
         gap = center - radius - SHIP_RADIUS
         gap = max(gap, 1.0)
 
-        avx, avy = getattr(a, "velocity", (0.0, 0.0))
+        avx, avy = getattr(a, "velocity", (0.0, 0.0))#The velocity of the asteroid, used to calculate the relative velocity and approach speed for reward shaping and threat scoring.
         rel_vx, rel_vy = avx - svx, avy - svy
 
         approach_speed = (rel_vx * dx + rel_vy * dy) / max(center, 1.0)
@@ -222,7 +228,7 @@ class RLController(KesslerController):
 
     # how many frames to hold a target before re-evaluating
     TARGET_LOCK_FRAMES = 10
-
+    # The target-locking mechanism is important for both the reward function and the features, to ensure they are consistent and stable. By locking onto a specific target asteroid for several frames, we prevent the priority target from flickering between multiple asteroids in symmetric scenarios, which was causing the heading error feature to jump around and making it hard for the maneuver policy to learn a consistent turning behavior. The reward function also uses the locked target to calculate aiming rewards, so it benefits from the same stability.
     def __init__(
         self,
         maneuver_policy: StochasticManeuverPolicy,
@@ -374,7 +380,7 @@ class RLController(KesslerController):
             thrust_norm = action_m[0, 0].item()
             turn_norm = action_m[0, 1].item()
 
-        # FIX: apply gains AFTER sampling so log_prob stays clean.
+        # FIX apply gains after sampling so log_prob stays clean.
         # Matches nf_infer.py GAIN=1.5 and TURN_GAIN=1.2.
         # This is part of the environment interface, not the policy distribution.
         thrust_scaled = max(-1.0, min(1.0, thrust_norm * 1.5))
@@ -382,7 +388,7 @@ class RLController(KesslerController):
 
         turn_scaled = max(-1.0, min(1.0, turn_norm * 1.2))
         turn_rate = turn_scaled * 180.0
-        
+        # Note that the combat policy also uses the same features and has its own deterministic vs stochastic logic, so we have to call it separately after the maneuver action is determined.
         if self.deterministic:
             fire_logit, mine_logit = self.combat_policy(xb)
             fire = bool(torch.sigmoid(fire_logit).item() > 0.4)
@@ -391,11 +397,11 @@ class RLController(KesslerController):
             fire_a = torch.tensor(1.0 if fire else 0.0, device=self.device)
             mine_a = torch.tensor(1.0 if mine else 0.0, device=self.device)
         else:
-            fire_a, mine_a, log_prob_c = self.combat_policy.get_action(xb)
+            fire_a, mine_a, log_prob_c = self.combat_policy.get_action(xb)#Get combat actions and log probabilities from the combat policy, which also takes the same state features as input. This allows the combat policy to learn when it's appropriate to fire or drop mines based on the situation, rather than using hardcoded heuristics.
             fire = bool(fire_a.item())
             mine = bool(mine_a.item())
 
-        # Recompute combat log_prob to match the (possibly overridden) actions,
+        # Recompute combat log_prob to match the (possibly overrided) actions,
         # so the stored old_logp is consistent with the stored fire_a / mine_a.
         if not self.deterministic:
             log_prob_c, _ = self.combat_policy.evaluate_action(

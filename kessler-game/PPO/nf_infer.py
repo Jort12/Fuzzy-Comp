@@ -4,6 +4,7 @@ import numpy as np
 from sugeno_nn import SugenoNet
 
 class NFPolicy:
+    # Loads a bundle of trained SugenoNet models for inference. Each model is associated with a key (e.g. "thrust", "turn_rate", "fire", "drop_mine") and optional normalization parameters (mu, sd) and feature column names for input preparation.
     def __init__(self, model_path: str):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         bundle = torch.load(model_path, map_location=device)
@@ -19,7 +20,7 @@ class NFPolicy:
             self.models[name] = (model, info.get("mu"), info.get("sd"))
             self.feature_cols = self.feature_cols or info.get("feature_cols")
 
-
+    # Prepares input features by normalizing with provided mu and sd, then converting to a tensor on the correct device. If mu and sd are not provided, just converts to tensor without normalization.
     def prep(self, x_list, mu, sd):
         x = np.array(x_list, dtype=np.float32)
         if mu is not None and sd is not None:
@@ -29,7 +30,7 @@ class NFPolicy:
             x = (x - mu) / sd
         return torch.tensor(x, dtype=torch.float32).unsqueeze(0).to(self.device)
 
-
+    # Runs the specified model on the prepared input and applies optional post-processing (sigmoid for probabilities, tanh for normalized continuous outputs). Returns the raw output if no post-processing is specified.
     def run_model(self, key, x_list, post=None):
         model, mu, sd = self.models[key]
         xb = self.prep(x_list, mu, sd)
@@ -41,6 +42,7 @@ class NFPolicy:
             e2y = np.exp(2*y); return (e2y - 1) / (e2y + 1)
         return y
 
+    # For maneuver actions, runs the "thrust" and "turn_rate" models (if present) and applies scaling and thresholds to produce final action values. For combat actions, runs the "fire" and "drop_mine" models (if present) and applies a sigmoid + threshold to produce boolean action decisions.
     def act_maneuver_tensor(self, xb):
         has_t = "thrust" in self.models
         has_r = "turn_rate" in self.models
@@ -94,7 +96,7 @@ class NFPolicy:
         return float(thrust), float(turn)
 
 
-    def act_combat_tensor(self, xb, thresh=0.5):
+    def act_combat_tensor(self, xb, thresh=0.5): #returns bools for fire and drop_mine, can be used for both discrete and continuous combat policies depending on which models are present in the bundle
         has_f = "fire" in self.models
         has_m = "drop_mine" in self.models
         with torch.no_grad():
