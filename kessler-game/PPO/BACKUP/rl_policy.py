@@ -6,10 +6,6 @@ NOTE:
   Combat head: SugenoNet outputs -> Bernoulli logits (fire/mine).
     Sample binary actions, compute log_prob.
 
-  v2: Both actor heads receive optional scenario one-hot context.
-  SugenoNet inputs stay at 8 (warm start preserved). Scenario one-hot
-  is projected through a near-zero-init Linear and added as output bias,
-  so the warm start behavior is undisturbed at the start of training.
 """
 import torch
 import torch.nn as nn
@@ -21,7 +17,7 @@ from sugeno_nn import SugenoNet
 # The network outputs the mean, and we have a learnable log_std parameter for exploration noise. Actions are sampled from the Gaussian and squashed with tanh to keep them in [-1, 1]. Log probabilities are computed with the tanh correction for PPO updates.
 class StochasticManeuverPolicy(nn.Module):
 
-    def __init__(self, num_inputs, num_mfs, num_scenarios=0, init_log_std=-1.0):
+    def __init__(self, num_inputs, num_mfs, init_log_std=-1.0):
         super().__init__()
         self.thrust_net = SugenoNet(num_inputs=num_inputs, num_mfs=num_mfs, num_outputs=1)
         self.turn_net   = SugenoNet(num_inputs=num_inputs, num_mfs=num_mfs, num_outputs=1)
@@ -29,46 +25,34 @@ class StochasticManeuverPolicy(nn.Module):
         # Learnable exploration noise (one per output)
         self.log_std = nn.Parameter(torch.tensor([init_log_std, init_log_std]))
 
-        # Scenario conditioning: near-zero init preserves warm start.
-        # Each scenario learns a small additive bias on top of the SugenoNet output.
-        self.num_scenarios = num_scenarios
-        if num_scenarios > 0:
-            self.scenario_bias_thrust = nn.Linear(num_scenarios, 1, bias=False)
-            self.scenario_bias_turn   = nn.Linear(num_scenarios, 1, bias=False)
-            nn.init.normal_(self.scenario_bias_thrust.weight, std=0.01)
-            nn.init.normal_(self.scenario_bias_turn.weight,   std=0.01)
-
-    def forward(self, x, scenario_onehot=None):
+    def forward(self, x):
         """
         x: (B, num_inputs) — normalized features
-        scenario_onehot: (B, num_scenarios) or None
         Returns: means (B, 2), stds (B, 2)
         """
         thrust_mean = self.thrust_net(x)  # (B, 1)
         turn_mean   = self.turn_net(x)    # (B, 1)
-
-        if scenario_onehot is not None and self.num_scenarios > 0:
-            thrust_mean = thrust_mean + self.scenario_bias_thrust(scenario_onehot)
-            turn_mean   = turn_mean   + self.scenario_bias_turn(scenario_onehot)
-
         means = torch.cat([thrust_mean, turn_mean], dim=1)  # (B, 2)
+
         stds = self.log_std.exp().unsqueeze(0).expand_as(means)  # (B, 2)
         return means, stds
-
+    
     # Sample actions with tanh squashing and compute log probabilities with correction for PPO updates.
-    def get_action(self, x, scenario_onehot=None):
-        means, stds = self.forward(x, scenario_onehot)
+    def get_action(self, x):
+        means, stds = self.forward(x)
         dist = D.Normal(means, stds)
         raw_sample = dist.rsample()
         action = torch.tanh(raw_sample)
 
+        # FIX: removed 1.5x thrust amplification that was causing get_action() and evaluate_action() to disagree, inflating
+        # PPO importance sampling ratios. Let the network learn to output larger thrust means through the normal tanh space.
+
         log_prob = dist.log_prob(raw_sample) - torch.log(1 - action.pow(2) + 1e-4)
         log_prob = log_prob.sum(dim=-1)
         return action, log_prob, raw_sample
-
     # Evaluate log probabilities of given actions (for PPO updates). Inverse tanh to get raw action, compute log_prob with correction.
-    def evaluate_action(self, x, raw_sample, scenario_onehot=None):
-        means, stds = self.forward(x, scenario_onehot)
+    def evaluate_action(self, x, raw_sample):
+        means, stds = self.forward(x)
         dist = D.Normal(means, stds)
         action = torch.tanh(raw_sample)
         log_prob = dist.log_prob(raw_sample) - torch.log(1 - action.pow(2) + 1e-4)
@@ -77,27 +61,14 @@ class StochasticManeuverPolicy(nn.Module):
 
 #Wraps a SugenoNet for fire + drop_mine as Bernoulli policy. Outputs are logits for each action, sampled independently. Log probabilities are computed for PPO updates.
 class StochasticCombatPolicy(nn.Module):
-    def __init__(self, num_inputs, num_mfs, num_scenarios=0):
+    def __init__(self, num_inputs, num_mfs):
         super().__init__()
         self.fire_net = SugenoNet(num_inputs=num_inputs, num_mfs=num_mfs, num_outputs=1)
         self.mine_net = SugenoNet(num_inputs=num_inputs, num_mfs=num_mfs, num_outputs=1)
 
-        # Scenario conditioning
-        self.num_scenarios = num_scenarios
-        if num_scenarios > 0:
-            self.scenario_bias_fire = nn.Linear(num_scenarios, 1, bias=False)
-            self.scenario_bias_mine = nn.Linear(num_scenarios, 1, bias=False)
-            nn.init.normal_(self.scenario_bias_fire.weight, std=0.01)
-            nn.init.normal_(self.scenario_bias_mine.weight, std=0.01)
-
-    def forward(self, x, scenario_onehot=None):
+    def forward(self, x):
         fire_logit = self.fire_net(x).squeeze(-1)
         mine_logit = self.mine_net(x).squeeze(-1)
-
-        # Scenario bias added before clamping so it can shift the operating point
-        if scenario_onehot is not None and self.num_scenarios > 0:
-            fire_logit = fire_logit + self.scenario_bias_fire(scenario_onehot).squeeze(-1)
-            mine_logit = mine_logit + self.scenario_bias_mine(scenario_onehot).squeeze(-1)
 
         # Prevent NaN/Inf from crashing Bernoulli
         fire_logit = torch.nan_to_num(fire_logit, nan=0.0, posinf=4.0, neginf=-4.0)
@@ -110,20 +81,18 @@ class StochasticCombatPolicy(nn.Module):
         mine_logit = torch.clamp(mine_logit, -4.0, 4.0)
 
         return fire_logit, mine_logit
-
     # Sample binary actions and compute log probabilities for PPO updates.
-    def get_action(self, x, scenario_onehot=None):
-        fire_logit, mine_logit = self.forward(x, scenario_onehot)
+    def get_action(self, x):
+        fire_logit, mine_logit = self.forward(x)
         fire_dist = D.Bernoulli(logits=fire_logit)
         mine_dist = D.Bernoulli(logits=mine_logit)
         fire_action = fire_dist.sample()
         mine_action = mine_dist.sample()
         log_prob = fire_dist.log_prob(fire_action) + mine_dist.log_prob(mine_action)
         return fire_action, mine_action, log_prob
-
     # Evaluate log probabilities of given actions (for PPO updates).
-    def evaluate_action(self, x, fire_action, mine_action, scenario_onehot=None):
-        fire_logit, mine_logit = self.forward(x, scenario_onehot)
+    def evaluate_action(self, x, fire_action, mine_action):
+        fire_logit, mine_logit = self.forward(x)
         fire_dist = D.Bernoulli(logits=fire_logit)
         mine_dist = D.Bernoulli(logits=mine_logit)
         log_prob = fire_dist.log_prob(fire_action) + mine_dist.log_prob(mine_action)
@@ -153,7 +122,6 @@ class ValueNet(nn.Module):
 #helpers
 
 #Load weights from maneuver bundle, and return normalization stats and feature columns for input preparation.
-# Only loads SugenoNet weights, scenario bias layers are left at their near-zero init.
 def warm_start_maneuver(policy: StochasticManeuverPolicy, bundle_path: str):
     bundle = torch.load(bundle_path, map_location="cpu")
     heads = bundle["heads"]

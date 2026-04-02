@@ -42,7 +42,7 @@ class NFPolicy:
             e2y = np.exp(2*y); return (e2y - 1) / (e2y + 1)
         return y
 
-    # For maneuver actions, runs the "thrust" and "turn_rate" models (if present) and applies scaling and thresholds to produce final action values. For combat actions, runs the "fire" and "drop_mine" models (if present) and applies a sigmoid + threshold to produce boolean action decisions.
+    # For maneuver actions, runs the "thrust" and "turn_rate" models and applies scaling and thresholds to produce final action values. For combat actions, runs the "fire" and "drop_mine" models and applies a sigmoid + threshold to produce boolean action decisions.
     def act_maneuver_tensor(self, xb):
         has_t = "thrust" in self.models
         has_r = "turn_rate" in self.models

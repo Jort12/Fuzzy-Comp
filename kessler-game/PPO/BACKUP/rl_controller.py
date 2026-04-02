@@ -2,10 +2,6 @@
 rl_controller.py uses the stochastic RL policy.
 Runs inside the game loop, collects (state, action, reward, log_prob) trajectories.
 After each episode, the training script pulls the trajectory and does PPO updates.
-
-v2: Actor receives scenario one-hot via scenario_id / num_scenarios.
-    Removed unused prev_danger tracking.
-    Fixed fire_a/mine_a detach consistency.
 """
 
 import math
@@ -38,12 +34,11 @@ def team_hits_and_deaths(game_or_score):
 
 
 
-#calculate the reward for the current state, including sparse rewards for kills/deaths and dense shaping rewards for movement, aiming, and firing quality.
-# prev_danger removed: was computed but never read in the reward body (dead code from removed danger-shaping term)
-def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=False, locked_target=None):
+#calculate the reward for the current state, including sparse rewards for kills/deaths and dense shaping rewards for movement, aiming, and firing quality. 
+def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_danger, prev_fire=False, locked_target=None):
     reward = 0.0
     dt = float(getattr(game_state, "delta_time", 1 / 30))#Time delta since last frame, used to make rewards per-second consistent regardless of frame rate.
-    map_size = getattr(game_state, "map_size", (1000, 800))
+    map_size = getattr(game_state, "map_size", (1000, 800))#Map size is needed for wrap-aware calculations in the reward function, and also passed to calculate_context to ensure the same wrapping logic is used for features and rewards. ___>>> THIS IS WHY IT WAS BREAKING!!!!!
 
     current_hits, current_deaths = team_hits_and_deaths(game_state)
     new_kills = max(0, current_hits - prev_hits) #New kills since last step, used for sparse kill rewards.
@@ -97,7 +92,7 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
     if prev_fire and err > 35:
         reward -= 0.12 * dt   # bad spray
 
-    return reward, current_hits, current_deaths
+    return reward, current_hits, current_deaths, compute_min_danger(ship_state, game_state)
 
 
 # shared scoring formula, used by both find_priority_threat and compute_min_danger
@@ -147,6 +142,41 @@ def find_priority_threat(asteroids, ship_state, map_size):
 
     return best, max(best_gap, 1.0)
 
+
+def compute_min_danger(ship_state, game_state):
+    #returns the highest threat score across all asteroids
+    asteroids = getattr(game_state, "asteroids", [])
+    map_size = getattr(game_state, "map_size", (1000, 800))
+
+    if not asteroids:
+        return 0.0
+
+    sx, sy = ship_state.position
+    svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
+
+    best_score = 0.0
+
+    for a in asteroids:
+        ax, ay = a.position
+        dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
+        center = math.hypot(dx, dy)
+
+        radius = getattr(a, "radius", 0.0)
+        gap = max(center - radius - SHIP_RADIUS, 1.0)
+
+        avx, avy = getattr(a, "velocity", (0.0, 0.0))
+        rel_vx, rel_vy = avx - svx, avy - svy
+
+        approach_speed = (rel_vx * dx + rel_vy * dy) / max(center, 1.0)
+        closing = max(approach_speed, 0.0)
+
+        ttc = min(gap / max(closing, 1e-6), 100.0)
+        size = getattr(a, "size", 2)
+
+        score = _threat_score(gap, ttc, closing, size)
+        best_score = max(best_score, score)
+
+    return best_score
 
 def calculate_context(ship_state, game_state, locked_target=None):
     sx, sy = ship_state.position
@@ -199,25 +229,20 @@ class RLController(KesslerController):
     # how many frames to hold a target before re-evaluating
     TARGET_LOCK_FRAMES = 10
     # The target-locking mechanism is important for both the reward function and the features, to ensure they are consistent and stable. By locking onto a specific target asteroid for several frames, we prevent the priority target from flickering between multiple asteroids in symmetric scenarios, which was causing the heading error feature to jump around and making it hard for the maneuver policy to learn a consistent turning behavior. The reward function also uses the locked target to calculate aiming rewards, so it benefits from the same stability.
-
     def __init__(
         self,
         maneuver_policy: StochasticManeuverPolicy,
         combat_policy: StochasticCombatPolicy,
         mu=None,
         sd=None,
-        deterministic=False,
-        scenario_id: int = 0,
-        num_scenarios: int = 8,
-    ):
+        deterministic=False,):
+        self.prev_danger = 0.0
         super().__init__()
         self.maneuver_policy = maneuver_policy
         self.combat_policy = combat_policy
         self.mu = mu
         self.sd = sd
         self.deterministic = deterministic
-        self.scenario_id = scenario_id
-        self.num_scenarios = num_scenarios
 
         self.device = next(maneuver_policy.parameters()).device
 
@@ -231,17 +256,12 @@ class RLController(KesslerController):
         self._locked_pos = None
         self._lock_frames_left = 0
 
-    def _scenario_onehot(self):
-        oh = torch.zeros(1, self.num_scenarios, device=self.device)
-        if 0 <= self.scenario_id < self.num_scenarios:
-            oh[0, self.scenario_id] = 1.0
-        return oh
-
     def reset(self):
         self.trajectory = []
         self.prev_asteroids_hit = 0
         self.prev_deaths = 0
         self._pending = None
+        self.prev_danger = 0.0
         self._locked_target = None
         self._locked_pos = None
         self._lock_frames_left = 0
@@ -325,17 +345,17 @@ class RLController(KesslerController):
 
         ctx = calculate_context(ship_state, game_state, locked_target=locked)
         xb = self._normalize(ctx)
-        sc_oh = self._scenario_onehot()
 
         # Finish previous transition reward using the current state
         if self._pending is not None:
             prev_fire = bool(self._pending["fire_action"].item() > 0.5)
 
-            reward, self.prev_asteroids_hit, self.prev_deaths = compute_reward(
+            reward, self.prev_asteroids_hit, self.prev_deaths, self.prev_danger = compute_reward(
                 ship_state,
                 game_state,
                 self.prev_asteroids_hit,
                 self.prev_deaths,
+                self.prev_danger,
                 prev_fire=prev_fire,
                 locked_target=locked,
             )
@@ -346,7 +366,7 @@ class RLController(KesslerController):
         # Current action
         if self.deterministic:
             with torch.no_grad():
-                means, _ = self.maneuver_policy(xb, sc_oh)
+                means, _ = self.maneuver_policy(xb)
                 # Truly deterministic eval — no noise
                 action = torch.tanh(means)
                 thrust_norm = action[0, 0].item()
@@ -356,7 +376,7 @@ class RLController(KesslerController):
                 raw_sample_m = means
 
         else:
-            action_m, log_prob_m, raw_sample_m = self.maneuver_policy.get_action(xb, sc_oh)
+            action_m, log_prob_m, raw_sample_m = self.maneuver_policy.get_action(xb)
             thrust_norm = action_m[0, 0].item()
             turn_norm = action_m[0, 1].item()
 
@@ -370,23 +390,22 @@ class RLController(KesslerController):
         turn_rate = turn_scaled * 180.0
         # Note that the combat policy also uses the same features and has its own deterministic vs stochastic logic, so we have to call it separately after the maneuver action is determined.
         if self.deterministic:
-            fire_logit, mine_logit = self.combat_policy(xb, sc_oh)
+            fire_logit, mine_logit = self.combat_policy(xb)
             fire = bool(torch.sigmoid(fire_logit).item() > 0.4)
             mine = bool(torch.sigmoid(mine_logit).item() > 0.4)
             log_prob_c = torch.tensor(0.0, device=self.device)
             fire_a = torch.tensor(1.0 if fire else 0.0, device=self.device)
             mine_a = torch.tensor(1.0 if mine else 0.0, device=self.device)
         else:
-            fire_a, mine_a, log_prob_c = self.combat_policy.get_action(xb, sc_oh)#Get combat actions and log probabilities from the combat policy, which also takes the same state features as input. This allows the combat policy to learn when it's appropriate to fire or drop mines based on the situation, rather than using hardcoded heuristics.
+            fire_a, mine_a, log_prob_c = self.combat_policy.get_action(xb)#Get combat actions and log probabilities from the combat policy, which also takes the same state features as input. This allows the combat policy to learn when it's appropriate to fire or drop mines based on the situation, rather than using hardcoded heuristics.
             fire = bool(fire_a.item())
             mine = bool(mine_a.item())
 
         # Recompute combat log_prob to match the (possibly overrided) actions,
         # so the stored old_logp is consistent with the stored fire_a / mine_a.
-        # Both actions detached since they are fixed for this log_prob computation.
         if not self.deterministic:
             log_prob_c, _ = self.combat_policy.evaluate_action(
-                xb, fire_a.detach(), mine_a.detach(), sc_oh
+                xb, fire_a, mine_a.detach()
             )
 
         self._pending = {
