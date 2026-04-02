@@ -112,6 +112,7 @@ def ppo_update_pooled(
         raw_adv_stds.append(float(adv_ep.std()) if adv_ep.numel() > 1 else 0.0)
         if adv_ep.numel() > 1 and adv_ep.std() > 1e-8:
             adv_ep = (adv_ep - adv_ep.mean()) / (adv_ep.std() + 1e-8)
+        adv_ep = torch.clamp(adv_ep, -5.0, 5.0)
 
         #Truncate AFTER GAE so boundary advantages have correct bootstraps
         #before: truncation happened before GAE, which forced the last step of a mid-episode window to bootstrap with V=0 (as if the episode ended).
