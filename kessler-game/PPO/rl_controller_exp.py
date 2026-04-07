@@ -3,7 +3,7 @@ rl_controller.py uses the stochastic RL policy.
 Runs inside the game loop, collects (state, action, reward, log_prob) trajectories.
 After each episode, the training script pulls the trajectory and does PPO updates.
 
-v3: Uses single SharedActorPolicy (shared trunk + 4 action heads) instead of
+Uses single SharedActorPolicy (shared trunk + 4 action heads) instead of
     separate maneuver and combat policies. One forward pass for all actions.
 """
 
@@ -89,7 +89,7 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
         reward += 0.14 * dt   # very good shot
     elif prev_fire and err < 15:
         reward += 0.08 * dt   # decent shot
-    elif prev_fire and err < 22:
+    elif prev_fire and err < 22: 
         reward += 0.03 * dt   # still acceptable
 
     if prev_fire and err > 35:
@@ -99,7 +99,7 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
 
 
 # shared scoring formula, used by both find_priority_threat and compute_min_danger
-def _threat_score(gap, ttc, closing, size):
+def threat_score(gap, ttc, closing, size):
     return (
         2.5 / max(gap, 20.0) +
         1.5 / max(ttc, 0.25) +
@@ -136,7 +136,7 @@ def find_priority_threat(asteroids, ship_state, map_size):
 
         size = getattr(a, "size", 2)
 
-        score = _threat_score(gap, ttc, closing, size)
+        score = threat_score(gap, ttc, closing, size)
 
         if score > best_score:
             best_score = score
@@ -226,7 +226,7 @@ class RLController(KesslerController):
         self._locked_pos = None
         self._lock_frames_left = 0
 
-    def _scenario_onehot(self):
+    def scenario_onehot(self):
         oh = torch.zeros(1, self.num_scenarios, device=self.device)
         if 0 <= self.scenario_id < self.num_scenarios:
             oh[0, self.scenario_id] = 1.0
@@ -259,7 +259,7 @@ class RLController(KesslerController):
         self.trajectory.append(self._pending)
         self._pending = None
 
-    def _normalize(self, ctx):
+    def normalize(self, ctx):
         x = np.array([ctx[k] for k in FEATURE_COLS], dtype=np.float32)
         if self.mu is not None and self.sd is not None:
             sd = self.sd.copy()
@@ -267,7 +267,7 @@ class RLController(KesslerController):
             x = (x - self.mu) / sd
         return torch.tensor(x, dtype=torch.float32, device=self.device).unsqueeze(0)
 
-    def _get_locked_target(self, ship_state, game_state):
+    def get_locked_target(self, ship_state, game_state):
         """
         Returns a stable target asteroid, holding the same one for
         TARGET_LOCK_FRAMES before re-evaluating. This prevents the
@@ -311,11 +311,11 @@ class RLController(KesslerController):
 
     def actions(self, ship_state, game_state):
         # get a stable target for this frame
-        locked = self._get_locked_target(ship_state, game_state)
+        locked = self.get_locked_target(ship_state, game_state)
 
         ctx = calculate_context(ship_state, game_state, locked_target=locked)
-        xb = self._normalize(ctx)
-        sc_oh = self._scenario_onehot()
+        xb = self.normalize(ctx)
+        sc_oh = self.scenario_onehot()
 
         # Finish previous transition reward using the current state
         if self._pending is not None:

@@ -1,16 +1,5 @@
 """
-rl_train.py: PPO training with shared-trunk actor policy.
-
-architecture:
-  SharedActorPolicy: one MLP trunk + 4 action heads (thrust, turn, fire, mine)
-  ValueNet: separate MLP with its own optimizer / LR
-  No SugenoNet, no warm start from old bundles — trains from scratch.
-
-  Keeps all training infrastructure from v2:
-    separate actor/critic optimizers, KL early stop, per-episode advantage
-    normalization, log_std excluded from optimizer + anneal by PPO update count,
-    episode cap with post-GAE truncation, scenario-diverse pool, LR cooldown.
-
+PPO training with shared-trunk actor policy.
 Usage:
   python rl_train.py --episodes 6000 --scenario all
   python rl_train.py --eval --scenario all
@@ -234,9 +223,8 @@ def ppo_update_pooled(
 
 
 """
-    Actively shrink exploration after each real PPO update.
-    Tracks ppo_update_count so exploration decays evenly regardless
-    of how many episodes it takes to fill the pool.
+Actively shrink exploration after each real PPO update.
+Tracks ppo_update_count so exploration decays evenly regardless of how many episodes it takes to fill the pool.
 """
 def anneal_log_std_(actor, ppo_update_count, expected_updates):
     progress = min(1.0, ppo_update_count / max(expected_updates, 1))
@@ -305,6 +293,7 @@ def load_actor_bundle(actor, path, device):
 
 def main():
     p = argparse.ArgumentParser()
+    #absolute behemoth of a cli
     p.add_argument("--episodes", type=int, default=300)
     p.add_argument("--scenario", type=str, default="all")
     p.add_argument("--lr", type=float, default=5e-5)
