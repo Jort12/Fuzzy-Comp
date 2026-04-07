@@ -7,7 +7,7 @@ architecture:
   This replaces the old separate SugenoNet-based policies.
   No warm start from old bundles — fresh MLP trained from scratch.
 
-  Why shared trunk:
+    ideas:
     - thrust and turn decisions depend on the same situational understanding
     - fire/mine decisions need the same aiming geometry as turning
     - scenario context flows through the trunk so ALL heads can condition on it
@@ -53,7 +53,7 @@ class SharedActorPolicy(nn.Module):
 
     def forward(self, features, scenario_onehot):
         """
-        features: (B, num_features) — normalized 8 features
+        features: (B, num_features)/ normalized 8 features
         scenario_onehot: (B, num_scenarios)
         Returns: maneuver_means (B,2), maneuver_stds (B,2), fire_logit (B,), mine_logit (B,)
         """
