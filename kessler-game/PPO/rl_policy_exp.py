@@ -12,7 +12,7 @@ architecture:
     - fire/mine decisions need the same aiming geometry as turning
     - scenario context flows through the trunk so all heads can condition on it
     - the old architecture had 4 independent SugenoNets that couldn't share
-      representations, causing the scenario seesaw
+      representations, learning was slow and unstable
 """
 import torch
 import torch.nn as nn
