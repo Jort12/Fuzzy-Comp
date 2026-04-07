@@ -1,7 +1,5 @@
 """
-rl_policy.py: Shared trunk RL policy with separate action heads.
-
-v3 architecture:
+architecture:
   One shared MLP trunk processes (8 features + scenario one-hot).
   Four separate heads branch off for thrust, turn, fire, mine.
   ValueNet stays separate (different optimizer / LR).
@@ -22,8 +20,7 @@ import torch.distributions as D
 import numpy as np
 
 
-# Shared trunk + 4 action heads. Continuous (thrust, turn) use Gaussian with
-# learnable log_std. Discrete (fire, mine) use Bernoulli.
+# Shared trunk + 4 action heads. Continuous (thrust, turn) use Gaussian with learnable log_std. Discrete (fire, mine) use Bernoulli.
 class SharedActorPolicy(nn.Module):
 
     def __init__(self, num_features=8, num_scenarios=8,

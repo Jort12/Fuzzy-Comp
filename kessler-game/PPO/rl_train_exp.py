@@ -1,7 +1,7 @@
 """
 rl_train.py: PPO training with shared-trunk actor policy.
 
-v3 architecture:
+architecture:
   SharedActorPolicy: one MLP trunk + 4 action heads (thrust, turn, fire, mine)
   ValueNet: separate MLP with its own optimizer / LR
   No SugenoNet, no warm start from old bundles — trains from scratch.
@@ -91,8 +91,8 @@ def ppo_update_pooled(
         adv_ep = torch.tensor(advantages, dtype=torch.float32, device=device)
         ret_ep = torch.tensor(returns, dtype=torch.float32, device=device)
         raw_adv_stds.append(float(adv_ep.std()) if adv_ep.numel() > 1 else 0.0)
-        if adv_ep.numel() > 0:
-            adv_ep = adv_ep - adv_ep.mean()
+        if adv_ep.numel() > 1 and adv_ep.std() > 1e-8:#avoid division by zero
+            adv_ep = (adv_ep - adv_ep.mean()) / (adv_ep.std() + 1e-8)
         adv_ep = torch.clamp(adv_ep, -5.0, 5.0)
 
         #Truncate AFTER GAE so boundary advantages have correct bootstraps
@@ -250,7 +250,7 @@ def anneal_log_std_(actor, ppo_update_count, expected_updates):
 # Save actor checkpoint (full state dict + normalization stats)
 def save_actor_bundle(actor, mu, sd, feature_cols, path):
     bundle = {
-        "task": "rl_v3",
+        "task": "rl_exp",
         "actor_state_dict": {k: v.cpu() for k, v in actor.state_dict().items()},
         "mu": mu.tolist() if mu is not None else None,
         "sd": sd.tolist() if sd is not None else None,
@@ -291,6 +291,17 @@ def load_rl_checkpoint(actor, value_net, opt_policy, opt_critic, path, device):
     return ep, best, total_ep, ppo_count
 
 
+
+def load_actor_bundle(actor, path, device):
+    bundle = torch.load(path, map_location=device)
+    actor.load_state_dict(bundle["actor_state_dict"])
+
+    mu = np.array(bundle["mu"], dtype=np.float32) if bundle.get("mu") is not None else None
+    sd = np.array(bundle["sd"], dtype=np.float32) if bundle.get("sd") is not None else None
+    feature_cols = bundle.get("feature_cols")
+
+    print(f"Loaded actor bundle from {path}")
+    return mu, sd, feature_cols
 
 def main():
     p = argparse.ArgumentParser()
@@ -340,28 +351,37 @@ def main():
     print(f"Actor params: {sum(p.numel() for p in actor.parameters()):,}")
     print(f"Critic params: {sum(p.numel() for p in value_net.parameters()):,}")
 
-    # Normalization stats: compute from feature_cols defaults since we're not warm-starting from a bundle
-    # If you have pre-computed mu/sd from expert data, load them here
     mu, sd = None, None
     feature_cols = list(FEATURE_COLS)
-    mu_path = os.path.join(model_dir, "norm_stats.npz")
-    if os.path.exists(mu_path):
-        stats = np.load(mu_path)
-        mu = stats["mu"].astype(np.float32)
-        sd = stats["sd"].astype(np.float32)
-        print(f"Loaded normalization stats from {mu_path}")
+
+    if args.eval:
+        best_path = os.path.join(model_dir, "actor_best.pt")
+        rl_path = os.path.join(model_dir, "actor_rl.pt")
+
+        if os.path.exists(best_path):
+            mu, sd, feature_cols = load_actor_bundle(actor, best_path, device)
+        elif os.path.exists(rl_path):
+            mu, sd, feature_cols = load_actor_bundle(actor, rl_path, device)
+        else:
+            print("No saved actor bundle found for eval; evaluating fresh model.")
     else:
-        # Try to extract from an old maneuver bundle if it exists
-        old_bundle_path = os.path.join(model_dir, "maneuver.pt")
-        if os.path.exists(old_bundle_path):
-            old_bundle = torch.load(old_bundle_path, map_location="cpu")
-            info = old_bundle.get("heads", {}).get("thrust", {})
-            if info.get("mu") is not None:
-                mu = np.array(info["mu"], dtype=np.float32)
-                sd = np.array(info["sd"], dtype=np.float32)
-                print(f"Extracted normalization stats from old bundle {old_bundle_path}")
-        if mu is None:
-            print(" No normalization stats found. Training with raw features.")
+        mu_path = os.path.join(model_dir, "norm_stats.npz")
+        if os.path.exists(mu_path):
+            stats = np.load(mu_path)
+            mu = stats["mu"].astype(np.float32)
+            sd = stats["sd"].astype(np.float32)
+            print(f"Loaded normalization stats from {mu_path}")
+        else:
+            old_bundle_path = os.path.join(model_dir, "maneuver.pt")
+            if os.path.exists(old_bundle_path):
+                old_bundle = torch.load(old_bundle_path, map_location="cpu")
+                info = old_bundle.get("heads", {}).get("thrust", {})
+                if info.get("mu") is not None:
+                    mu = np.array(info["mu"], dtype=np.float32)
+                    sd = np.array(info["sd"], dtype=np.float32)
+                    print(f"Extracted normalization stats from old bundle {old_bundle_path}")
+            if mu is None:
+                print("No normalization stats found. Training with raw features.")
 
     # Separate optimizers. Exclude log_std from policy optimizer (controlled by anneal only).
     policy_params = [p for n, p in actor.named_parameters() if "log_std" not in n]
