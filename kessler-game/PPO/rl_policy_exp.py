@@ -10,7 +10,7 @@ architecture:
     ideas:
     - thrust and turn decisions depend on the same situational understanding
     - fire/mine decisions need the same aiming geometry as turning
-    - scenario context flows through the trunk so ALL heads can condition on it
+    - scenario context flows through the trunk so all heads can condition on it
     - the old architecture had 4 independent SugenoNets that couldn't share
       representations, causing the scenario seesaw
 """
