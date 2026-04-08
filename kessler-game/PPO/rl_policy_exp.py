@@ -40,6 +40,7 @@ class SharedActorPolicy(nn.Module):
             nn.Tanh(),
         )
 
+        #Action heads: separate linear layers for each output, no shared parameters after the trunk. Continuous heads output means, log_std is a shared learnable parameter for both continuous actions.
         # Continuous action heads (thrust, turn_rate)
         self.thrust_head = nn.Linear(trunk_out, 1)
         self.turn_head = nn.Linear(trunk_out, 1)
