@@ -7,7 +7,7 @@ v2: Actor receives scenario one-hot via scenario_id / num_scenarios.
     Removed unused prev_danger tracking.
     Fixed fire_a/mine_a detach consistency.
 """
-
+f
 import math
 import torch
 import numpy as np
@@ -203,7 +203,7 @@ class RLController(KesslerController):
     def __init__(
         self,
         maneuver_policy: StochasticManeuverPolicy,
-        combat_policy: StochasticCombatPolicy,
+        #combat_policy: StochasticCombatPolicy,
         mu=None,
         sd=None,
         deterministic=False,
@@ -212,7 +212,7 @@ class RLController(KesslerController):
     ):
         super().__init__()
         self.maneuver_policy = maneuver_policy
-        self.combat_policy = combat_policy
+        #self.combat_policy = combat_policy
         self.mu = mu
         self.sd = sd
         self.deterministic = deterministic
@@ -369,8 +369,9 @@ class RLController(KesslerController):
         turn_scaled = max(-1.0, min(1.0, turn_norm * 1.2))
         turn_rate = turn_scaled * 180.0
         # Note that the combat policy also uses the same features and has its own deterministic vs stochastic logic, so we have to call it separately after the maneuver action is determined.
+        """
         if self.deterministic:
-            fire_logit, mine_logit = self.combat_policy(xb, sc_oh)
+            #fire_logit, mine_logit = self.combat_policy(xb, sc_oh)
             fire = bool(torch.sigmoid(fire_logit).item() > 0.4)
             mine = bool(torch.sigmoid(mine_logit).item() > 0.4)
             log_prob_c = torch.tensor(0.0, device=self.device)
@@ -379,22 +380,23 @@ class RLController(KesslerController):
         else:
             fire_a, mine_a, log_prob_c = self.combat_policy.get_action(xb, sc_oh)#Get combat actions and log probabilities from the combat policy, which also takes the same state features as input. This allows the combat policy to learn when it's appropriate to fire or drop mines based on the situation, rather than using hardcoded heuristics.
             fire = bool(fire_a.item())
-            mine = bool(mine_a.item())
+            mine = bool(mine_a.item())"""
 
         # Recompute combat log_prob to match the (possibly overrided) actions,
         # so the stored old_logp is consistent with the stored fire_a / mine_a.
         # Both actions detached since they are fixed for this log_prob computation.
+        """
         if not self.deterministic:
             log_prob_c, _ = self.combat_policy.evaluate_action(
                 xb, fire_a.detach(), mine_a.detach(), sc_oh
             )
-
+        """
         self._pending = {
             "features": xb.detach(),
             "raw_sample_m": raw_sample_m.detach(),
-            "fire_action": fire_a.detach(),
-            "mine_action": mine_a.detach(),
-            "log_prob": (log_prob_m + log_prob_c).detach().squeeze(),
+            #"fire_action": fire_a.detach(),
+            #"mine_action": mine_a.detach(),
+            "log_prob": (log_prob_m).detach().squeeze(),
             "reward": 0.0,
         }
 
@@ -405,4 +407,4 @@ class RLController(KesslerController):
             lo, hi = ship_state.turn_rate_range
             turn_rate = max(lo, min(hi, turn_rate))
 
-        return float(thrust), float(turn_rate), fire, mine
+        return float(thrust), float(turn_rate)  #, fire, mine

@@ -36,10 +36,10 @@ import scenarios as sc
 from sugeno_nn import SugenoNet
 from rl_policy import (
     StochasticManeuverPolicy,
-    StochasticCombatPolicy,
+    #StochasticCombatPolicy,
     ValueNet,
     warm_start_maneuver,
-    warm_start_combat,
+    #warm_start_combat,
 )
 from rl_controller import RLController
 
@@ -71,7 +71,7 @@ def compute_gae(rewards, values, gamma=0.99, lam=0.95):
 # Includes per-episode advantage normalization, episode cap with post-GAE truncation,
 # separate policy/critic optimization, and KL early stopping.
 def ppo_update_pooled(
-    maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
+    maneuver_policy, value_net, opt_policy, opt_critic,
     episode_pool, clip_eps=0.2, entropy_coef=0.01, value_coef=1.0,
     epochs=1, mini_batch_size=512, gamma=0.99, lam=0.95,
     max_steps_per_episode=None, num_scenarios=NUM_SCENARIOS):
@@ -88,8 +88,8 @@ def ppo_update_pooled(
             continue
         features = torch.cat([t["features"] for t in traj], dim=0).to(device)
         raw_m = torch.cat([t["raw_sample_m"] for t in traj], dim=0).to(device)
-        fire_acts = torch.stack([t["fire_action"] for t in traj]).to(device)
-        mine_acts = torch.stack([t["mine_action"] for t in traj]).to(device)
+        #fire_acts = torch.stack([t["fire_action"] for t in traj]).to(device)
+        #mine_acts = torch.stack([t["mine_action"] for t in traj]).to(device)
         old_logp = torch.stack([t["log_prob"] for t in traj]).to(device).squeeze(-1)
         rewards = [t["reward"] for t in traj]
 
@@ -147,8 +147,8 @@ def ppo_update_pooled(
 
     features = torch.cat(all_features, dim=0)
     raw_m = torch.cat(all_raw_m, dim=0)
-    fire_acts = torch.cat(all_fire, dim=0)
-    mine_acts = torch.cat(all_mine, dim=0)
+    #fire_acts = torch.cat(all_fire, dim=0)
+    #mine_acts = torch.cat(all_mine, dim=0)
     old_logp = torch.cat(all_old_logp, dim=0)
     adv_t = torch.cat(all_adv, dim=0)
     ret_t = torch.cat(all_ret, dim=0)
@@ -185,19 +185,19 @@ def ppo_update_pooled(
             # Actor evaluate_action now gets scenario context too
             new_logp_m, entropy_m = maneuver_policy.evaluate_action(
                 mb_features, mb_raw_m, scenario_onehot=mb_sc)
-            new_logp_c, entropy_c = combat_policy.evaluate_action(
-                mb_features, mb_fire, mb_mine, scenario_onehot=mb_sc)
+            #new_logp_c, entropy_c = combat_policy.evaluate_action(
+                #mb_features, mb_fire, mb_mine, scenario_onehot=mb_sc)
 
             new_logp_m = new_logp_m.squeeze(-1)
-            new_logp_c = new_logp_c.squeeze(-1)
+            #new_logp_c = new_logp_c.squeeze(-1)
             entropy_m = entropy_m.squeeze(-1) if entropy_m.dim() > 1 else entropy_m
-            entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
+            #entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
 
-            new_logp = new_logp_m + new_logp_c
-            # Combat entropy dominates; small maneuver term gives the
+            new_logp = new_logp_m
+            # Combat entropy dominates, small maneuver term gives the
             # continuous head some exploration pressure without the
             # mean-collapse issues seen at full weight.
-            entropy = entropy_c + 0.25 * entropy_m
+            entropy =  entropy_m
 
             log_ratio = new_logp - mb_old_logp
             log_ratio = log_ratio.clamp(-4.0, 4.0)
@@ -227,7 +227,7 @@ def ppo_update_pooled(
             critic_obj = value_coef * value_loss
 
             # only run policy backward if policy params are unfrozen
-            policy_params = list(maneuver_policy.parameters()) + list(combat_policy.parameters())
+            policy_params = list(maneuver_policy.parameters())
             policy_trainable = any(p.requires_grad for p in policy_params)
 
             if policy_trainable:
@@ -289,10 +289,10 @@ def anneal_log_std_(maneuver_policy, ppo_update_count, expected_updates):
 
 #Save in the same format as nf_train.py so nf_infer.py can load it.
 # Also saves scenario bias weights so they persist across runs.
-def save_bundle(maneuver_policy, combat_policy, mu, sd, feature_cols, num_mfs, path):
+def save_bundle(maneuver_policy, mu, sd, feature_cols, num_mfs, path):
     bundle = {"task": "rl", "heads": {}}
 
-    for name, net in [("thrust", maneuver_policy.thrust_net),
+    for name, net in [("thrust", maneuver_policy.thrust_net),s
                       ("turn_rate", maneuver_policy.turn_net)]:
         bundle["heads"][name] = {
             "state_dict": {k: v.cpu() for k, v in net.state_dict().items()},
@@ -316,26 +316,6 @@ def save_bundle(maneuver_policy, combat_policy, mu, sd, feature_cols, num_mfs, p
     torch.save(bundle, path)
     print(f"Saved maneuver bundle -> {path}")
 
-    # Combat bundle
-    combat_path = path.replace("maneuver", "combat")
-    combat_bundle = {"task": "rl_combat", "heads": {}}
-    for name, net in [("fire", combat_policy.fire_net),
-                      ("drop_mine", combat_policy.mine_net)]:
-        combat_bundle["heads"][name] = {
-            "state_dict": {k: v.cpu() for k, v in net.state_dict().items()},
-            "feature_cols": feature_cols,
-            "mu": mu.tolist() if mu is not None else None,
-            "sd": sd.tolist() if sd is not None else None,
-            "num_inputs": len(feature_cols),
-            "num_mfs": num_mfs,
-        }
-    if combat_policy.num_scenarios > 0:
-        combat_bundle["scenario_combat"] = {
-            k: v.cpu() for k, v in combat_policy.state_dict().items()
-            if "scenario_bias" in k
-        }
-    torch.save(combat_bundle, combat_path)
-    print(f"Saved combat bundle -> {combat_path}")
 
 
 def save_rl_checkpoint(
@@ -345,7 +325,7 @@ def save_rl_checkpoint(
     #saves everything needed to resume training, including total_episodes for annealing and ppo_update_count for the fixed anneal schedule
     torch.save({
         "maneuver_policy": maneuver_policy.state_dict(),
-        "combat_policy": combat_policy.state_dict(),
+        #"combat_policy": combat_policy.state_dict(),
         "value_net": value_net.state_dict(),
         "opt_policy": opt_policy.state_dict(),
         "opt_critic": opt_critic.state_dict(),
@@ -358,19 +338,19 @@ def save_rl_checkpoint(
 
 
 def load_rl_checkpoint(
-    maneuver_policy, combat_policy, value_net, opt_policy, opt_critic, path, device,
+    maneuver_policy, value_net, opt_policy, opt_critic, path, device,
 ):
     #restores full training state, returns (episode, best_reward, total_episodes, ppo_update_count)
     ckpt = torch.load(path, map_location=device)
     # strict=False: old checkpoints won't have scenario_bias_* keys, that's fine
     maneuver_policy.load_state_dict(ckpt["maneuver_policy"], strict=False)
-    combat_policy.load_state_dict(ckpt["combat_policy"], strict=False)
+    #combat_policy.load_state_dict(ckpt["combat_policy"], strict=False)
     try:
         value_net.load_state_dict(ckpt["value_net"])
         critic_reloaded = True
     except RuntimeError as e:
         if "size mismatch" in str(e):
-            print("  (value_net/optimizer shape changed — reinitializing critic)")
+            print("  (value_net/optimizer shape changed, reinitializing critic)")
             critic_reloaded = False
         else:
             raise
@@ -430,28 +410,28 @@ def main():
         num_scenarios=NUM_SCENARIOS,
         init_log_std=args.init_log_std,
     ).to(device)
+    """
     combat_policy = StochasticCombatPolicy(
         num_inputs, args.num_mfs,
         num_scenarios=NUM_SCENARIOS,
-    ).to(device)
+    ).to(device)"""
     value_net = ValueNet(num_inputs + NUM_SCENARIOS).to(device)
-
+    
     # Kill dropout in every SugenoNet for RL. Dropout makes forward()
     # stochastic wrt the network old_logp and new_logp diverge even
     # before any gradient step because different masks produce different
     # outputs from the same input, breaking PPO importance sampling.
     # Identity swap is permanent and can't be undone by an accidental .train().
-    for net in [maneuver_policy.thrust_net, maneuver_policy.turn_net,
-                combat_policy.fire_net, combat_policy.mine_net]:
+    for net in [maneuver_policy.thrust_net, maneuver_policy.turn_net]:
         net.dropout = nn.Identity()
 
     #  Warm-start from expert-trained models 
     if args.eval:
         maneuver_path = os.path.join(model_dir, "maneuver_best.pt")
-        combat_path   = os.path.join(model_dir, "combat_best.pt")
+        #combat_path   = os.path.join(model_dir, "combat_best.pt")
     else:
         maneuver_path = os.path.join(model_dir, "maneuver.pt")
-        combat_path   = os.path.join(model_dir, "combat.pt")
+        #combat_path   = os.path.join(model_dir, "combat.pt")
 
     mu, sd, feature_cols = None, None, None
     if os.path.exists(maneuver_path):
@@ -475,15 +455,7 @@ def main():
             "ammo", "mines", "threat_density", "threat_angle",
         ]
 
-    if os.path.exists(combat_path):
-        mu_c, sd_c = warm_start_combat(combat_policy, combat_path)
-        _cbundle = torch.load(combat_path, map_location="cpu")
-        if "scenario_combat" in _cbundle and combat_policy.num_scenarios > 0:
-            combat_policy.load_state_dict(_cbundle["scenario_combat"], strict=False)
-            print("Restored combat scenario bias from bundle")
-        print("Warm started combat policy from expert.")
-    else:
-        print("No combat.pt found —> training from scratch")
+    ###
 
     # Separate optimizers: critic needs a higher LR to keep up with
     # the changing policy across diverse scenarios.
@@ -492,9 +464,7 @@ def main():
     # the optimizer (pulled up by entropy bonus) and the annealer
     # (pulled down) creates a tug-of-war that prevents clean decay.
     policy_params = (
-        [p for n, p in maneuver_policy.named_parameters() if "log_std" not in n]
-        + list(combat_policy.parameters())
-    )
+        [p for n, p in maneuver_policy.named_parameters() if "log_std" not in n])
     opt_policy = optim.Adam(policy_params, lr=args.lr)
     opt_critic = optim.Adam(value_net.parameters(), lr=args.critic_lr)
 
@@ -506,7 +476,7 @@ def main():
     rl_ckpt_path = os.path.join(model_dir, "rl_checkpoint.pt")
     if args.resume and os.path.exists(rl_ckpt_path):
         start_ep, best_reward, saved_total, ppo_update_count = load_rl_checkpoint(
-            maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
+            maneuver_policy, value_net, opt_policy, opt_critic,
             rl_ckpt_path, device,
         )
         start_ep += 1  # resume from the next episode
@@ -576,8 +546,7 @@ def main():
     if args.warmup_episodes > 0 and not args.eval:
         for p in maneuver_policy.parameters():
             p.requires_grad = False
-        for p in combat_policy.parameters():
-            p.requires_grad = False
+
         policy_frozen = True
         print(f"Policy frozen for first {args.warmup_episodes} episodes (critic warmup)")
 
@@ -585,8 +554,6 @@ def main():
         # unfreeze policy once warmup is done
         if policy_frozen and ep > args.warmup_episodes:
             for p in maneuver_policy.parameters():
-                p.requires_grad = True
-            for p in combat_policy.parameters():
                 p.requires_grad = True
             policy_frozen = False
             print(f"Policy unfrozen at episode {ep} (critic warmup done)")
@@ -600,7 +567,7 @@ def main():
         sc_idx = scenario_to_idx[scenario_name]
 
         controller = RLController(
-            maneuver_policy, combat_policy,
+            maneuver_policy,
             mu=mu, sd=sd,
             deterministic=args.eval,  # deterministic during evaluation
             scenario_id=sc_idx,
@@ -641,7 +608,7 @@ def main():
         if pool_steps >= MIN_POOL_STEPS and len(pool_scenarios) >= MIN_POOL_SCENARIOS:
             stats = ppo_update_pooled(
                 maneuver_policy,
-                combat_policy,
+                
                 value_net,
                 opt_policy,
                 opt_critic,
@@ -713,7 +680,6 @@ def main():
         if ep % args.save_every == 0:
             save_bundle(
                 maneuver_policy,
-                combat_policy,
                 mu,
                 sd,
                 feature_cols,
@@ -721,7 +687,7 @@ def main():
                 os.path.join(model_dir, "maneuver_rl.pt"),
             )
             save_rl_checkpoint(
-                maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
+                maneuver_policy, value_net, opt_policy, opt_critic,
                 ep, best_reward, total_episodes, ppo_update_count, rl_ckpt_path,
             )
 
@@ -739,7 +705,7 @@ def main():
                 eval_scenario = scenario_map[eval_name]()
                 eval_sc_idx = scenario_to_idx[eval_name]
                 eval_ctrl = RLController(
-                    maneuver_policy, combat_policy,
+                    maneuver_policy,
                     mu=mu, sd=sd, deterministic=True,
                     scenario_id=eval_sc_idx,
                     num_scenarios=num_scenarios,
@@ -768,7 +734,6 @@ def main():
                 best_reward = avg_det_reward
                 save_bundle(
                     maneuver_policy,
-                    combat_policy,
                     mu,
                     sd,
                     feature_cols,
@@ -785,12 +750,12 @@ def main():
     if not args.eval:
         #Final save
         save_bundle(
-            maneuver_policy, combat_policy,
+            maneuver_policy,
             mu, sd, feature_cols, args.num_mfs,
             os.path.join(model_dir, "maneuver_rl.pt"),
         )
         save_rl_checkpoint(
-            maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
+            maneuver_policy, value_net, opt_policy, opt_critic,
             args.episodes, best_reward, total_episodes, ppo_update_count, rl_ckpt_path,
         )
         print("\nDone. Models saved to models/")

@@ -172,7 +172,7 @@ def warm_start_maneuver(policy: StochasticManeuverPolicy, bundle_path: str):
     feature_cols = info.get("feature_cols")
     return mu, sd, feature_cols
 
-
+#NOT BEING USED
 def warm_start_combat(policy: StochasticCombatPolicy, bundle_path: str):
     #Load weights from combat bundle
     bundle = torch.load(bundle_path, map_location="cpu")
