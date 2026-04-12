@@ -7,7 +7,7 @@ v2: Actor receives scenario one-hot via scenario_id / num_scenarios.
     Removed unused prev_danger tracking.
     Fixed fire_a/mine_a detach consistency.
 """
-f
+
 import math
 import torch
 import numpy as np
@@ -25,6 +25,9 @@ FEATURE_COLS = [
 # Reward coefficients
 HIT_REWARD = 7.0
 DEATH_PENALTY = -4.0
+
+#Parameter
+EXTENDED_RANGE = 100.0
 
 
 #Extracts total hits and deaths from the game score for reward calculation.
@@ -190,8 +193,59 @@ def calculate_context(ship_state, game_state, locked_target=None):
         "ammo": getattr(ship_state, "ammo", 0),
         "mines": getattr(ship_state, "mines", 0),
         "threat_density": density,
-        "threat_angle": math.degrees(math.atan2(dy, dx)),
+        "threat_angle": math.degrees(math.atan2(dy, dx)), 
     }
+
+def dot(ax, ay, bx, by):
+    return (ax*bx) + (ay*by)
+
+def length(x, y):
+    return math.sqrt(x*x + y*y)
+
+def should_fire(ship_state, game_state) -> bool:
+    #If ammo is unlimited shoot until you are hit by an asteroid then stop
+    asteroid_arr = getattr(game_state, "asteroids", [])
+    sx, sy = ship_state.position
+    if ship_state.bullets_remaining == -1:
+        for a in asteroid_arr:
+            ax, ay = a.position
+            total_r = a.radius + ship_state.radius
+            dist = math.sqrt(((ax-sx)**2)+((ay-sy)**2))
+            if dist <= total_r:
+                return False
+        return True
+    
+    heading = ship_state.heading
+    dx = math.cos(heading)
+    dy = math.sin(heading)
+
+    best = None  
+
+    for a in asteroid_arr:
+        ax, ay = a.position
+
+        vx = ax - sx
+        vy = ay - sy
+
+        along = dot(vx, vy, dx, dy)
+
+        perp = vx * dy - vy * dx  
+
+        if along <= 0:
+            continue
+
+        if abs(perp) <= a.radius:
+            if best is None or along < best["along"]:
+                best = {
+                    "asteroid": a,
+                    "along": along,
+                    "perp": perp
+                }
+
+    if best is not None:
+        return True  
+    return False
+
 
 class RLController(KesslerController):
     name = "RLController"
@@ -407,4 +461,6 @@ class RLController(KesslerController):
             lo, hi = ship_state.turn_rate_range
             turn_rate = max(lo, min(hi, turn_rate))
 
-        return float(thrust), float(turn_rate)  #, fire, mine
+        fire = should_fire(ship_state, game_state)
+
+        return float(thrust), float(turn_rate), fire #, mine
