@@ -12,7 +12,6 @@ Merged trainer (v2):
 Usage:
   # Step 1: Train base model from expert data
   python nf_train.py --task maneuver --epochs 200
-  python nf_train.py --task combat   --epochs 200
 
   # Step 2: RL fine-tuning on top of the warm start
   python rl_train.py --episodes 300 --scenario all
@@ -24,7 +23,6 @@ Usage:
 import argparse
 import os
 import time
-import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -33,13 +31,10 @@ import torch.optim as optim
 from kesslergame import KesslerGame, GraphicsType
 
 import scenarios as sc
-from sugeno_nn import SugenoNet
 from rl_policy import (
     StochasticManeuverPolicy,
-    #StochasticCombatPolicy,
     ValueNet,
     warm_start_maneuver,
-    #warm_start_combat,
 )
 from rl_controller import RLController
 
@@ -78,7 +73,7 @@ def ppo_update_pooled(
 
     device = next(maneuver_policy.parameters()).device
     # Pool data across episodes, compute advantages and returns per episode to avoid bootstrapping across episode boundaries.
-    all_features, all_raw_m, all_fire, all_mine, all_old_logp = [], [], [], [], []
+    all_features, all_raw_m, all_old_logp = [], [], []
     all_adv, all_ret = [], []
     all_scenario_ctx = []  # one-hot scenario context for both critic and actor now
     raw_adv_stds = []  # diagnostic: track pre-normalization advantage spread
@@ -88,8 +83,6 @@ def ppo_update_pooled(
             continue
         features = torch.cat([t["features"] for t in traj], dim=0).to(device)
         raw_m = torch.cat([t["raw_sample_m"] for t in traj], dim=0).to(device)
-        #fire_acts = torch.stack([t["fire_action"] for t in traj]).to(device)
-        #mine_acts = torch.stack([t["mine_action"] for t in traj]).to(device)
         old_logp = torch.stack([t["log_prob"] for t in traj]).to(device).squeeze(-1)
         rewards = [t["reward"] for t in traj]
 
@@ -124,8 +117,6 @@ def ppo_update_pooled(
             sl = slice(start, start + cap)
             features  = features[sl]
             raw_m     = raw_m[sl]
-            fire_acts = fire_acts[sl]
-            mine_acts = mine_acts[sl]
             old_logp  = old_logp[sl]
             adv_ep    = adv_ep[sl]
             ret_ep    = ret_ep[sl]
@@ -133,8 +124,6 @@ def ppo_update_pooled(
 
         all_features.append(features)
         all_raw_m.append(raw_m)
-        all_fire.append(fire_acts)
-        all_mine.append(mine_acts)
         all_old_logp.append(old_logp)
         all_adv.append(adv_ep)
         all_ret.append(ret_ep)
@@ -147,8 +136,6 @@ def ppo_update_pooled(
 
     features = torch.cat(all_features, dim=0)
     raw_m = torch.cat(all_raw_m, dim=0)
-    #fire_acts = torch.cat(all_fire, dim=0)
-    #mine_acts = torch.cat(all_mine, dim=0)
     old_logp = torch.cat(all_old_logp, dim=0)
     adv_t = torch.cat(all_adv, dim=0)
     ret_t = torch.cat(all_ret, dim=0)
@@ -175,8 +162,6 @@ def ppo_update_pooled(
 
             mb_features = features[mb]
             mb_raw_m = raw_m[mb]
-            mb_fire = fire_acts[mb]
-            mb_mine = mine_acts[mb]
             mb_old_logp = old_logp[mb]
             mb_adv = adv_t[mb]
             mb_ret = ret_t[mb]
@@ -185,19 +170,12 @@ def ppo_update_pooled(
             # Actor evaluate_action now gets scenario context too
             new_logp_m, entropy_m = maneuver_policy.evaluate_action(
                 mb_features, mb_raw_m, scenario_onehot=mb_sc)
-            #new_logp_c, entropy_c = combat_policy.evaluate_action(
-                #mb_features, mb_fire, mb_mine, scenario_onehot=mb_sc)
 
             new_logp_m = new_logp_m.squeeze(-1)
-            #new_logp_c = new_logp_c.squeeze(-1)
             entropy_m = entropy_m.squeeze(-1) if entropy_m.dim() > 1 else entropy_m
-            #entropy_c = entropy_c.squeeze(-1) if entropy_c.dim() > 1 else entropy_c
 
             new_logp = new_logp_m
-            # Combat entropy dominates, small maneuver term gives the
-            # continuous head some exploration pressure without the
-            # mean-collapse issues seen at full weight.
-            entropy =  entropy_m
+            entropy = entropy_m
 
             log_ratio = new_logp - mb_old_logp
             log_ratio = log_ratio.clamp(-4.0, 4.0)
@@ -292,7 +270,7 @@ def anneal_log_std_(maneuver_policy, ppo_update_count, expected_updates):
 def save_bundle(maneuver_policy, mu, sd, feature_cols, num_mfs, path):
     bundle = {"task": "rl", "heads": {}}
 
-    for name, net in [("thrust", maneuver_policy.thrust_net),s
+    for name, net in [("thrust", maneuver_policy.thrust_net),
                       ("turn_rate", maneuver_policy.turn_net)]:
         bundle["heads"][name] = {
             "state_dict": {k: v.cpu() for k, v in net.state_dict().items()},
@@ -319,13 +297,12 @@ def save_bundle(maneuver_policy, mu, sd, feature_cols, num_mfs, path):
 
 
 def save_rl_checkpoint(
-    maneuver_policy, combat_policy, value_net, opt_policy, opt_critic,
+    maneuver_policy, value_net, opt_policy, opt_critic,
     episode, best_reward, total_episodes, ppo_update_count, path,
 ):
     #saves everything needed to resume training, including total_episodes for annealing and ppo_update_count for the fixed anneal schedule
     torch.save({
         "maneuver_policy": maneuver_policy.state_dict(),
-        #"combat_policy": combat_policy.state_dict(),
         "value_net": value_net.state_dict(),
         "opt_policy": opt_policy.state_dict(),
         "opt_critic": opt_critic.state_dict(),
@@ -344,7 +321,6 @@ def load_rl_checkpoint(
     ckpt = torch.load(path, map_location=device)
     # strict=False: old checkpoints won't have scenario_bias_* keys, that's fine
     maneuver_policy.load_state_dict(ckpt["maneuver_policy"], strict=False)
-    #combat_policy.load_state_dict(ckpt["combat_policy"], strict=False)
     try:
         value_net.load_state_dict(ckpt["value_net"])
         critic_reloaded = True
@@ -369,6 +345,38 @@ def load_rl_checkpoint(
     return ep, best, total_ep, ppo_count
 
 
+def run_eval_sweep(game, scenario_names, scenario_map, scenario_to_idx,
+                   maneuver_policy, mu, sd, num_scenarios):
+    results = []
+
+    for eval_name in scenario_names:
+        eval_scenario = scenario_map[eval_name]()
+        eval_sc_idx = scenario_to_idx[eval_name]
+        eval_ctrl = RLController(
+            maneuver_policy,
+            mu=mu,
+            sd=sd,
+            deterministic=True,
+            scenario_id=eval_sc_idx,
+            num_scenarios=num_scenarios,
+        )
+        eval_ctrl.reset()
+        eval_score, _ = game.run(scenario=eval_scenario, controllers=[eval_ctrl])
+        eval_ctrl.finalize_episode(eval_score)
+
+        det_reward = sum(t["reward"] for t in eval_ctrl.trajectory)
+        det_hits = sum(t.asteroids_hit for t in eval_score.teams)
+        det_deaths = sum(t.deaths for t in eval_score.teams)
+        results.append({
+            "name": eval_name,
+            "reward": det_reward,
+            "hits": det_hits,
+            "deaths": det_deaths,
+        })
+
+    return results
+
+
 
 def main():
     p = argparse.ArgumentParser()
@@ -385,12 +393,21 @@ def main():
     p.add_argument("--entropy_coef", type=float, default=0.01)
     p.add_argument("--save_every", type=int, default=25)
     p.add_argument("--eval", action="store_true")
+    p.add_argument("--graphics", action="store_true",
+                   help="Render the game window. Off by default for faster training and evaluation.")
     p.add_argument("--init_log_std", type=float, default=-1.0,
                    help="Initial exploration noise (log scale). "
                         "-0.5 ≈ std=0.6, -1.0 ≈ std=0.37, -2.0 ≈ std=0.14")
     p.add_argument("--mini_batch_size", type=int, default=512)
     p.add_argument("--max_steps_per_episode", type=int, default=512)
     p.add_argument("--warmup_episodes", type=int, default=0)
+    p.add_argument("--min_pool_steps", type=int, default=2048)
+    p.add_argument("--min_pool_scenarios", type=int, default=4)
+    p.add_argument("--cooldown_episodes", type=int, default=25)
+    p.add_argument("--cooldown_lr_scale", type=float, default=0.5)
+    p.add_argument("--early_stop_patience", type=int, default=3,
+                   help="Stop after this many save/eval sweeps without a new best train-scenario deterministic average. Set to 0 to disable.")
+    p.add_argument("--early_stop_min_delta", type=float, default=0.0)
     p.add_argument("--resume", action="store_true",
                    help="Resume training from rl_checkpoint.pt")
     args = p.parse_args()
@@ -410,14 +427,9 @@ def main():
         num_scenarios=NUM_SCENARIOS,
         init_log_std=args.init_log_std,
     ).to(device)
-    """
-    combat_policy = StochasticCombatPolicy(
-        num_inputs, args.num_mfs,
-        num_scenarios=NUM_SCENARIOS,
-    ).to(device)"""
     value_net = ValueNet(num_inputs + NUM_SCENARIOS).to(device)
     
-    # Kill dropout in every SugenoNet for RL. Dropout makes forward()
+    # Kill dropout in every warm-started SugenoNet for RL. Dropout makes forward()
     # stochastic wrt the network old_logp and new_logp diverge even
     # before any gradient step because different masks produce different
     # outputs from the same input, breaking PPO importance sampling.
@@ -428,10 +440,8 @@ def main():
     #  Warm-start from expert-trained models 
     if args.eval:
         maneuver_path = os.path.join(model_dir, "maneuver_best.pt")
-        #combat_path   = os.path.join(model_dir, "combat_best.pt")
     else:
         maneuver_path = os.path.join(model_dir, "maneuver.pt")
-        #combat_path   = os.path.join(model_dir, "combat.pt")
 
     mu, sd, feature_cols = None, None, None
     if os.path.exists(maneuver_path):
@@ -491,7 +501,7 @@ def main():
         "crossing_lanes": sc.crossing_lanes,
         "asteroid_rain": sc.asteroid_rain,
         "four_corner": sc.four_corner,
-        "sniper_practice": sc.sniper_practice, #removed from training pool since it's too different and causes instability, but keep it available for evaluation since it's a fun stress test for the combat policy
+        "sniper_practice": sc.sniper_practice,
     }
     # Fixed index for critic one-hot context. Must match NUM_SCENARIOS.
     scenario_to_idx = {name: i for i, name in enumerate(scenario_map.keys())}
@@ -517,8 +527,8 @@ def main():
 
     game_settings = {
         "perf_tracker": True,
-        "graphics_type": GraphicsType.NoGraphics if not args.eval else GraphicsType.Tkinter,
-        "realtime_multiplier": 1.0 if args.eval else 0.0,
+        "graphics_type": GraphicsType.Tkinter if args.graphics else GraphicsType.NoGraphics,
+        "realtime_multiplier": 1.0 if args.graphics else 0.0,
         "graphics_obj": None,
         "frequency": 30,
     }
@@ -529,8 +539,6 @@ def main():
     episode_pool = [] # list of trajectories (each is a list of dicts)
     pool_steps = 0
     pool_scenarios = set()# track distinct scenarios in current pool
-    MIN_POOL_STEPS = 2048  # don't update PPO until this many steps
-    MIN_POOL_SCENARIOS = 4 # require scenario diversity before updating
     base_lr = args.lr
     cooldown_until = 0 # episode at which LR cooldown expires
     train_start = time.perf_counter()
@@ -540,9 +548,13 @@ def main():
     # per 1-2 episodes. Conservative: ~1 per 3 episodes accounting for
     # the scenario diversity gate slowing things down.
     expected_updates = max(1, (args.episodes - args.warmup_episodes) // 3)
+    if not (0.0 < args.cooldown_lr_scale <= 1.0):
+        raise ValueError("--cooldown_lr_scale must be in (0, 1].")
 
     # critic warmup: freeze policy params so only value_net trains, let the critic learn what states are worth before PPO starts pushing the actor around with bad advantage estimates
     policy_frozen = False
+    no_improve_evals = 0
+    final_episode = start_ep - 1
     if args.warmup_episodes > 0 and not args.eval:
         for p in maneuver_policy.parameters():
             p.requires_grad = False
@@ -551,6 +563,7 @@ def main():
         print(f"Policy frozen for first {args.warmup_episodes} episodes (critic warmup)")
 
     for ep in range(start_ep, args.episodes + 1):
+        final_episode = ep
         # unfreeze policy once warmup is done
         if policy_frozen and ep > args.warmup_episodes:
             for p in maneuver_policy.parameters():
@@ -605,7 +618,7 @@ def main():
 
         #PPO Update — only when pool has enough steps AND scenario diversity
         stats = None
-        if pool_steps >= MIN_POOL_STEPS and len(pool_scenarios) >= MIN_POOL_SCENARIOS:
+        if pool_steps >= args.min_pool_steps and len(pool_scenarios) >= args.min_pool_scenarios:
             stats = ppo_update_pooled(
                 maneuver_policy,
                 
@@ -669,7 +682,7 @@ def main():
             f"loss={stats['total_loss']:.4f} "# PPO loss (for debugging, not a great performance metric on its own)
             f"pi={stats['policy_loss']:.4f} "# policy loss component (how much the actor is updating)
             f"v={stats['value_loss']:.4f} "# value loss component (how much the critic is updating)
-            f"H={stats['entropy']:.4f} "# combat policy entropy (exploration bonus from discrete actions)
+            f"H={stats['entropy']:.4f} "# maneuver policy entropy
             f"ratio={stats['ratio']:.3f}{skip_str}{diag_str}{warmup_str} "# PPO ratio (clipped vs unclipped policy update magnitude, should be near 1.0 if updates are stable)
             f"log_std_raw={log_std_raw} "# raw log_std values for debugging
             f"({dt:.1f}s, elapsed={((time.perf_counter()-train_start)/60):.1f}m)"
@@ -696,42 +709,55 @@ def main():
         # scenario but bad at others could look much better or worse than it
         # really is overall.
         if ep % args.save_every == 0:
-            total_det_reward = 0.0
-            total_det_hits = 0
-            total_det_deaths = 0
-            eval_details = []
+            eval_results = run_eval_sweep(
+                game,
+                eval_scenario_names,
+                scenario_map,
+                scenario_to_idx,
+                maneuver_policy,
+                mu,
+                sd,
+                num_scenarios,
+            )
+            train_eval_results = [r for r in eval_results if r["name"] in train_scenario_names]
+            extra_eval_results = [
+                r for r in eval_results
+                if r["name"] not in train_scenario_names and r["name"] != "sniper_practice"
+            ]
+            sniper_result = next((r for r in eval_results if r["name"] == "sniper_practice"), None)
 
-            for eval_name in eval_scenario_names:
-                eval_scenario = scenario_map[eval_name]()
-                eval_sc_idx = scenario_to_idx[eval_name]
-                eval_ctrl = RLController(
-                    maneuver_policy,
-                    mu=mu, sd=sd, deterministic=True,
-                    scenario_id=eval_sc_idx,
-                    num_scenarios=num_scenarios,
-                )
-                eval_ctrl.reset()
-                eval_score, _ = game.run(scenario=eval_scenario, controllers=[eval_ctrl])
-                eval_ctrl.finalize_episode(eval_score)
+            total_det_reward = sum(r["reward"] for r in eval_results)
+            total_det_hits = sum(r["hits"] for r in eval_results)
+            total_det_deaths = sum(r["deaths"] for r in eval_results)
+            avg_det_reward = total_det_reward / len(eval_results)
+            avg_train_reward = (
+                sum(r["reward"] for r in train_eval_results) / len(train_eval_results)
+                if train_eval_results else 0.0
+            )
 
-                det_reward = sum(t["reward"] for t in eval_ctrl.trajectory)
-                det_hits = sum(t.asteroids_hit for t in eval_score.teams)
-                det_deaths = sum(t.deaths for t in eval_score.teams)
-
-                total_det_reward += det_reward
-                total_det_hits += det_hits
-                total_det_deaths += det_deaths
-                eval_details.append(f"{eval_name}={det_reward:.0f}")
-
-            avg_det_reward = total_det_reward / len(eval_scenario_names)
             print(
-                f" [DET-EVAL] avg={avg_det_reward:.1f} " # average deterministic reward across all eval scenarios, used for best checkpoint selection
+                f" [DET-EVAL] train_avg={avg_train_reward:.1f} all_avg={avg_det_reward:.1f} "
                 f"total_hits={total_det_hits} total_deaths={total_det_deaths}"
             )
-            print(f"    {', '.join(eval_details)}")
+            print("    " + ", ".join(
+                f"{r['name']}={r['reward']:.0f}(h{r['hits']}/d{r['deaths']})"
+                for r in train_eval_results
+            ))
+            if extra_eval_results:
+                print("    extra: " + ", ".join(
+                    f"{r['name']}={r['reward']:.0f}(h{r['hits']}/d{r['deaths']})"
+                    for r in extra_eval_results
+                ))
+            if sniper_result is not None:
+                print(
+                    f"    combat-check: sniper_practice={sniper_result['reward']:.0f} "
+                    f"(h{sniper_result['hits']}/d{sniper_result['deaths']})"
+                )
 
-            if avg_det_reward > best_reward:
-                best_reward = avg_det_reward
+            improved = avg_train_reward > (best_reward + args.early_stop_min_delta)
+            if improved:
+                best_reward = avg_train_reward
+                no_improve_evals = 0
                 save_bundle(
                     maneuver_policy,
                     mu,
@@ -740,12 +766,22 @@ def main():
                     args.num_mfs,
                     os.path.join(model_dir, "maneuver_best.pt"),
                 )
-                print(f" New best (deterministic avg): {best_reward:.2f}")
-                # Cooldown: halve LR for 75 ep, hopefully stop the next few updates from destroying this checkpoint before it can be evaluated.
+                print(f" New best (train-scenario deterministic avg): {best_reward:.2f}")
+                # Cooldown after a new best to reduce immediate regressions.
                 for g in opt_policy.param_groups:
-                    g["lr"] = base_lr * 0.5
-                cooldown_until = ep + 75
-                print(f" LR cooldown: {base_lr:.1e} -> {base_lr*0.5:.1e} until ep {cooldown_until}")
+                    g["lr"] = base_lr * args.cooldown_lr_scale
+                cooldown_until = ep + args.cooldown_episodes
+                print(
+                    f" LR cooldown: {base_lr:.1e} -> {base_lr*args.cooldown_lr_scale:.1e} "
+                    f"until ep {cooldown_until}"
+                )
+            else:
+                no_improve_evals += 1
+                if args.early_stop_patience > 0:
+                    print(f" No new best for {no_improve_evals}/{args.early_stop_patience} eval sweeps")
+                    if no_improve_evals >= args.early_stop_patience:
+                        print(" Early stopping on deterministic eval plateau")
+                        break
 
     if not args.eval:
         #Final save
@@ -756,7 +792,7 @@ def main():
         )
         save_rl_checkpoint(
             maneuver_policy, value_net, opt_policy, opt_critic,
-            args.episodes, best_reward, total_episodes, ppo_update_count, rl_ckpt_path,
+            final_episode, best_reward, total_episodes, ppo_update_count, rl_ckpt_path,
         )
         print("\nDone. Models saved to models/")
     total_time = time.perf_counter() - train_start
