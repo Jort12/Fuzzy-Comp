@@ -18,6 +18,7 @@ Usage:
 
   # Step 3: Evaluate
   python rl_train.py --eval --scenario stock
+  python rl_train.py --eval --graphic --scenario stock --episodes 10
 """
 
 import argparse
@@ -109,7 +110,7 @@ def ppo_update_pooled(
 
         #Truncate AFTER GAE so boundary advantages have correct bootstraps
         #before: truncation happened before GAE, which forced the last step of a mid-episode window to bootstrap with V=0 (as if the episode ended).
-        #Now GAE sees the full episode, and we slice the result.
+        #Now GAE sees the full episode, then slice the result.
         T = features.shape[0]
         cap = max_steps_per_episode or 0
         if cap > 0 and T > cap:
