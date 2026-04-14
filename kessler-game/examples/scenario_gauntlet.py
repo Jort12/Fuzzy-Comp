@@ -12,22 +12,38 @@ from fuzzy_aggressive_controller import AggressiveFuzzyController
 
 # Build the list of scenarios in the order you want to play them
 SCENARIOS = [
-    sc.phase_shift_grid(),
-    sc.s_curve_chokepoint(),
-    sc.corner_shockwaves(),
-    sc.diagonal_grid_fast(),
-    sc.wrap_pincer(),
-    sc.pinch_chamber(),
-    sc.double_orbit_with_darts(),
-    sc.moving_maze_right(),
+    # Level 1: Intro
+    sc.single_target_practice(),
+    sc.dual_static_targets(),
     sc.donut_ring(),
-    sc.vertical_wall_left(),
+    sc.slow_crossing_paths(),
+    sc.lane_switcher(),
     sc.stock_scenario(),
-    sc.spiral_arms(),
-    sc.crossing_lanes(),
+
+    # Level 2: Movement patterns
+    sc.staggered_fall(),
+    sc.vertical_wall_left(),
     sc.asteroid_rain(),
-    sc.giants_with_kamikaze(),
+    sc.horizontal_gate_runner(),
     sc.donut_ring_closing(),
+    sc.crossing_lanes(),
+    sc.moving_maze_right(),
+    sc.spiral_arms(),
+
+    # Level 3: Advanced pressure
+    sc.inner_outer_rings(),
+    sc.wrap_wall_light(),
+    sc.corner_wave_pairs(),
+    sc.phase_shift_grid(),
+    sc.corner_shockwaves(),
+    sc.giants_with_kamikaze(),
+    sc.wrap_pincer(),
+    sc.double_orbit_with_darts(),
+
+    # Level 4: Final tests
+    sc.pinch_chamber(),
+    sc.diagonal_grid_fast(),
+    sc.s_curve_chokepoint(),
     sc.rotating_cross(),
 ]
 
@@ -79,18 +95,29 @@ def main():
         print("=" * 60)
 
         start = time.perf_counter()
-        score, perf_data = game.run(
-            scenario=scenario,
-            controllers=controllers,
-        )
-        elapsed = time.perf_counter() - start
 
-        print(f"Scenario eval time: {elapsed:.3f} s")
-        print("Stop reason:", score.stop_reason)
-        print("Asteroids hit:", [team.asteroids_hit for team in score.teams])
-        print("Deaths:", [team.deaths for team in score.teams])
-        print("Accuracy:", [team.accuracy for team in score.teams])
-        print("Mean eval time:", [team.mean_eval_time for team in score.teams])
+        try:
+            score, perf_data = game.run(
+                scenario=scenario,
+                controllers=controllers,
+            )
+            elapsed = time.perf_counter() - start
+
+            if score.stop_reason != "time_limit":
+                print(f"Skipped: {scenario.name} (closed early)")
+                continue
+
+            print(f"Scenario eval time: {elapsed:.3f} s")
+            print("Stop reason:", score.stop_reason)
+            print("Asteroids hit:", [team.asteroids_hit for team in score.teams])
+            print("Deaths:", [team.deaths for team in score.teams])
+            print("Accuracy:", [team.accuracy for team in score.teams])
+            print("Mean eval time:", [team.mean_eval_time for team in score.teams])
+
+        except Exception as e:
+            print(f"Skipped: {scenario.name} (exception)")
+            print("Error:", e)
+            continue
 
     print("\n" + "#" * 60)
     print(f"All scenarios completed in {time.perf_counter() - total_start:.3f} s.")

@@ -14,7 +14,7 @@ from kesslergame import Scenario
 
 
 def _mk_ship(team=1, pos=(400, 400), angle=0, mines=3):
-    return {'position': pos, 'angle': angle, 'lives': 99, 'team': team, "mines_remaining": mines}
+    return {'position': pos, 'angle': angle, 'lives': 3, 'team': team, "mines_remaining": mines}
 
 def _get_asteroid_list(scenario):
 
@@ -31,21 +31,265 @@ def _get_asteroid_list(scenario):
         pass
     return []
 
+def single_target_practice(map_size=(1000, 800), *,
+                           asteroid_pos_ratio=(0.75, 0.50),
+                           ship_pos_ratio=(0.25, 0.50),
+                           asteroid_size=3,
+                           asteroid_speed=0.0,
+                           asteroid_angle=0.0,
+                           time_limit=40):
+
+    W, H = map_size
+
+    ship = {
+        'position': (W * ship_pos_ratio[0], H * ship_pos_ratio[1]),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = [{
+        'position': (W * asteroid_pos_ratio[0], H * asteroid_pos_ratio[1]),
+        'size': int(asteroid_size),
+        'angle': float(asteroid_angle),
+        'speed': float(asteroid_speed)
+    }]
+
+    return Scenario(
+        name="Single Target Practice",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=1,
+        stop_if_no_ammo=False
+    )
+
+
+def dual_static_targets(map_size=(1000, 800), *,
+                        ship_pos_ratio=(0.22, 0.50),
+                        left_target_ratio=(0.72, 0.35),
+                        right_target_ratio=(0.72, 0.65),
+                        asteroid_size=2,
+                        time_limit=45):
+
+    W, H = map_size
+
+    ship = {
+        'position': (W * ship_pos_ratio[0], H * ship_pos_ratio[1]),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = [
+        {
+            'position': (W * left_target_ratio[0], H * left_target_ratio[1]),
+            'size': int(asteroid_size),
+            'angle': 0.0,
+            'speed': 0.0
+        },
+        {
+            'position': (W * right_target_ratio[0], H * right_target_ratio[1]),
+            'size': int(asteroid_size),
+            'angle': 0.0,
+            'speed': 0.0
+        }
+    ]
+
+    return Scenario(
+        name="Dual Static Targets",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+# ------------------------------------
+# Donut shaped ring around the player
+# ------------------------------------
+def donut_ring(map_size=(1000, 800), *, count=24, radius_ratio=0.35, size_class=2, time_limit=60):
+
+    # Takes the map size and splits it into Width and Height 
+    W, H = map_size
+
+    # This finds the center of the map: half of width(cx) and half of height(cy)
+    cx, cy = W * 0.5, H * 0.5
+
+    # This decides how far away from the center the donut ring will be
+    # Using the smaller width or height to center
+    r = min(W, H) * radius_ratio
+
+    # Offset amount (how far above/below center)
+    offset = H * 0.12
+
+    # Two ships: one slightly above, one slightly below center
+    ship1 = {
+        'position': (cx, cy - offset),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ship2 = {
+        'position': (cx, cy + offset),
+        'angle': 0,
+        'lives': 3,
+        'team': 2,
+        'mines_remaining': 3
+    }
+
+
+    # Starts and empty list that will later hold all asteroid info
+    ast_states = []
+
+    # This loop will run once for each number of asteroid (count)
+    for i in range(count):
+
+        # Calculates the angle for each asteroid around the circle in a full 360 degree circle (2pi radains)
+        theta = 2.0 * math.pi * (i / count)
+        x = cx + r * math.cos(theta)
+        y = cy + r * math.sin(theta)
+
+        # adds asteroid to the list, its postion, size, angle, and speed
+        ast_states.append({
+            'position': (x, y),
+            'size': int(size_class),
+            'angle': 0.0,
+            'speed': 0.0,
+        })
+
+    # Returns scenario name, map size, passes the asteroid list, ship state, how long the round lasted, turns off ammo count
+    return Scenario(
+        name="Donut Ring",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship1, ship2],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+def slow_crossing_paths(map_size=(1000, 800), *,
+                        ship_pos_ratio=(0.50, 0.50),
+                        asteroid_size=2,
+                        speed=90.0,
+                        time_limit=50):
+
+    W, H = map_size
+
+    ship = {
+        'position': (W * ship_pos_ratio[0], H * ship_pos_ratio[1]),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = [
+        {
+            'position': (W * 0.15, H * 0.30),
+            'size': int(asteroid_size),
+            'angle': 0.0,
+            'speed': float(speed)
+        },
+        {
+            'position': (W * 0.85, H * 0.70),
+            'size': int(asteroid_size),
+            'angle': 180.0,
+            'speed': float(speed)
+        },
+        {
+            'position': (W * 0.50, H * 0.15),
+            'size': int(asteroid_size),
+            'angle': 90.0,
+            'speed': float(speed)
+        }
+    ]
+
+    return Scenario(
+        name="Slow Crossing Paths",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+def lane_switcher(map_size=(1100, 850), *,
+                  rows=3,
+                  cols=4,
+                  lane_margin=90,
+                  lane_speed=110.0,
+                  size_class=2,
+                  time_limit=60):
+
+    W, H = map_size
+    ship = {
+        'position': (W * 0.50, H * 0.50),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = []
+
+    y_spacing = (H - 2 * lane_margin) / max(1, rows - 1)
+    for r in range(rows):
+        y = lane_margin + r * y_spacing
+        if r % 2 == 0:
+            x_positions = [lane_margin + i * ((W - 2 * lane_margin) / max(1, cols - 1)) for i in range(cols)]
+            for x in x_positions:
+                ast_states.append({
+                    'position': (x, y),
+                    'size': int(size_class),
+                    'angle': 0.0,
+                    'speed': float(lane_speed)
+                })
+        else:
+            x_positions = [W - lane_margin - i * ((W - 2 * lane_margin) / max(1, cols - 1)) for i in range(cols)]
+            for x in x_positions:
+                ast_states.append({
+                    'position': (x, y),
+                    'size': int(size_class),
+                    'angle': 180.0,
+                    'speed': float(lane_speed)
+                })
+
+    return Scenario(
+        name="Lane Switcher",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
 # ------------------------------------------------------------
 # A general baseline: random asteroids
 # ------------------------------------------------------------
 def stock_scenario(map_size=(1000, 800)):
     random.seed(42)
-    s = _mk_ship(pos=(map_size[0] * 0.75, map_size[1] * 0.5), angle=180)
-    s["bullets_remaining"] = 200
-
     return Scenario(
         name="Stock Scenario",
         num_asteroids=15,
-        ship_states=[s],
+        ship_states=[_mk_ship(pos=(map_size[0] * 0.75, map_size[1] * 0.5), angle=180)],
         map_size=map_size,
         time_limit=60,
-        ammo_limit_multiplier=1,   # keep >= 1 so scenario doesn't clamp ammo to 0
+        ammo_limit_multiplier=0,
         stop_if_no_ammo=False
     )
 
@@ -93,6 +337,7 @@ def vertical_wall_left(map_size=(1000, 800), *,
         ammo_limit_multiplier=0,
         stop_if_no_ammo=False
     )
+
 
 # ------------------------------------------------------------
 # Still work in progress, Spiral swarm: asteroids moves tangentially
@@ -349,56 +594,6 @@ def sniper_practice(map_size=(2000, 1400), *,
         stop_if_no_ammo=False
     )
 
-
-# ------------------------------------
-# Donut shaped ring around the player
-# ------------------------------------
-def donut_ring(map_size=(1000, 800), *, count=24, radius_ratio=0.35, size_class=2, time_limit=60):
-
-    # Takes the map size and splits it into Width and Height 
-    W, H = map_size
-
-    # This finds the center of the map: half of width(cx) and half of height(cy)
-    cx, cy = W * 0.5, H * 0.5
-
-    # This decides how far away from the center the donut ring will be
-    # Using the smaller width or height to center
-    r = min(W, H) * radius_ratio
-
-    # The ships's position, angle, lives, mines, and belongs to team 1
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
-
-    # Starts and empty list that will later hold all asteroid info
-    ast_states = []
-
-    # This loop will run once for each number of asteroid (count)
-    for i in range(count):
-
-        # Calculates the angle for each asteroid around the circle in a full 360 degree circle (2pi radains)
-        theta = 2.0 * math.pi * (i / count)
-        x = cx + r * math.cos(theta)
-        y = cy + r * math.sin(theta)
-
-        # adds asteroid to the list, its postion, size, angle, and speed
-        ast_states.append({
-            'position': (x, y),
-            'size': int(size_class),
-            'angle': 0.0,
-            'speed': 0.0,
-        })
-
-    # Returns scenario name, map size, passes the asteroid list, ship state, how long the round lasted, turns off ammo count
-    return Scenario(
-        name="Donut Ring",
-        map_size=map_size,
-        num_asteroids=0,
-        asteroid_states=ast_states,
-        ship_states=[ship],
-        time_limit=time_limit,
-        ammo_limit_multiplier=0,
-        stop_if_no_ammo=False
-    )
-
 # -----------------------------------------------------
 # Closing donut: ring asteroids head toward the center
 # -----------------------------------------------------
@@ -412,7 +607,7 @@ def donut_ring_closing(map_size=(1200, 900), *,
     W, H = map_size
     cx, cy = W * 0.5, H * 0.5
 
-    ship = {'position': (cx, cy), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (cx, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     # Convert radius ratio to actual pixels
     r = min(W, H) * start_radius_ratio
@@ -459,7 +654,7 @@ def rotating_cross(map_size=(1400, 1000), *,
     cx, cy = W * 0.5, H * 0.5
 
     # Player far left
-    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (W * 0.10, cy), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     ast_states = []
 
@@ -542,7 +737,7 @@ def moving_maze_right(map_size=(1000, 800), *,
     ship = {
         'position': (W * 0.10, H * 0.50),
         'angle': 0,
-        'lives': 99,
+        'lives': 3,
         'team': 1,
         'mines_remaining': 3
     }
@@ -630,7 +825,7 @@ def pinch_chamber(map_size=(1200, 900), *,
                   time_limit=75):
 
     W, H = map_size
-    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+    ship = _ship_center(map_size, lives=3, angle=0, mines=3)
 
     ast_states = []
 
@@ -693,7 +888,7 @@ def wrap_pincer(map_size=(1000, 800), *,
                 time_limit=60):
 
     W, H = map_size
-    ship = {'position': (W * 0.5, H * 0.55), 'angle': 0, 'lives': 99, 'team': 1, 'mines_remaining': 3}
+    ship = {'position': (W * 0.5, H * 0.55), 'angle': 0, 'lives': 3, 'team': 1, 'mines_remaining': 3}
 
     ast_states = []
 
@@ -763,7 +958,7 @@ def double_orbit_with_darts(map_size=(1400, 1000), *,
     ship = {
         'position': (cx, cy),
         'angle': 0,
-        'lives': 99,
+        'lives': 3,
         'team': 1,
         'mines_remaining': 3
     }
@@ -831,7 +1026,7 @@ def diagonal_grid_fast(map_size=(1200, 900), *,
                        time_limit=65):
 
     W, H = map_size
-    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+    ship = _ship_center(map_size, lives=3, angle=0, mines=3)
 
     ast_states = []
 
@@ -873,7 +1068,7 @@ def corner_shockwaves(map_size=(1200, 900), *,
                       time_limit=75):
 
     W, H = map_size
-    ship = _ship_center(map_size, lives=99, angle=0, mines=3)
+    ship = _ship_center(map_size, lives=3, angle=0, mines=3)
 
     corners = [(0.0, 0.0), (float(W), 0.0), (0.0, float(H)), (float(W), float(H))]
     center = (W * 0.5, H * 0.5)
@@ -1037,3 +1232,271 @@ def phase_shift_grid(map_size=(1300, 950), *,
         stop_if_no_ammo=False
     )
 
+def horizontal_gate_runner(map_size=(1000, 800), *,
+                           rows=5,
+                           per_row=6,
+                           lane_margin=70,
+                           speed=120.0,
+                           gap_row=2,
+                           size_class=2,
+                           time_limit=60):
+
+    W, H = map_size
+
+    ship = {
+        'position': (W * 0.18, H * 0.50),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = []
+
+    y_spacing = (H - 2 * lane_margin) / max(1, rows - 1)
+    x_spacing = (W - 2 * lane_margin) / max(1, per_row - 1)
+
+    for r in range(rows):
+        if r == gap_row:
+            continue
+
+        y = lane_margin + r * y_spacing
+
+        for i in range(per_row):
+            x = lane_margin + i * x_spacing
+            ast_states.append({
+                'position': (x, y),
+                'size': int(size_class),
+                'angle': 0.0 if r % 2 == 0 else 180.0,
+                'speed': float(speed)
+            })
+
+    return Scenario(
+        name="Horizontal Gate Runner",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+
+def staggered_fall(map_size=(1000, 800), *,
+                   columns=7,
+                   waves=4,
+                   x_margin_ratio=0.18,
+                   y_gap=95.0,
+                   speed=150.0,
+                   size_cycle=(2, 1, 2),
+                   time_limit=65):
+
+    W, H = map_size
+
+    ship = {
+        'position': (W * 0.50, H * 0.83),
+        'angle': 270,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    left = W * x_margin_ratio
+    right = W * (1.0 - x_margin_ratio)
+    dx = (right - left) / max(1, columns - 1)
+
+    ast_states = []
+    idx = 0
+
+    for w in range(waves):
+        shift = dx * 0.5 if w % 2 == 1 else 0.0
+        y = -w * y_gap
+
+        for c in range(columns):
+            x = left + c * dx + shift
+
+            if x < 0 or x > W:
+                continue
+
+            ast_states.append({
+                'position': (x, y),
+                'size': int(size_cycle[idx % len(size_cycle)]),
+                'angle': 90.0,
+                'speed': float(speed)
+            })
+            idx += 1
+
+    return Scenario(
+        name="Staggered Fall",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+def corner_wave_pairs(map_size=(1200, 900), *,
+                      waves=3,
+                      speed_base=160.0,
+                      speed_step=30.0,
+                      size_cycle=(2, 2, 1),
+                      time_limit=70):
+
+    W, H = map_size
+    cx, cy = W * 0.5, H * 0.5
+
+    ship = {
+        'position': (cx, cy),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    corners = [(0.0, 0.0), (float(W), 0.0), (0.0, float(H)), (float(W), float(H))]
+    ast_states = []
+    idx = 0
+
+    for w in range(waves):
+        offset = 30.0 * w
+        speed = speed_base + speed_step * w
+
+        for x0, y0 in corners:
+            sx = x0 + (-offset if x0 == 0.0 else offset)
+            sy = y0 + (-offset if y0 == 0.0 else offset)
+
+            base_heading = math.degrees(math.atan2(cy - sy, cx - sx))
+
+            for spread in (-8.0, 8.0):
+                ast_states.append({
+                    'position': (sx, sy),
+                    'size': int(size_cycle[idx % len(size_cycle)]),
+                    'angle': float(base_heading + spread),
+                    'speed': float(speed)
+                })
+                idx += 1
+
+    return Scenario(
+        name="Corner Wave Pairs",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+def wrap_wall_light(map_size=(1000, 800), *,
+                      per_side=5,
+                      speed=185.0,
+                      size_class=2,
+                      offscreen=35.0,
+                      time_limit=65):
+
+    W, H = map_size
+
+    ship = {
+        'position': (W * 0.5, H * 0.55),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = []
+
+    dy = (H * 0.78) / max(1, per_side - 1)
+    y_start = H * 0.11
+
+    for i in range(per_side):
+        y = y_start + i * dy
+
+        ast_states.append({
+            'position': (-offscreen, y),
+            'size': int(size_class),
+            'angle': 0.0,
+            'speed': float(speed)
+        })
+
+        ast_states.append({
+            'position': (W + offscreen, y),
+            'size': int(size_class),
+            'angle': 180.0,
+            'speed': float(speed)
+        })
+
+    return Scenario(
+        name="Wrap Pincer Light",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
+
+def inner_outer_rings(map_size=(1200, 900), *,
+                      inner_count=10,
+                      outer_count=16,
+                      inner_speed=75.0,
+                      outer_speed=95.0,
+                      inner_ratio=0.22,
+                      outer_ratio=0.40,
+                      time_limit=75):
+
+    W, H = map_size
+    cx, cy = W * 0.5, H * 0.5
+
+    ship = {
+        'position': (cx, cy),
+        'angle': 0,
+        'lives': 3,
+        'team': 1,
+        'mines_remaining': 3
+    }
+
+    ast_states = []
+
+    for i in range(inner_count):
+        theta = 2.0 * math.pi * (i / inner_count)
+        r = min(W, H) * inner_ratio
+        x = cx + r * math.cos(theta)
+        y = cy + r * math.sin(theta)
+        heading = math.degrees(math.atan2(cy - y, cx - x))
+
+        ast_states.append({
+            'position': (x, y),
+            'size': 2,
+            'angle': float(heading),
+            'speed': float(inner_speed)
+        })
+
+    for i in range(outer_count):
+        theta = 2.0 * math.pi * (i / outer_count)
+        r = min(W, H) * outer_ratio
+        x = cx + r * math.cos(theta)
+        y = cy + r * math.sin(theta)
+        heading = math.degrees(math.atan2(cy - y, cx - x))
+
+        ast_states.append({
+            'position': (x, y),
+            'size': 1,
+            'angle': float(heading),
+            'speed': float(outer_speed)
+        })
+
+    return Scenario(
+        name="Inner Outer Rings",
+        map_size=map_size,
+        num_asteroids=0,
+        asteroid_states=ast_states,
+        ship_states=[ship],
+        time_limit=time_limit,
+        ammo_limit_multiplier=0,
+        stop_if_no_ammo=False
+    )
