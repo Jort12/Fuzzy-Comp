@@ -18,6 +18,7 @@ Usage:
 
   # Step 3: Evaluate
   python rl_train.py --eval --scenario stock
+  python rl_train.py --eval --graphic --scenario stock --episodes 10
 """
 
 import argparse
@@ -109,7 +110,7 @@ def ppo_update_pooled(
 
         #Truncate AFTER GAE so boundary advantages have correct bootstraps
         #before: truncation happened before GAE, which forced the last step of a mid-episode window to bootstrap with V=0 (as if the episode ended).
-        #Now GAE sees the full episode, and we slice the result.
+        #Now GAE sees the full episode, then slice the result.
         T = features.shape[0]
         cap = max_steps_per_episode or 0
         if cap > 0 and T > cap:
@@ -384,6 +385,8 @@ def main():
     p.add_argument("--scenario", type=str, default="all")
     p.add_argument("--num_mfs", type=int, default=2,
                    help="Must match the warm-start model")
+    p.add_argument("--init_bundle", type=str, default=None,
+                   help="Optional warm-start bundle path. If omitted, training uses models/maneuver.pt and eval uses models/maneuver_best.pt.")
     p.add_argument("--lr", type=float, default=5e-5)
     p.add_argument("--critic_lr", type=float, default=3e-4,
                    help="Learning rate for value network (higher than policy LR)")
@@ -438,7 +441,11 @@ def main():
         net.dropout = nn.Identity()
 
     #  Warm-start from expert-trained models 
-    if args.eval:
+    if args.init_bundle is not None:
+        maneuver_path = args.init_bundle
+        if not os.path.isabs(maneuver_path):
+            maneuver_path = os.path.join(here, maneuver_path)
+    elif args.eval:
         maneuver_path = os.path.join(model_dir, "maneuver_best.pt")
     else:
         maneuver_path = os.path.join(model_dir, "maneuver.pt")
@@ -561,6 +568,20 @@ def main():
 
         policy_frozen = True
         print(f"Policy frozen for first {args.warmup_episodes} episodes (critic warmup)")
+
+    if args.init_bundle is not None and not args.eval and not args.resume:
+        baseline_results = run_eval_sweep(
+            game,
+            train_scenario_names,
+            scenario_map,
+            scenario_to_idx,
+            maneuver_policy,
+            mu,
+            sd,
+            num_scenarios,
+        )
+        best_reward = sum(r["reward"] for r in baseline_results) / max(len(baseline_results), 1)
+        print(f"Initial train-scenario deterministic avg from init bundle: {best_reward:.2f}")
 
     for ep in range(start_ep, args.episodes + 1):
         final_episode = ep
