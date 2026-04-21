@@ -22,6 +22,7 @@ Usage:
 """
 
 import argparse
+import csv
 import os
 import time
 import numpy as np
@@ -43,6 +44,64 @@ from rl_controller import RLController
 # critic's one-hot context input AND now the actor's scenario bias layers.
 # Must match the scenario_map in main().
 NUM_SCENARIOS = 8
+
+DEFAULT_TRAIN_SCENARIOS = [
+    "stock",
+    "donut_ring",
+    "vertical_wall_left",
+    "spiral_arms",
+    "crossing_lanes",
+    "asteroid_rain",
+    "four_corner",
+]
+
+DEFAULT_TRAIN_SCENARIO_WEIGHT_MAP = {
+    "asteroid_rain": 0.24,
+    "vertical_wall_left": 0.18,
+    "spiral_arms": 0.15,
+    "crossing_lanes": 0.16,
+    "stock": 0.10,
+    "four_corner": 0.10,
+    "donut_ring": 0.07,
+}
+
+CURRICULUM_GROUPS = {
+    "foundation": [
+        "stock",
+        "donut_ring",
+        "vertical_wall_left",
+    ],
+    "motion": [
+        "asteroid_rain",
+        "crossing_lanes",
+        "spiral_arms",
+    ],
+    "pressure": [
+        "vertical_wall_left",
+        "asteroid_rain",
+        "four_corner",
+    ],
+    "full": list(DEFAULT_TRAIN_SCENARIOS),
+}
+
+CURRICULUM_GROUP_WEIGHT_MAPS = {
+    "foundation": {
+        "stock": 0.40,
+        "donut_ring": 0.32,
+        "vertical_wall_left": 0.28,
+    },
+    "motion": {
+        "asteroid_rain": 0.38,
+        "crossing_lanes": 0.34,
+        "spiral_arms": 0.28,
+    },
+    "pressure": {
+        "asteroid_rain": 0.38,
+        "four_corner": 0.34,
+        "vertical_wall_left": 0.28,
+    },
+    "full": dict(DEFAULT_TRAIN_SCENARIO_WEIGHT_MAP),
+}
 
 
 #  PPO update 
@@ -346,6 +405,92 @@ def load_rl_checkpoint(
     return ep, best, total_ep, ppo_count
 
 
+def create_episode_csv_logger(csv_path: str):
+    fieldnames = [
+        "episode",
+        "total_episodes",
+        "scenario",
+        "reward",
+        "hits",
+        "deaths",
+        "steps",
+        "std",
+        "log_std_0",
+        "log_std_1",
+        "entropy",
+        "ratio",
+        "total_loss",
+        "policy_loss",
+        "value_loss",
+        "skipped",
+        "ppo_update_count",
+        "pool_episodes",
+        "adv_std_spread",
+        "learning_rate",
+        "policy_frozen",
+        "det_train_avg",
+        "det_all_avg",
+        "det_total_hits",
+        "det_total_deaths",
+        "best_reward_so_far",
+    ]
+
+    csv_dir = os.path.dirname(csv_path)
+    if csv_dir:
+        os.makedirs(csv_dir, exist_ok=True)
+
+    handle = open(csv_path, "w", newline="", encoding="utf-8")
+    writer = csv.DictWriter(handle, fieldnames=fieldnames)
+    writer.writeheader()
+    handle.flush()
+    return handle, writer
+
+
+def parse_scenario_weights(weight_spec: str | None, scenario_names):
+    if not scenario_names:
+        return None
+
+    if weight_spec is None or not weight_spec.strip():
+        return None
+
+    weights = {}
+    for chunk in weight_spec.split(","):
+        piece = chunk.strip()
+        if not piece:
+            continue
+        if "=" not in piece:
+            raise ValueError(
+                "Scenario weights must look like 'asteroid_rain=0.24,crossing_lanes=0.16'."
+            )
+        name, raw_value = piece.split("=", 1)
+        name = name.strip()
+        value = float(raw_value.strip())
+        if name not in scenario_names:
+            raise ValueError(f"Unknown scenario in weights: {name}")
+        if value < 0.0:
+            raise ValueError(f"Scenario weight must be non-negative: {name}={value}")
+        weights[name] = value
+
+    if not weights:
+        return None
+
+    ordered = np.array([weights.get(name, 0.0) for name in scenario_names], dtype=np.float64)
+    total = float(ordered.sum())
+    if total <= 0.0:
+        raise ValueError("Scenario weights must sum to a positive value.")
+    ordered /= total
+    return ordered
+
+
+def normalize_weight_map(weight_map, scenario_names):
+    ordered = np.array([weight_map.get(name, 0.0) for name in scenario_names], dtype=np.float64)
+    total = float(ordered.sum())
+    if total <= 0.0:
+        return None
+    ordered /= total
+    return ordered
+
+
 def run_eval_sweep(game, scenario_names, scenario_map, scenario_to_idx,
                    maneuver_policy, mu, sd, num_scenarios):
     results = []
@@ -380,6 +525,7 @@ def run_eval_sweep(game, scenario_names, scenario_map, scenario_to_idx,
 
 
 def main():
+    #Absolute behemoth of a cli
     p = argparse.ArgumentParser()
     p.add_argument("--episodes", type=int, default=300)
     p.add_argument("--scenario", type=str, default="all")
@@ -387,6 +533,12 @@ def main():
                    help="Must match the warm-start model")
     p.add_argument("--init_bundle", type=str, default=None,
                    help="Optional warm-start bundle path. If omitted, training uses models/maneuver.pt and eval uses models/maneuver_best.pt.")
+    p.add_argument("--csv_log", type=str, default=None,
+                   help="Optional per-episode CSV output path. Defaults to a timestamped file in models/.")
+    p.add_argument("--scenario_weights", type=str, default=None,
+                   help="Optional comma-separated weights like 'asteroid_rain=0.24,vertical_wall_left=0.18'. Used when training on multiple scenarios.")
+    p.add_argument("--scenario_group", type=str, default=None,
+                   help="Optional curriculum subset for maneuver training: foundation, motion, pressure, or full. Uses only the existing scenario map, so saved bundles stay compatible.")
     p.add_argument("--lr", type=float, default=5e-5)
     p.add_argument("--critic_lr", type=float, default=3e-4,
                    help="Learning rate for value network (higher than policy LR)")
@@ -394,7 +546,7 @@ def main():
     p.add_argument("--ppo_epochs", type=int, default=1)
     p.add_argument("--clip_eps", type=float, default=0.2)
     p.add_argument("--entropy_coef", type=float, default=0.01)
-    p.add_argument("--save_every", type=int, default=25)
+    p.add_argument("--save_every", type=int, default=20)
     p.add_argument("--eval", action="store_true")
     p.add_argument("--graphics", action="store_true",
                    help="Render the game window. Off by default for faster training and evaluation.")
@@ -406,9 +558,9 @@ def main():
     p.add_argument("--warmup_episodes", type=int, default=0)
     p.add_argument("--min_pool_steps", type=int, default=2048)
     p.add_argument("--min_pool_scenarios", type=int, default=4)
-    p.add_argument("--cooldown_episodes", type=int, default=25)
+    p.add_argument("--cooldown_episodes", type=int, default=15)
     p.add_argument("--cooldown_lr_scale", type=float, default=0.5)
-    p.add_argument("--early_stop_patience", type=int, default=3,
+    p.add_argument("--early_stop_patience", type=int, default=100,
                    help="Stop after this many save/eval sweeps without a new best train-scenario deterministic average. Set to 0 to disable.")
     p.add_argument("--early_stop_min_delta", type=float, default=0.0)
     p.add_argument("--resume", action="store_true",
@@ -517,20 +669,45 @@ def main():
         f"scenario_map has {num_scenarios} entries but NUM_SCENARIOS={NUM_SCENARIOS}"
     )
 
-    if args.scenario.lower() == "all":
-        train_scenario_names = [
-            "stock",
-            "donut_ring",
-            "vertical_wall_left",
-            "spiral_arms",
-            "crossing_lanes",
-            "asteroid_rain",
-            "four_corner",
-        ]
+    selected_group = None
+    if args.scenario_group is not None:
+        selected_group = args.scenario_group.lower().strip()
+        if args.scenario.lower() != "all":
+            raise ValueError("--scenario_group can only be used with --scenario all.")
+        if selected_group not in CURRICULUM_GROUPS:
+            valid_groups = ", ".join(sorted(CURRICULUM_GROUPS.keys()))
+            raise ValueError(f"Unknown --scenario_group '{args.scenario_group}'. Valid groups: {valid_groups}")
+        train_scenario_names = list(CURRICULUM_GROUPS[selected_group])
+        eval_scenario_names = train_scenario_names if args.eval else list(scenario_map.keys())
+        print(f"Curriculum group -> {selected_group}: {', '.join(train_scenario_names)}")
+    elif args.scenario.lower() == "all":
+        train_scenario_names = list(DEFAULT_TRAIN_SCENARIOS)
         eval_scenario_names = list(scenario_map.keys())
     else:
+        if args.scenario not in scenario_map:
+            valid_names = ", ".join(scenario_map.keys())
+            raise ValueError(f"Unknown scenario '{args.scenario}'. Valid scenarios: {valid_names}")
         train_scenario_names = [args.scenario]
         eval_scenario_names = [args.scenario]
+
+    train_scenario_probs = None
+    if not args.eval and len(train_scenario_names) > 1:
+        weight_spec = args.scenario_weights
+        if weight_spec is not None:
+            train_scenario_probs = parse_scenario_weights(weight_spec, train_scenario_names)
+        else:
+            default_weight_map = None
+            if selected_group is not None:
+                default_weight_map = CURRICULUM_GROUP_WEIGHT_MAPS.get(selected_group)
+            elif args.scenario.lower() == "all":
+                default_weight_map = DEFAULT_TRAIN_SCENARIO_WEIGHT_MAP
+            if default_weight_map is not None:
+                train_scenario_probs = normalize_weight_map(default_weight_map, train_scenario_names)
+        if train_scenario_probs is not None:
+            weights_str = ", ".join(
+                f"{name}={prob:.2f}" for name, prob in zip(train_scenario_names, train_scenario_probs)
+            )
+            print(f"Weighted scenario sampling -> {weights_str}")
 
     game_settings = {
         "perf_tracker": True,
@@ -540,6 +717,20 @@ def main():
         "frequency": 30,
     }
     game = KesslerGame(settings=game_settings)#type:ignore
+
+    csv_handle = None
+    csv_writer = None
+    csv_log_path = None
+    if not args.eval:
+        if args.csv_log is not None:
+            csv_log_path = args.csv_log
+            if not os.path.isabs(csv_log_path):
+                csv_log_path = os.path.join(here, csv_log_path)
+        else:
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            csv_log_path = os.path.join(model_dir, f"training_log_{timestamp}.csv")
+        csv_handle, csv_writer = create_episode_csv_logger(csv_log_path)
+        print(f"CSV logging -> {csv_log_path}")
 
     #  Training/Eval loop 
     rng = np.random.default_rng()
@@ -595,7 +786,7 @@ def main():
         if args.eval:
             scenario_name = eval_scenario_names[(ep - 1) % len(eval_scenario_names)]
         else:
-            scenario_name = rng.choice(train_scenario_names)
+            scenario_name = rng.choice(train_scenario_names, p=train_scenario_probs)
         
         scenario = scenario_map[scenario_name]()
         sc_idx = scenario_to_idx[scenario_name]
@@ -685,6 +876,10 @@ def main():
                 "adv_std_spread": 0.0,
             }
 
+        det_train_avg = None
+        det_all_avg = None
+        det_total_hits = None
+        det_total_deaths = None
 
         #Logging 
         log_std_val = maneuver_policy.log_std.exp().mean().item()
@@ -755,6 +950,10 @@ def main():
                 sum(r["reward"] for r in train_eval_results) / len(train_eval_results)
                 if train_eval_results else 0.0
             )
+            det_train_avg = avg_train_reward
+            det_all_avg = avg_det_reward
+            det_total_hits = total_det_hits
+            det_total_deaths = total_det_deaths
 
             print(
                 f" [DET-EVAL] train_avg={avg_train_reward:.1f} all_avg={avg_det_reward:.1f} "
@@ -804,6 +1003,38 @@ def main():
                         print(" Early stopping on deterministic eval plateau")
                         break
 
+        if csv_writer is not None:
+            current_lr = opt_policy.param_groups[0]["lr"] if opt_policy.param_groups else args.lr
+            csv_writer.writerow({
+                "episode": ep,
+                "total_episodes": args.episodes,
+                "scenario": scenario_name,
+                "reward": f"{ep_reward:.6f}",
+                "hits": hits,
+                "deaths": deaths,
+                "steps": ep_steps,
+                "std": f"{log_std_val:.6f}",
+                "log_std_0": f"{log_std_raw[0]:.6f}" if len(log_std_raw) > 0 else "",
+                "log_std_1": f"{log_std_raw[1]:.6f}" if len(log_std_raw) > 1 else "",
+                "entropy": f"{stats['entropy']:.6f}",
+                "ratio": f"{stats['ratio']:.6f}",
+                "total_loss": f"{stats['total_loss']:.6f}",
+                "policy_loss": f"{stats['policy_loss']:.6f}",
+                "value_loss": f"{stats['value_loss']:.6f}",
+                "skipped": stats["skipped"],
+                "ppo_update_count": ppo_update_count,
+                "pool_episodes": stats["n_episodes"],
+                "adv_std_spread": f"{stats['adv_std_spread']:.6f}",
+                "learning_rate": f"{current_lr:.10f}",
+                "policy_frozen": int(policy_frozen),
+                "det_train_avg": f"{det_train_avg:.6f}" if det_train_avg is not None else "",
+                "det_all_avg": f"{det_all_avg:.6f}" if det_all_avg is not None else "",
+                "det_total_hits": det_total_hits if det_total_hits is not None else "",
+                "det_total_deaths": det_total_deaths if det_total_deaths is not None else "",
+                "best_reward_so_far": f"{best_reward:.6f}",
+            })
+            csv_handle.flush()
+
     if not args.eval:
         #Final save
         save_bundle(
@@ -816,6 +1047,12 @@ def main():
             final_episode, best_reward, total_episodes, ppo_update_count, rl_ckpt_path,
         )
         print("\nDone. Models saved to models/")
+        if csv_log_path is not None:
+            print(f"CSV log saved to {csv_log_path}")
+
+    if csv_handle is not None:
+        csv_handle.close()
+
     total_time = time.perf_counter() - train_start
     minutes = total_time / 60
     print(f"\nTotal training time: {minutes:.1f} min ({total_time:.0f}s)")

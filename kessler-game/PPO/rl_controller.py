@@ -21,6 +21,9 @@ FEATURE_COLS = [
 # Reward coefficients
 HIT_REWARD = 7.0
 DEATH_PENALTY = -4.0
+SURVIVAL_SOFT_GAP = 160.0
+SURVIVAL_HARD_GAP = 80.0
+CROWDING_RADIUS = 220.0
 
 #Parameter
 EXTENDED_RANGE = 100.0
@@ -59,11 +62,30 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
     elif speed > 100.0:
         reward += 0.05 * dt
 
+    asteroids = getattr(game_state, "asteroids", [])
+    nearest_gap, crowding_count, danger_pressure, nearest_approach = survival_metrics(
+        ship_state, asteroids, map_size
+    )
+
+    if crowding_count >= 3:
+        reward -= 0.05 * min(crowding_count - 2, 4) * dt
+
+    if nearest_gap < SURVIVAL_SOFT_GAP:
+        reward -= 0.22 * (1.0 - nearest_gap / SURVIVAL_SOFT_GAP) * dt
+    if nearest_gap < SURVIVAL_HARD_GAP:
+        reward -= 0.35 * (1.0 - nearest_gap / SURVIVAL_HARD_GAP) * dt
+
+    reward -= 0.015 * min(danger_pressure, 12.0) * dt
+
+    if nearest_gap < SURVIVAL_SOFT_GAP and nearest_approach < 0.0:
+        separation_speed = min(-nearest_approach / 120.0, 1.0)
+        reward += 0.10 * separation_speed * dt
+
     #Dense Targeting Rewards
     #continuous aiming reward so the agent always has a gradient toward the target
     # uses locked_target if provided so reward and features target the same asteroid
-    asteroids = getattr(game_state, "asteroids", [])
     err = 180.0  # default to max error if no asteroids
+    combat_focus = 0.35 if nearest_gap < SURVIVAL_SOFT_GAP or crowding_count >= 3 else 1.0
     if asteroids:
         sx, sy = ship_state.position
         if locked_target is not None:
@@ -79,22 +101,24 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
         # smooth reward: 0 at 180 degrees, ramps up to 0.30 at 0 degrees
         # squaring makes it pull harder as you get close to on-target
         aim_reward = 0.30 * (1.0 - err / 180.0) ** 2
+        aim_reward *= combat_focus
         reward += aim_reward * dt
 
         dist = math.hypot(dx, dy)
         if dist < 220:
-            reward += 0.08 * (1.0 - dist / 220.0) * dt
+            reward += 0.08 * combat_focus * (1.0 - dist / 220.0) * dt
 
     # Firing: reward good shots, punish spraying into empty space
+    fire_focus = 0.25 if nearest_gap < SURVIVAL_HARD_GAP or crowding_count >= 4 else combat_focus
     if prev_fire and err < 8:
-        reward += 0.14 * dt   # very good shot
+        reward += 0.14 * fire_focus * dt   # very good shot
     elif prev_fire and err < 15:
-        reward += 0.08 * dt   # decent shot
+        reward += 0.08 * fire_focus * dt   # decent shot
     elif prev_fire and err < 22:
-        reward += 0.03 * dt   # still acceptable
+        reward += 0.03 * fire_focus * dt   # still acceptable
 
     if prev_fire and err > 35:
-        reward -= 0.12 * dt   # bad spray
+        reward -= 0.12 * max(fire_focus, 0.5) * dt   # bad spray
 
     return reward, current_hits, current_deaths
 
@@ -145,6 +169,43 @@ def find_priority_threat(asteroids, ship_state, map_size):
             best_gap = gap
 
     return best, max(best_gap, 1.0)
+
+
+def survival_metrics(ship_state, asteroids, map_size):
+    sx, sy = ship_state.position
+    svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
+
+    nearest_gap = float("inf")
+    nearest_approach = 0.0
+    crowding_count = 0
+    danger_pressure = 0.0
+
+    for a in asteroids:
+        ax, ay = a.position
+        dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
+        center = math.hypot(dx, dy)
+        radius = getattr(a, "radius", 0.0)
+        gap = max(center - radius - SHIP_RADIUS, 1.0)
+
+        avx, avy = getattr(a, "velocity", (0.0, 0.0))
+        rel_vx, rel_vy = avx - svx, avy - svy
+        approach_speed = (rel_vx * dx + rel_vy * dy) / max(center, 1.0)
+        closing = max(approach_speed, 0.0)
+
+        if gap < nearest_gap:
+            nearest_gap = gap
+            nearest_approach = approach_speed
+
+        if gap < CROWDING_RADIUS:
+            crowding_count += 1
+
+        if gap < SURVIVAL_SOFT_GAP:
+            danger_pressure += closing / max(gap, 20.0)
+
+    if not asteroids:
+        return float("inf"), 0, 0.0, 0.0
+
+    return nearest_gap, crowding_count, danger_pressure, nearest_approach
 
 
 def calculate_context(ship_state, game_state, locked_target=None):
