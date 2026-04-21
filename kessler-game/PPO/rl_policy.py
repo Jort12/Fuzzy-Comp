@@ -6,10 +6,7 @@ NOTE:
   Combat head: SugenoNet outputs -> Bernoulli logits (fire/mine).
     Sample binary actions, compute log_prob.
 
-  v2: Both actor heads receive optional scenario one-hot context.
-  SugenoNet inputs stay at 8 (warm start preserved). Scenario one-hot
-  is projected through a near-zero-init Linear and added as output bias,
-  so the warm start behavior is undisturbed at the start of training.
+  v2: hybrid setup, only the maneuver head is used for the policy, combat is still rule-based.
 """
 import torch
 import torch.nn as nn
@@ -40,8 +37,8 @@ class StochasticManeuverPolicy(nn.Module):
 
     def forward(self, x, scenario_onehot=None):
         """
-        x: (B, num_inputs) — normalized features
-        scenario_onehot: (B, num_scenarios) or None
+        x: (B, num_inputs): Normalized features
+        scenario_onehot: (B, num_scenarios) or None, for scenario conditioning. If provided, adds a learned bias to the means for each scenario.
         Returns: means (B, 2), stds (B, 2)
         """
         thrust_mean = self.thrust_net(x)  # (B, 1)
@@ -105,7 +102,7 @@ class StochasticCombatPolicy(nn.Module):
 
         # Clamp to keep both actions with meaningful probability mass.
         # At +-4, sigmoid ~ 98%/2%, bounding worst case log ratio to ~8
-        # per action instead of ~40 with the old ±20.
+        # per action instead of ~40 with the old +-20.
         fire_logit = torch.clamp(fire_logit, -4.0, 4.0)
         mine_logit = torch.clamp(mine_logit, -4.0, 4.0)
 

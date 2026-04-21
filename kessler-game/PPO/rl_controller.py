@@ -311,7 +311,8 @@ class RLController(KesslerController):
 
     # how many frames to hold a target before re-evaluating
     TARGET_LOCK_FRAMES = 10
-    # The target-locking mechanism is important for both the reward function and the features, to ensure they are consistent and stable. By locking onto a specific target asteroid for several frames, we prevent the priority target from flickering between multiple asteroids in symmetric scenarios, which was causing the heading error feature to jump around and making it hard for the maneuver policy to learn a consistent turning behavior. The reward function also uses the locked target to calculate aiming rewards, so it benefits from the same stability.
+    # The target-locking mechanism is important for both the reward function and the features, to ensure they are consistent and stable. By locking onto a specific target asteroid for several frames, 
+    # we prevent the priority target from flickering between multiple asteroids in symmetric scenarios, which was causing the heading error feature to jump around and making it hard for the maneuver policy to learn a consistent turning behavior. The reward function also uses the locked target to calculate aiming rewards, so it benefits from the same stability.
 
     def __init__(
         self,
@@ -320,8 +321,7 @@ class RLController(KesslerController):
         sd=None,
         deterministic=False,
         scenario_id: int = 0,
-        num_scenarios: int = 8,
-    ):
+        num_scenarios: int = 8,):
         super().__init__()
         self.maneuver_policy = maneuver_policy
         self.mu = mu
@@ -342,7 +342,7 @@ class RLController(KesslerController):
         self._locked_pos = None
         self._lock_frames_left = 0
 
-    def _scenario_onehot(self):
+    def scenario_onehot(self):
         oh = torch.zeros(1, self.num_scenarios, device=self.device)
         if 0 <= self.scenario_id < self.num_scenarios:
             oh[0, self.scenario_id] = 1.0
@@ -375,7 +375,7 @@ class RLController(KesslerController):
         self.trajectory.append(self._pending)
         self._pending = None
 
-    def _normalize(self, ctx):
+    def normalize(self, ctx):
         x = np.array([ctx[k] for k in FEATURE_COLS], dtype=np.float32)
         if self.mu is not None and self.sd is not None:
             sd = self.sd.copy()
@@ -383,7 +383,7 @@ class RLController(KesslerController):
             x = (x - self.mu) / sd
         return torch.tensor(x, dtype=torch.float32, device=self.device).unsqueeze(0)
 
-    def _get_locked_target(self, ship_state, game_state):
+    def get_locked_target(self, ship_state, game_state):
         """
         Returns a stable target asteroid, holding the same one for
         TARGET_LOCK_FRAMES before re-evaluating. This prevents the
@@ -432,11 +432,11 @@ class RLController(KesslerController):
 
     def actions(self, ship_state, game_state):
         # get a stable target for this frame
-        locked = self._get_locked_target(ship_state, game_state)
+        locked = self.get_locked_target(ship_state, game_state)
 
         ctx = calculate_context(ship_state, game_state, locked_target=locked)
-        xb = self._normalize(ctx)
-        sc_oh = self._scenario_onehot()
+        xb = self.normalize(ctx)
+        sc_oh = self.scenario_onehot()
 
         # Finish previous transition reward using the current state
         if self._pending is not None:
