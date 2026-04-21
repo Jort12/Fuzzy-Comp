@@ -19,6 +19,21 @@ Usage:
   # Step 3: Evaluate
   python rl_train.py --eval --scenario stock
   python rl_train.py --eval --graphic --scenario stock --episodes 10
+  
+  
+# Full curriculum training
+python -u rl_train.py --episodes 1000 --scenario all --scenario_group foundation --init_bundle models\maneuver_best.pt --csv_log models\foundation_run.csv 2>&1 | Tee-Object -FilePath run_log_foundation.txt
+python visualize_training.py --log run_log_foundation.txt --csv models\foundation_run.csv --run_name foundation --bundle models\maneuver_best.pt --compare_run foundation=run_log_foundation.txt
+
+python -u rl_train.py --episodes 1000 --scenario all --scenario_group motion --init_bundle models\maneuver_best.pt --csv_log models\motion_run.csv 2>&1 | Tee-Object -FilePath run_log_motion.txt
+python visualize_training.py --log run_log_motion.txt --csv models\motion_run.csv --run_name motion --bundle models\maneuver_best.pt --compare_run foundation=run_log_foundation.txt --compare_run motion=run_log_motion.txt
+
+python -u rl_train.py --episodes 1000 --scenario all --scenario_group pressure --init_bundle models\maneuver_best.pt --csv_log models\pressure_run.csv 2>&1 | Tee-Object -FilePath run_log_pressure.txt
+python visualize_training.py --log run_log_pressure.txt --csv models\pressure_run.csv --run_name pressure --bundle models\maneuver_best.pt --compare_run foundation=run_log_foundation.txt --compare_run motion=run_log_motion.txt --compare_run pressure=run_log_pressure.txt
+
+python -u rl_train.py --episodes 1000 --scenario all --scenario_group full --init_bundle models\maneuver_best.pt --csv_log models\full_run.csv 2>&1 | Tee-Object -FilePath run_log_full.txt
+python visualize_training.py --log run_log_full.txt --csv models\full_run.csv --run_name full --bundle models\maneuver_best.pt --compare_run foundation=run_log_foundation.txt --compare_run motion=run_log_motion.txt --compare_run pressure=run_log_pressure.txt --compare_run full=run_log_full.txt
+
 """
 
 import argparse
