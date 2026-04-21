@@ -1,4 +1,0 @@
-episode,total_episodes,scenario,reward,hits,deaths,steps,std,log_std_0,log_std_1,entropy,ratio,total_loss,policy_loss,value_loss,skipped,ppo_update_count,pool_episodes,adv_std_spread,learning_rate,policy_frozen,det_train_avg,det_all_avg,det_total_hits,det_total_deaths,best_reward_so_far
-1,3,asteroid_rain,48.263261,9,3,132,0.367879,-1.000000,-1.000000,0.000000,1.000000,0.000000,0.000000,0.000000,0,0,0,0.000000,0.0000500000,0,,,,,-inf
-2,3,asteroid_rain,291.007543,44,3,301,0.367879,-1.000000,-1.000000,0.000000,1.000000,0.000000,0.000000,0.000000,0,0,0,0.000000,0.0000500000,0,,,,,-inf
-3,3,crossing_lanes,603.463986,94,9,917,0.367879,-1.000000,-1.000000,0.000000,1.000000,0.000000,0.000000,0.000000,0,0,0,0.000000,0.0000500000,0,,,,,-inf
