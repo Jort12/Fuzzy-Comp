@@ -1,4 +1,4 @@
-r"""
+"""
 rl_train.py: finetuning trained neuro-fuzzy policy with PPO.
 
 Merged trainer (v2):
@@ -35,7 +35,6 @@ python -u rl_train.py --episodes 1000 --scenario all --scenario_group full --ini
 python visualize_training.py --log run_log_full.txt --csv models\full_run.csv --run_name full --bundle models\maneuver_best.pt --compare_run foundation=run_log_foundation.txt --compare_run motion=run_log_motion.txt --compare_run pressure=run_log_pressure.txt --compare_run full=run_log_full.txt
 
 """
-
 import argparse
 import csv
 import os
@@ -55,11 +54,10 @@ from rl_policy import (
 )
 from rl_controller import RLController
 
-# Number of scenarios in the fixed scenario map. Used to size the
-# critic's one-hot context input AND now the actor's scenario bias layers.
-# Must match the scenario_map in main().
+# Keep this fixed so saved scenario IDs always line up with actor/critic inputs.
 NUM_SCENARIOS = 8
 
+# Default multi-scenario training set used by --scenario all.
 DEFAULT_TRAIN_SCENARIOS = [
     "stock",
     "donut_ring",
@@ -70,6 +68,7 @@ DEFAULT_TRAIN_SCENARIOS = [
     "four_corner",
 ]
 
+# Hand-tuned sampling weights so harder cases show up more often.
 DEFAULT_TRAIN_SCENARIO_WEIGHT_MAP = {
     "asteroid_rain": 0.24,
     "vertical_wall_left": 0.18,
@@ -80,6 +79,7 @@ DEFAULT_TRAIN_SCENARIO_WEIGHT_MAP = {
     "donut_ring": 0.07,
 }
 
+# Curriculum slices let us train on themed subsets without changing the scenario map.
 CURRICULUM_GROUPS = {
     "foundation": [
         "stock",
@@ -99,6 +99,7 @@ CURRICULUM_GROUPS = {
     "full": list(DEFAULT_TRAIN_SCENARIOS),
 }
 
+# Matching default sampling weights for each curriculum slice.
 CURRICULUM_GROUP_WEIGHT_MAPS = {
     "foundation": {
         "stock": 0.40,
@@ -118,28 +119,23 @@ CURRICULUM_GROUP_WEIGHT_MAPS = {
     "full": dict(DEFAULT_TRAIN_SCENARIO_WEIGHT_MAP),
 }
 
-
-#  PPO update 
-#Generalized Advantage Estimation, computes advantages and returns from rewards and value estimates for a single episode/trajectory. No bootstrapping across episode boundaries.
+# Compute PPO advantages and returns from one finished trajectory.
 def compute_gae(rewards, values, gamma=0.99, lam=0.95):
     T = len(rewards)
     advantages = np.zeros(T, dtype=np.float32)
     returns = np.zeros(T, dtype=np.float32)
     gae = 0.0
     for t in reversed(range(T)):
-        # Terminal step bootstraps with 0 (episode is over, no future reward), so next_val is 0 when t+1 is out of bounds.
+        # Bootstrap from the next critic value, or 0 at the terminal step.
         next_val = values[t + 1] if t + 1 < T else 0.0
+        # Temporal-difference error for this step before the recursive GAE smoothing.
         delta = rewards[t] + gamma * next_val - values[t]
         gae = delta + gamma * lam * gae
         advantages[t] = gae
         returns[t] = advantages[t] + values[t]
     return advantages, returns
 
-
-
-# PPO update from multiple episodes. Computes GAE per-episode to avoid bootstrapping across episode boundaries, then concatenates for minibatch SGD.
-# Includes per-episode advantage normalization, episode cap with post-GAE truncation,
-# separate policy/critic optimization, and KL early stopping.
+# Run PPO on a pooled set of finished episodes and return aggregate training stats.
 def ppo_update_pooled(
     maneuver_policy, value_net, opt_policy, opt_critic,
     episode_pool, clip_eps=0.2, entropy_coef=0.01, value_coef=1.0,
@@ -147,47 +143,43 @@ def ppo_update_pooled(
     max_steps_per_episode=None, num_scenarios=NUM_SCENARIOS):
 
     device = next(maneuver_policy.parameters()).device
-    # Pool data across episodes, compute advantages and returns per episode to avoid bootstrapping across episode boundaries.
+    # Gather each episode separately first, then flatten after GAE is computed.
     all_features, all_raw_m, all_old_logp = [], [], []
     all_adv, all_ret = [], []
-    all_scenario_ctx = []  # one-hot scenario context for both critic and actor now
-    raw_adv_stds = []  # diagnostic: track pre-normalization advantage spread
+    all_scenario_ctx = []
+    raw_adv_stds = []
 
     for traj in episode_pool:
         if len(traj) == 0:
             continue
+        # The controller already stored features, sampled actions, and log-probs per step.
         features = torch.cat([t["features"] for t in traj], dim=0).to(device)
         raw_m = torch.cat([t["raw_sample_m"] for t in traj], dim=0).to(device)
         old_logp = torch.stack([t["log_prob"] for t in traj]).to(device).squeeze(-1)
         rewards = [t["reward"] for t in traj]
 
-        #Build scenario one-hot for critic context AND actor conditioning
-        sc_id = traj[0].get("scenario_id", 0)#default to 0 if not present, but it should always be there
-        sc_onehot = torch.zeros(features.shape[0], num_scenarios, device=device)#shape (T, num_scenarios)
-        sc_onehot[:, sc_id] = 1.0#one-hot encoding of the scenario
+        sc_id = traj[0].get("scenario_id", 0)
+        sc_onehot = torch.zeros(features.shape[0], num_scenarios, device=device)
+        sc_onehot[:, sc_id] = 1.0
 
         with torch.no_grad():
+            # The critic also sees scenario context so its baseline matches the policy input.
             values_np = value_net(torch.cat([features, sc_onehot], dim=1)).cpu().numpy()
 
         advantages, returns = compute_gae(rewards, values_np, gamma, lam)
 
-        #Per-episode advantage normalization
-        # Normalize advantages within each episode BEFORE concatenating.
-        # This prevents high-reward scenarios (crossing_lanes) from drowning out low-reward ones (sniper_practice) after global
-        # normalization, which was causing the scenario tug-of-war.
         adv_ep = torch.tensor(advantages, dtype=torch.float32, device=device)
         ret_ep = torch.tensor(returns, dtype=torch.float32, device=device)
         raw_adv_stds.append(float(adv_ep.std()) if adv_ep.numel() > 1 else 0.0)
+        # Normalize per episode so one long or extreme rollout does not dominate the pool.
         if adv_ep.numel() > 1 and adv_ep.std() > 1e-8:
             adv_ep = (adv_ep - adv_ep.mean()) / (adv_ep.std() + 1e-8)
         adv_ep = torch.clamp(adv_ep, -5.0, 5.0)
 
-        #Truncate AFTER GAE so boundary advantages have correct bootstraps
-        #before: truncation happened before GAE, which forced the last step of a mid-episode window to bootstrap with V=0 (as if the episode ended).
-        #Now GAE sees the full episode, then slice the result.
         T = features.shape[0]
         cap = max_steps_per_episode or 0
         if cap > 0 and T > cap:
+            # Random cropping keeps update cost bounded for very long episodes.
             start = int(torch.randint(0, T - cap + 1, (1,)).item())
             sl = slice(start, start + cap)
             features  = features[sl]
@@ -224,10 +216,10 @@ def ppo_update_pooled(
     ratio_sum = 0.0
     ratio_count = 0
     skipped_batches = 0
-    #Kullback–Leibler divergence: a measure of how much the new policy diverged from the old one. Used for early stopping to prevent destructive updates.
     target_kl = 0.05
 
     for _ in range(epochs):
+        # Shuffle pooled samples each epoch so minibatches are less correlated.
         idxs = torch.randperm(N, device=device)
         stop_early = False
 
@@ -235,6 +227,7 @@ def ppo_update_pooled(
             end = min(start + mini_batch_size, N)
             mb = idxs[start:end]
 
+            # Slice one minibatch from the pooled rollout tensors.
             mb_features = features[mb]
             mb_raw_m = raw_m[mb]
             mb_old_logp = old_logp[mb]
@@ -242,7 +235,6 @@ def ppo_update_pooled(
             mb_ret = ret_t[mb]
             mb_sc = scenario_ctx[mb]
 
-            # Actor evaluate_action now gets scenario context too
             new_logp_m, entropy_m = maneuver_policy.evaluate_action(
                 mb_features, mb_raw_m, scenario_onehot=mb_sc)
 
@@ -252,6 +244,7 @@ def ppo_update_pooled(
             new_logp = new_logp_m
             entropy = entropy_m
 
+            # PPO compares the new policy probability to the probability used to sample the action.
             log_ratio = new_logp - mb_old_logp
             log_ratio = log_ratio.clamp(-4.0, 4.0)
 
@@ -260,36 +253,37 @@ def ppo_update_pooled(
             mean_ratio = float(ratio.mean().item())
             approx_kl = float((mb_old_logp - new_logp).mean().abs().item())
 
-            # Skip guard: block destructive minibatches
             if mean_ratio > 3.0 or mean_ratio < 0.33:
-
+                # Skip obviously unstable batches instead of letting PPO explode.
                 skipped_batches += 1
                 continue
 
+            # Clipped surrogate objective is the main PPO policy loss.
             surr1 = ratio * mb_adv
             surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * mb_adv
             policy_loss = -torch.min(surr1, surr2).mean()
 
+            # Critic learns to predict return targets for the same state/scenario input.
             v_pred = value_net(torch.cat([mb_features, mb_sc], dim=1))
             value_loss = nn.SmoothL1Loss()(v_pred, mb_ret)
 
             loss = policy_loss + value_coef * value_loss - entropy_coef * entropy.mean()
 
-            # critic step always runs
             opt_critic.zero_grad(set_to_none=True)
             critic_obj = value_coef * value_loss
 
-            # only run policy backward if policy params are unfrozen
             policy_params = list(maneuver_policy.parameters())
             policy_trainable = any(p.requires_grad for p in policy_params)
 
             if policy_trainable:
+                # Policy and critic use separate optimizers so warmup/freezing stays simple.
                 opt_policy.zero_grad(set_to_none=True)
                 policy_obj = policy_loss - entropy_coef * entropy.mean()
                 policy_obj.backward(retain_graph=True)
                 nn.utils.clip_grad_norm_(policy_params, max_norm=0.5)
                 opt_policy.step()
 
+            # Critic update still runs during warmup, even if the actor is frozen.
             critic_obj.backward()
             nn.utils.clip_grad_norm_(value_net.parameters(), max_norm=0.5)
             opt_critic.step()
@@ -301,7 +295,7 @@ def ppo_update_pooled(
             ratio_sum += mean_ratio
             ratio_count += 1
 
-            # Early stop this PPO pass if policy moved too much
+            # Stop early if this PPO pass is already drifting too far from the old policy.
             if approx_kl > target_kl:
                 stop_early = True
                 break
@@ -329,6 +323,7 @@ def ppo_update_pooled(
     decays evenly regardless of how many episodes it takes to fill the pool.
     Schedule: std ~0.33 (log_std -1.10) at start -> std ~0.10 (log_std -2.30) at end
 """
+# Gradually reduce policy exploration noise across PPO updates.
 def anneal_log_std_(maneuver_policy, ppo_update_count, expected_updates):
 
     progress = min(1.0, ppo_update_count / max(expected_updates, 1))
@@ -340,11 +335,11 @@ def anneal_log_std_(maneuver_policy, ppo_update_count, expected_updates):
         maneuver_policy.log_std.lerp_(target, 0.25)
         maneuver_policy.log_std.clamp_(-2.30, -0.90)
 
-#Save in the same format as nf_train.py so nf_infer.py can load it.
-# Also saves scenario bias weights so they persist across runs.
+# Save the compact inference bundle used by eval and deployment scripts.
 def save_bundle(maneuver_policy, mu, sd, feature_cols, num_mfs, path):
     bundle = {"task": "rl", "heads": {}}
 
+    # Save both continuous action heads in the same structure used by the NF bundle loader.
     for name, net in [("thrust", maneuver_policy.thrust_net),
                       ("turn_rate", maneuver_policy.turn_net)]:
         bundle["heads"][name] = {
@@ -356,11 +351,11 @@ def save_bundle(maneuver_policy, mu, sd, feature_cols, num_mfs, path):
             "num_mfs": num_mfs,
         }
 
-    # Preserve the trained log_std so eval can reload it
+    # Persist the learned exploration scale so future runs reload the same behavior.
     bundle["log_std"] = maneuver_policy.log_std.detach().cpu().tolist()
 
-    # Save scenario bias weights so they can be restored on resume
     if maneuver_policy.num_scenarios > 0:
+        # Scenario bias parameters are pulled out so older bundle loaders can still find them.
         bundle["scenario_maneuver"] = {
             k: v.cpu() for k, v in maneuver_policy.state_dict().items()
             if "scenario_bias" in k
@@ -371,11 +366,11 @@ def save_bundle(maneuver_policy, mu, sd, feature_cols, num_mfs, path):
 
 
 
+# Save full training state so PPO can resume from the same point later.
 def save_rl_checkpoint(
     maneuver_policy, value_net, opt_policy, opt_critic,
     episode, best_reward, total_episodes, ppo_update_count, path,
 ):
-    #saves everything needed to resume training, including total_episodes for annealing and ppo_update_count for the fixed anneal schedule
     torch.save({
         "maneuver_policy": maneuver_policy.state_dict(),
         "value_net": value_net.state_dict(),
@@ -389,12 +384,12 @@ def save_rl_checkpoint(
     print(f"Saved RL checkpoint (ep {episode}) -> {path}")
 
 
+# Restore model weights and optimizer state from an RL checkpoint.
 def load_rl_checkpoint(
     maneuver_policy, value_net, opt_policy, opt_critic, path, device,
 ):
-    #restores full training state, returns (episode, best_reward, total_episodes, ppo_update_count)
+    # strict=False keeps checkpoint loading compatible if new keys were added later.
     ckpt = torch.load(path, map_location=device)
-    # strict=False: old checkpoints won't have scenario_bias_* keys, that's fine
     maneuver_policy.load_state_dict(ckpt["maneuver_policy"], strict=False)
     try:
         value_net.load_state_dict(ckpt["value_net"])
@@ -405,7 +400,6 @@ def load_rl_checkpoint(
             critic_reloaded = False
         else:
             raise
-    # Support loading from old single-optimizer checkpoints
     if "opt_policy" in ckpt:
         opt_policy.load_state_dict(ckpt["opt_policy"])
         if critic_reloaded:
@@ -414,12 +408,13 @@ def load_rl_checkpoint(
         print("  (old single-optimizer checkpoint — skipping optimizer state)")
     ep = ckpt.get("episode", 0)
     best = ckpt.get("best_reward", -float("inf"))
-    total_ep = ckpt.get("total_episodes", None) # None if old checkpoint
-    ppo_count = ckpt.get("ppo_update_count", 0) # 0 if old checkpoint
+    total_ep = ckpt.get("total_episodes", None)
+    ppo_count = ckpt.get("ppo_update_count", 0)
     print(f"Resumed RL checkpoint from ep {ep}, best_reward={best:.2f}, ppo_updates={ppo_count}")
     return ep, best, total_ep, ppo_count
 
 
+# Create the CSV logger that records one training row per episode.
 def create_episode_csv_logger(csv_path: str):
     fieldnames = [
         "episode",
@@ -461,6 +456,7 @@ def create_episode_csv_logger(csv_path: str):
     return handle, writer
 
 
+# Parse a CLI weight string into normalized sampling probabilities.
 def parse_scenario_weights(weight_spec: str | None, scenario_names):
     if not scenario_names:
         return None
@@ -489,6 +485,7 @@ def parse_scenario_weights(weight_spec: str | None, scenario_names):
     if not weights:
         return None
 
+    # Order matters here because numpy.choice expects probabilities aligned with scenario_names.
     ordered = np.array([weights.get(name, 0.0) for name in scenario_names], dtype=np.float64)
     total = float(ordered.sum())
     if total <= 0.0:
@@ -497,6 +494,7 @@ def parse_scenario_weights(weight_spec: str | None, scenario_names):
     return ordered
 
 
+# Convert a scenario->weight dict into a probability array in scenario order.
 def normalize_weight_map(weight_map, scenario_names):
     ordered = np.array([weight_map.get(name, 0.0) for name in scenario_names], dtype=np.float64)
     total = float(ordered.sum())
@@ -506,11 +504,13 @@ def normalize_weight_map(weight_map, scenario_names):
     return ordered
 
 
+# Run deterministic evaluation over multiple scenarios and collect summary stats.
 def run_eval_sweep(game, scenario_names, scenario_map, scenario_to_idx,
                    maneuver_policy, mu, sd, num_scenarios):
     results = []
 
     for eval_name in scenario_names:
+        # Deterministic eval removes action noise so checkpoint comparisons stay stable.
         eval_scenario = scenario_map[eval_name]()
         eval_sc_idx = scenario_to_idx[eval_name]
         eval_ctrl = RLController(
@@ -539,35 +539,31 @@ def run_eval_sweep(game, scenario_names, scenario_map, scenario_to_idx,
 
 
 
+# Parse args, build the trainer, and run training or evaluation.
 def main():
     #Absolute behemoth of a cli
     p = argparse.ArgumentParser()
     p.add_argument("--episodes", type=int, default=300)
     p.add_argument("--scenario", type=str, default="all")
-    p.add_argument("--num_mfs", type=int, default=2,
-                   help="Must match the warm-start model")
-    p.add_argument("--init_bundle", type=str, default=None,
-                   help="Optional warm-start bundle path. If omitted, training uses models/maneuver.pt and eval uses models/maneuver_best.pt.")
-    p.add_argument("--csv_log", type=str, default=None,
-                   help="Optional per-episode CSV output path. Defaults to a timestamped file in models/.")
+    p.add_argument("--num_mfs", type=int, default=2)
+    p.add_argument("--init_bundle", type=str, default=None, help="Optional warm-start bundle path. if none, training uses models/maneuver.pt and eval uses models/maneuver_best.pt.")
+    p.add_argument("--csv_log", type=str, default=None, help="Optional per ep CSV output path. Defaults to a timestamped file in models/.")
     p.add_argument("--scenario_weights", type=str, default=None,
-                   help="Optional comma-separated weights like 'asteroid_rain=0.24,vertical_wall_left=0.18'. Used when training on multiple scenarios.")
+                   help="Optional weights 'asteroid_rain=0.24,vertical_wall_left=0.18'")
     p.add_argument("--scenario_group", type=str, default=None,
-                   help="Optional curriculum subset for maneuver training: foundation, motion, pressure, or full. Uses only the existing scenario map, so saved bundles stay compatible.")
+                   help="optional: foundation, motion, pressure, full")
     p.add_argument("--lr", type=float, default=5e-5)
-    p.add_argument("--critic_lr", type=float, default=3e-4,
-                   help="Learning rate for value network (higher than policy LR)")
+    p.add_argument("--critic_lr", type=float, default=3e-4, help="Learning rate for value network (higher than policy LR)")
     p.add_argument("--gamma", type=float, default=0.99)
     p.add_argument("--ppo_epochs", type=int, default=1)
     p.add_argument("--clip_eps", type=float, default=0.2)
     p.add_argument("--entropy_coef", type=float, default=0.01)
     p.add_argument("--save_every", type=int, default=20)
     p.add_argument("--eval", action="store_true")
-    p.add_argument("--graphics", action="store_true",
-                   help="Render the game window. Off by default for faster training and evaluation.")
+    p.add_argument("--graphics", action="store_true")
     p.add_argument("--init_log_std", type=float, default=-1.0,
                    help="Initial exploration noise (log scale). "
-                        "-0.5 ≈ std=0.6, -1.0 ≈ std=0.37, -2.0 ≈ std=0.14")
+                        "-0.5 ~ std=0.6, -1.0 ~ std=0.37, -2.0 ~ std=0.14")
     p.add_argument("--mini_batch_size", type=int, default=512)
     p.add_argument("--max_steps_per_episode", type=int, default=512)
     p.add_argument("--warmup_episodes", type=int, default=0)
@@ -575,11 +571,11 @@ def main():
     p.add_argument("--min_pool_scenarios", type=int, default=4)
     p.add_argument("--cooldown_episodes", type=int, default=15)
     p.add_argument("--cooldown_lr_scale", type=float, default=0.5)
-    p.add_argument("--early_stop_patience", type=int, default=100,
-                   help="Stop after this many save/eval sweeps without a new best train-scenario deterministic average. Set to 0 to disable.")
+    p.add_argument("--early_stop_patience", type=int, default=100, help="Stop after this many eval sweeps without a new best deterministic average. Set to 0 to disable.")
+    
     p.add_argument("--early_stop_min_delta", type=float, default=0.0)
-    p.add_argument("--resume", action="store_true",
-                   help="Resume training from rl_checkpoint.pt")
+    
+    p.add_argument("--resume", action="store_true", help="Resume training from rl_checkpoint.pt")
     args = p.parse_args()
 
 
@@ -588,10 +584,10 @@ def main():
     model_dir = os.path.join(here, "models")
     os.makedirs(model_dir, exist_ok=True)
 
+    # Actor gets 8 handcrafted features; critic gets those plus scenario context.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    num_inputs = 8  # length of FEATURE_COLS
+    num_inputs = 8
 
-    # Build policies (actor now gets scenario context via num_scenarios)
     maneuver_policy = StochasticManeuverPolicy(
         num_inputs, args.num_mfs,
         num_scenarios=NUM_SCENARIOS,
@@ -599,15 +595,11 @@ def main():
     ).to(device)
     value_net = ValueNet(num_inputs + NUM_SCENARIOS).to(device)
     
-    # Kill dropout in every warm-started SugenoNet for RL. Dropout makes forward()
-    # stochastic wrt the network old_logp and new_logp diverge even
-    # before any gradient step because different masks produce different
-    # outputs from the same input, breaking PPO importance sampling.
-    # Identity swap is permanent and can't be undone by an accidental .train().
+    # Disable dropout so PPO compares stable log-probs for the same stored actions.
     for net in [maneuver_policy.thrust_net, maneuver_policy.turn_net]:
         net.dropout = nn.Identity()
 
-    #  Warm-start from expert-trained models 
+    # Choose the warm-start bundle path based on train/eval mode.
     if args.init_bundle is not None:
         maneuver_path = args.init_bundle
         if not os.path.isabs(maneuver_path):
@@ -618,44 +610,39 @@ def main():
         maneuver_path = os.path.join(model_dir, "maneuver.pt")
 
     mu, sd, feature_cols = None, None, None
-    if os.path.exists(maneuver_path):
+    if os.path.exists(maneuver_path): # load the warm start bundle if it exists, otherwise start with untrained policy (but still use the same feature set)
+        # Warm start gives PPO a useful prior instead of random maneuvering.
         mu, sd, feature_cols = warm_start_maneuver(maneuver_policy, maneuver_path)
-        # Restore trained log_std if available in the bundle
         _bundle = torch.load(maneuver_path, map_location="cpu")
         if "log_std" in _bundle:
+            # Restore the saved exploration scale if the bundle already learned one.
             with torch.no_grad():
                 maneuver_policy.log_std.copy_(torch.tensor(_bundle["log_std"]))
             print(f"Restored log_std: {maneuver_policy.log_std.data.tolist()}")
-        # Restore scenario bias weights if present in bundle (from a previous v2 run)
         if "scenario_maneuver" in _bundle and maneuver_policy.num_scenarios > 0:
+            # Older bundles may not have scenario bias weights, so this stays optional.
             maneuver_policy.load_state_dict(_bundle["scenario_maneuver"], strict=False)
             print("Restored maneuver scenario bias from bundle")
         print("Warm started maneuver policy from expert.")
     else:
-        print("No maneuver.pt found —> training from scratch")
+        print("No maneuver.pt found -> training from scratch")
         
         feature_cols = [
             "dist", "ttc", "heading_err", "approach_speed",
             "ammo", "mines", "threat_density", "threat_angle",
         ]
 
-    ###
 
-    # Separate optimizers: critic needs a higher LR to keep up with
-    # the changing policy across diverse scenarios.
-    # Exclude log_std from the policy optimizer — it is controlled
-    # entirely by anneal_log_std_() on a schedule. Having it in both
-    # the optimizer (pulled up by entropy bonus) and the annealer
-    # (pulled down) creates a tug-of-war that prevents clean decay.
+    # log_std is controlled by anneal_log_std_(), so it stays out of Adam.
     policy_params = (
         [p for n, p in maneuver_policy.named_parameters() if "log_std" not in n])
     opt_policy = optim.Adam(policy_params, lr=args.lr)
     opt_critic = optim.Adam(value_net.parameters(), lr=args.critic_lr)
 
-    # Resume from RL checkpoint if requested
+    # Resume restores optimizer state and PPO schedule counters from disk.
     start_ep = 1
     best_reward = -float("inf")
-    total_episodes = args.episodes # save the original training horizon for annealing
+    total_episodes = args.episodes
     ppo_update_count = 0
     rl_ckpt_path = os.path.join(model_dir, "rl_checkpoint.pt")
     if args.resume and os.path.exists(rl_ckpt_path):
@@ -663,10 +650,11 @@ def main():
             maneuver_policy, value_net, opt_policy, opt_critic,
             rl_ckpt_path, device,
         )
-        start_ep += 1  # resume from the next episode
+        start_ep += 1
         if saved_total is not None:
-            total_episodes = saved_total # keep the original schedule
+            total_episodes = saved_total
 
+    # Scenario order must stay fixed because IDs are written into trajectories.
     scenario_map = {
         "stock": sc.stock_scenario,
         "donut_ring": sc.donut_ring,
@@ -677,7 +665,6 @@ def main():
         "four_corner": sc.four_corner,
         "sniper_practice": sc.sniper_practice,
     }
-    # Fixed index for critic one-hot context. Must match NUM_SCENARIOS.
     scenario_to_idx = {name: i for i, name in enumerate(scenario_map.keys())}
     num_scenarios = len(scenario_map)
     assert num_scenarios == NUM_SCENARIOS, (
@@ -731,12 +718,13 @@ def main():
         "graphics_obj": None,
         "frequency": 30,
     }
-    game = KesslerGame(settings=game_settings)#type:ignore
+    game = KesslerGame(settings=game_settings)  # type:ignore
 
     csv_handle = None
     csv_writer = None
     csv_log_path = None
     if not args.eval:
+        # Training writes one CSV row per episode for later plotting and debugging.
         if args.csv_log is not None:
             csv_log_path = args.csv_log
             if not os.path.isabs(csv_log_path):
@@ -747,28 +735,24 @@ def main():
         csv_handle, csv_writer = create_episode_csv_logger(csv_log_path)
         print(f"CSV logging -> {csv_log_path}")
 
-    #  Training/Eval loop 
     rng = np.random.default_rng()
-    episode_pool = [] # list of trajectories (each is a list of dicts)
+    episode_pool = []
     pool_steps = 0
-    pool_scenarios = set()# track distinct scenarios in current pool
+    pool_scenarios = set()
     base_lr = args.lr
-    cooldown_until = 0 # episode at which LR cooldown expires
+    cooldown_until = 0
     train_start = time.perf_counter()
 
-    # Estimate expected PPO updates for anneal schedule.
-    # With MIN_POOL_STEPS=2048 and ~1800 steps/episode, roughly 1 update
-    # per 1-2 episodes. Conservative: ~1 per 3 episodes accounting for
-    # the scenario diversity gate slowing things down.
+    # Rough estimate used only for the exploration annealing schedule.
     expected_updates = max(1, (args.episodes - args.warmup_episodes) // 3)
     if not (0.0 < args.cooldown_lr_scale <= 1.0):
         raise ValueError("--cooldown_lr_scale must be in (0, 1].")
 
-    # critic warmup: freeze policy params so only value_net trains, let the critic learn what states are worth before PPO starts pushing the actor around with bad advantage estimates
     policy_frozen = False
     no_improve_evals = 0
     final_episode = start_ep - 1
     if args.warmup_episodes > 0 and not args.eval:
+        # Optional critic warmup lets value targets stabilize before actor updates begin.
         for p in maneuver_policy.parameters():
             p.requires_grad = False
 
@@ -776,6 +760,7 @@ def main():
         print(f"Policy frozen for first {args.warmup_episodes} episodes (critic warmup)")
 
     if args.init_bundle is not None and not args.eval and not args.resume:
+        # Use the warm-start policy itself as the first baseline best score.
         baseline_results = run_eval_sweep(
             game,
             train_scenario_names,
@@ -791,8 +776,8 @@ def main():
 
     for ep in range(start_ep, args.episodes + 1):
         final_episode = ep
-        # unfreeze policy once warmup is done
         if policy_frozen and ep > args.warmup_episodes:
+            # Unfreeze once the requested warmup window is done.
             for p in maneuver_policy.parameters():
                 p.requires_grad = True
             policy_frozen = False
@@ -801,6 +786,7 @@ def main():
         if args.eval:
             scenario_name = eval_scenario_names[(ep - 1) % len(eval_scenario_names)]
         else:
+            # Training samples scenarios randomly, optionally using custom weights.
             scenario_name = rng.choice(train_scenario_names, p=train_scenario_probs)
         
         scenario = scenario_map[scenario_name]()
@@ -809,10 +795,11 @@ def main():
         controller = RLController(
             maneuver_policy,
             mu=mu, sd=sd,
-            deterministic=args.eval,  # deterministic during evaluation
+            deterministic=args.eval,
             scenario_id=sc_idx,
             num_scenarios=num_scenarios,
         )
+        # Reset clears any controller state carried over from a prior episode.
         controller.reset()
 
         t0 = time.perf_counter()
@@ -820,7 +807,7 @@ def main():
         controller.finalize_episode(score)
         dt = time.perf_counter() - t0
 
-        #episode stats
+        # Episode-level metrics come from the stored trajectory plus the final score object.
         traj = controller.trajectory
         ep_reward = sum(t["reward"] for t in traj)
         ep_steps = len(traj)
@@ -832,20 +819,20 @@ def main():
                   f"hits={hits} deaths={deaths} steps={ep_steps} time={dt:.1f}s")
             continue
 
-        # Add episode to pool (keep separate for correct GAE)
         if ep_steps > 0:
+            # Every step needs its scenario ID so pooled PPO can rebuild one-hot context.
             for step in traj:
                 step["scenario_id"] = sc_idx
             episode_pool.append(traj)
-            # Count capped steps for pool-size gating
             cap = args.max_steps_per_episode or len(traj)
+            # Pool size is measured after per-episode capping so PPO update cost stays predictable.
             pool_steps += min(len(traj), cap)
             pool_scenarios.add(scenario_name)
 
-
-        #PPO Update — only when pool has enough steps AND scenario diversity
         stats = None
         if pool_steps >= args.min_pool_steps and len(pool_scenarios) >= args.min_pool_scenarios:
+            # Wait for enough data and enough scenario variety before each PPO update.
+            
             stats = ppo_update_pooled(
                 maneuver_policy,
                 
@@ -865,21 +852,23 @@ def main():
 
             ppo_update_count += 1
 
-            # Anneal exploration (tracks actual PPO updates, not episodes)
             if not policy_frozen:
+                # Exploration annealing only matters once the policy is actually trainable.
                 anneal_log_std_(maneuver_policy, ppo_update_count, expected_updates)
 
+            # Clear pooled rollouts after each PPO update so the next update uses fresh data.
             episode_pool = []
             pool_steps = 0
             pool_scenarios = set()
 
-            # Restore LR if cooldown expired
             if ep >= cooldown_until and cooldown_until > 0:
+                # Restore the base LR after the temporary cooldown window ends.
                 for g in opt_policy.param_groups:
                     g["lr"] = base_lr
                 cooldown_until = 0
 
         if stats is None:
+            # Fill in zero stats for episodes where no PPO update happened yet.
             stats = {
                 "total_loss": 0.0,
                 "policy_loss": 0.0,
@@ -896,32 +885,33 @@ def main():
         det_total_hits = None
         det_total_deaths = None
 
-        #Logging 
+        # log_std is stored in log-space, so exp() turns it into an actual std for logging.
         log_std_val = maneuver_policy.log_std.exp().mean().item()
         log_std_raw = maneuver_policy.log_std.detach().cpu().tolist()
         skip_str = f" skip={stats['skipped']}" if stats["skipped"] > 0 else ""
         warmup_str = " [WARMUP]" if policy_frozen else ""
         diag_str = ""
-        if stats["n_episodes"] > 0:
+        if stats["n_episodes"] > 0: # only log pool size and advantage spread if PPO update actually ran on some data
             diag_str = (f" pool={stats['n_episodes']}ep"
                         f" adv_spread={stats['adv_std_spread']:.1f}x"
                         f" ppo#{ppo_update_count}")
-        print(
-            f"[{ep:04d}/{args.episodes}] {scenario_name:20s} | " # scenario name padded to 20 chars for alignment
-            f"R={ep_reward:7.2f} hits={hits} deaths={deaths} steps={ep_steps:4d} "# episode stats
-            f"std={log_std_val:.3f} "# current exploration noise level
-            f"loss={stats['total_loss']:.4f} "# PPO loss (for debugging, not a great performance metric on its own)
-            f"pi={stats['policy_loss']:.4f} "# policy loss component (how much the actor is updating)
-            f"v={stats['value_loss']:.4f} "# value loss component (how much the critic is updating)
-            f"H={stats['entropy']:.4f} "# maneuver policy entropy
-            f"ratio={stats['ratio']:.3f}{skip_str}{diag_str}{warmup_str} "# PPO ratio (clipped vs unclipped policy update magnitude, should be near 1.0 if updates are stable)
-            f"log_std_raw={log_std_raw} "# raw log_std values for debugging
+        
+        
+        print(# Episode summary
+            f"[{ep:04d}/{args.episodes}] {scenario_name:20s} | "
+            f"R={ep_reward:7.2f} hits={hits} deaths={deaths} steps={ep_steps:4d} "
+            f"std={log_std_val:.3f} "
+            f"loss={stats['total_loss']:.4f} "
+            f"pi={stats['policy_loss']:.4f} "
+            f"v={stats['value_loss']:.4f} "
+            f"H={stats['entropy']:.4f} "
+            f"ratio={stats['ratio']:.3f}{skip_str}{diag_str}{warmup_str} "
+            f"log_std_raw={log_std_raw} "
             f"({dt:.1f}s, elapsed={((time.perf_counter()-train_start)/60):.1f}m)"
         )
 
-        #Save checkpoints 
-        # Save rolling checkpoint every N episodes
         if ep % args.save_every == 0:
+            # Rolling saves make long runs safer to interrupt and resume.
             save_bundle(
                 maneuver_policy,
                 mu,
@@ -935,11 +925,8 @@ def main():
                 ep, best_reward, total_episodes, ppo_update_count, rl_ckpt_path,
             )
 
-        # Run deterministic eval across ALL scenarios to pick best checkpoint.
-        # Single-scenario eval was misleading because a policy good at one
-        # scenario but bad at others could look much better or worse than it
-        # really is overall.
         if ep % args.save_every == 0:
+            # Deterministic eval decides whether this checkpoint becomes the new best model.
             eval_results = run_eval_sweep(
                 game,
                 eval_scenario_names,
@@ -1002,7 +989,7 @@ def main():
                     os.path.join(model_dir, "maneuver_best.pt"),
                 )
                 print(f" New best (train-scenario deterministic avg): {best_reward:.2f}")
-                # Cooldown after a new best to reduce immediate regressions.
+                # Temporary LR cooldown reduces the chance of immediate regression.
                 for g in opt_policy.param_groups:
                     g["lr"] = base_lr * args.cooldown_lr_scale
                 cooldown_until = ep + args.cooldown_episodes
@@ -1019,6 +1006,7 @@ def main():
                         break
 
         if csv_writer is not None:
+            # Write one CSV row per episode, even when PPO did not update this round.
             current_lr = opt_policy.param_groups[0]["lr"] if opt_policy.param_groups else args.lr
             csv_writer.writerow({
                 "episode": ep,
@@ -1051,7 +1039,7 @@ def main():
             csv_handle.flush()
 
     if not args.eval:
-        #Final save
+        # Final save preserves the latest state even if training stopped early.
         save_bundle(
             maneuver_policy,
             mu, sd, feature_cols, args.num_mfs,
@@ -1066,6 +1054,7 @@ def main():
             print(f"CSV log saved to {csv_log_path}")
 
     if csv_handle is not None:
+        # Close the CSV cleanly so the last buffered row is not lost.
         csv_handle.close()
 
     total_time = time.perf_counter() - train_start
@@ -1075,6 +1064,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
 
 
 # ------------------------------------------------------------

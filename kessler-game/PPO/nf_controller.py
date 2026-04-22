@@ -6,7 +6,7 @@ from nf_infer import NFPolicy
 import torch
 from data_log import Logger, FEATURES, TARGET
 
-
+# get context features from ship and game state, including distance and angle to closest asteroid, time to collision, approach speed, ammo/mines count, and threat density. Uses toroidal wrap calculations for angles and distances on a toroidal map. Returns a dictionary of context features for use as input to the NF models.
 def calculate_context(ship_state, game_state):
     sx, sy = ship_state.position
     heading = ship_state.heading
@@ -53,7 +53,9 @@ def calculate_context(ship_state, game_state):
     }
 
 
-class NFController(KesslerController): # now inherits KesslerController like the others
+# NFController uses the NFPolicy class to load pre-trained SugenoNet models for maneuvering and combat. 
+# It calculates the context features from the ship and game state, prepares them as input tensors, and runs the models to get action outputs. The maneuver model outputs continuous thrust and turn_rate values which are scaled and clipped. The combat model outputs binary decisions for firing and dropping mines based on a sigmoid threshold. The controller also logs the context and actions to a CSV file for later analysis.
+class NFController(KesslerController):
     name = "NFController"
     def __init__(self):
         self.input_buffer = None

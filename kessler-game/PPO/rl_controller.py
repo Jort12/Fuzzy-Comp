@@ -1,7 +1,8 @@
 """
-rl_controller.py uses the stochastic maneuver policy.
-Runs inside the game loop, collects (state, action, reward, log_prob)
-trajectories, and leaves combat decisions to heuristics.
+RL controller for maneuver training.
+Builds a compact threat-focused state vector, samples thrust/turn from the
+stochastic maneuver policy, uses a simple heuristic for firing, and stores
+transition data for PPO updates after each episode.
 """
 
 import math
@@ -16,21 +17,19 @@ FEATURE_COLS = [
     "ammo", "mines", "threat_density", "threat_angle",
 ]
 
-
-
-# Reward coefficients
+# Reward tuning for sparse game events.
 HIT_REWARD = 7.0
 DEATH_PENALTY = -4.0
+
+# Safety thresholds used by the dense survival reward.
 SURVIVAL_SOFT_GAP = 160.0
 SURVIVAL_HARD_GAP = 80.0
 CROWDING_RADIUS = 220.0
 
-#Parameter
 EXTENDED_RANGE = 100.0
 
-
-#Extracts total hits and deaths from the game score for reward calculation.
 def team_hits_and_deaths(game_or_score):
+    # Sum team-wide results so reward can be based on actual progress.
     hits = 0
     deaths = 0
     for t in getattr(game_or_score, "teams", []):
@@ -38,24 +37,20 @@ def team_hits_and_deaths(game_or_score):
         deaths += getattr(t, "deaths", 0)
     return hits, deaths
 
-
-
-#calculate the reward for the current state, including sparse rewards for kills/deaths and dense shaping rewards for movement, aiming, and firing quality.
-# prev_danger removed: was computed but never read in the reward body (dead code from removed danger-shaping term)
 def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=False, locked_target=None):
+    # Mix sparse rewards (hits/deaths) with dense shaping for survival and aim quality.
     reward = 0.0
-    dt = float(getattr(game_state, "delta_time", 1 / 30))#Time delta since last frame, used to make rewards per-second consistent regardless of frame rate.
+    dt = float(getattr(game_state, "delta_time", 1 / 30))
     map_size = getattr(game_state, "map_size", (1000, 800))
 
     current_hits, current_deaths = team_hits_and_deaths(game_state)
-    new_kills = max(0, current_hits - prev_hits) #New kills since last step, used for sparse kill rewards.
-    new_deaths = max(0, current_deaths - prev_deaths)#New deaths since last step, used for sparse death penalties.
+    new_kills = max(0, current_hits - prev_hits)
+    new_deaths = max(0, current_deaths - prev_deaths)
 
-    #High Value Sparse Rewards
     reward += HIT_REWARD * new_kills
     reward += DEATH_PENALTY * new_deaths
 
-    # Movement & Engagement (The "Search" part)
+    # Encourage steady movement so the ship does not sit still too often.
     speed = math.hypot(*getattr(ship_state, "velocity", (0.0, 0.0)))
     if speed < 20.0:
         reward -= 0.40 * dt 
@@ -67,9 +62,11 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
         ship_state, asteroids, map_size
     )
 
+    # Extra penalty when several threats are packed close together.
     if crowding_count >= 3:
         reward -= 0.05 * min(crowding_count - 2, 4) * dt
 
+    # Penalize getting too close to a threat, with a stronger penalty in the hard zone.
     if nearest_gap < SURVIVAL_SOFT_GAP:
         reward -= 0.22 * (1.0 - nearest_gap / SURVIVAL_SOFT_GAP) * dt
     if nearest_gap < SURVIVAL_HARD_GAP:
@@ -81,14 +78,12 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
         separation_speed = min(-nearest_approach / 120.0, 1.0)
         reward += 0.10 * separation_speed * dt
 
-    #Dense Targeting Rewards
-    #continuous aiming reward so the agent always has a gradient toward the target
-    # uses locked_target if provided so reward and features target the same asteroid
-    err = 180.0  # default to max error if no asteroids
+    err = 180.0
     combat_focus = 0.35 if nearest_gap < SURVIVAL_SOFT_GAP or crowding_count >= 3 else 1.0
     if asteroids:
         sx, sy = ship_state.position
         if locked_target is not None:
+            # Use the locked target so reward and features stay consistent across frames.
             target = locked_target
         else:
             target, _ = find_priority_threat(asteroids, ship_state, map_size)
@@ -98,8 +93,6 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
         desired = math.degrees(math.atan2(dy, dx))
         err = abs(wrap180(desired - ship_state.heading))
         
-        # smooth reward: 0 at 180 degrees, ramps up to 0.30 at 0 degrees
-        # squaring makes it pull harder as you get close to on-target
         aim_reward = 0.30 * (1.0 - err / 180.0) ** 2
         aim_reward *= combat_focus
         reward += aim_reward * dt
@@ -108,23 +101,22 @@ def compute_reward(ship_state, game_state, prev_hits, prev_deaths, prev_fire=Fal
         if dist < 220:
             reward += 0.08 * combat_focus * (1.0 - dist / 220.0) * dt
 
-    # Firing: reward good shots, punish spraying into empty space
     fire_focus = 0.25 if nearest_gap < SURVIVAL_HARD_GAP or crowding_count >= 4 else combat_focus
     if prev_fire and err < 8:
-        reward += 0.14 * fire_focus * dt   # very good shot
+        reward += 0.14 * fire_focus * dt
     elif prev_fire and err < 15:
-        reward += 0.08 * fire_focus * dt   # decent shot
+        reward += 0.08 * fire_focus * dt
     elif prev_fire and err < 22:
-        reward += 0.03 * fire_focus * dt   # still acceptable
+        reward += 0.03 * fire_focus * dt
 
     if prev_fire and err > 35:
-        reward -= 0.12 * max(fire_focus, 0.5) * dt   # bad spray
+        reward -= 0.12 * max(fire_focus, 0.5) * dt
 
     return reward, current_hits, current_deaths
 
 
-# shared scoring formula, used by both find_priority_threat and compute_min_danger
 def _threat_score(gap, ttc, closing, size):
+    # Higher score means the asteroid is a better candidate to track as the main threat.
     return (
         2.5 / max(gap, 20.0) +
         1.5 / max(ttc, 0.25) +
@@ -132,8 +124,8 @@ def _threat_score(gap, ttc, closing, size):
         0.20 * (5 - size)
     )
 
-#Find the highest-scoring threat based on a combination of distance, time-to-collision, closing speed, and size. This is used for both targeting and reward calculation, so it uses the same scoring formula as compute_min_danger.
 def find_priority_threat(asteroids, ship_state, map_size):
+    # Pick the asteroid with the highest combined risk score.
     sx, sy = ship_state.position
     svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
 
@@ -146,11 +138,11 @@ def find_priority_threat(asteroids, ship_state, map_size):
         dx, dy = toro_dx_dy(sx, sy, ax, ay, map_size)
         center = math.hypot(dx, dy)
 
-        radius = getattr(a, "radius", 0.0) #The radius of the asteroid, used to calculate the gap between the ship and the asteroid's surface, which is more relevant for collision risk than center distance.
+        radius = getattr(a, "radius", 0.0)
         gap = center - radius - SHIP_RADIUS
         gap = max(gap, 1.0)
 
-        avx, avy = getattr(a, "velocity", (0.0, 0.0))#The velocity of the asteroid, used to calculate the relative velocity and approach speed for reward shaping and threat scoring.
+        avx, avy = getattr(a, "velocity", (0.0, 0.0))
         rel_vx, rel_vy = avx - svx, avy - svy
 
         approach_speed = (rel_vx * dx + rel_vy * dy) / max(center, 1.0)
@@ -172,6 +164,7 @@ def find_priority_threat(asteroids, ship_state, map_size):
 
 
 def survival_metrics(ship_state, asteroids, map_size):
+    # Summarize nearby danger so the reward function can react to crowding and closing speed.
     sx, sy = ship_state.position
     svx, svy = getattr(ship_state, "velocity", (0.0, 0.0))
 
@@ -209,6 +202,7 @@ def survival_metrics(ship_state, asteroids, map_size):
 
 
 def calculate_context(ship_state, game_state, locked_target=None):
+    # Build the feature vector seen by the policy for this frame.
     sx, sy = ship_state.position
     heading = ship_state.heading
     asteroids = getattr(game_state, "asteroids", [])
@@ -260,7 +254,8 @@ def length(x, y):
     return math.sqrt(x*x + y*y)
 
 def should_fire(ship_state, game_state) -> bool:
-    #If ammo is unlimited shoot until you are hit by an asteroid then stop
+    # Fire when an asteroid is directly in front of the ship.
+    # In unlimited-ammo mode, keep firing unless an asteroid is already touching us.
     asteroid_arr = getattr(game_state, "asteroids", [])
     map_size = getattr(game_state, "map_size", (1000, 800))
     sx, sy = ship_state.position
@@ -284,15 +279,17 @@ def should_fire(ship_state, game_state) -> bool:
     for a in asteroid_arr:
         ax, ay = a.position
 
+        # Use wrap-aware offsets so aiming still works across map edges.
         vx, vy = toro_dx_dy(sx, sy, ax, ay, map_size)
 
         along = dot(vx, vy, dx, dy)
 
-        perp = vx * dy - vy * dx  
+        perp = vx * dy - vy * dx
 
         if along <= 0:
             continue
 
+        # Keep the nearest asteroid that intersects the ship's firing line.
         if abs(perp) <= a.radius:
             if best is None or along < best["along"]:
                 best = {
@@ -309,10 +306,8 @@ def should_fire(ship_state, game_state) -> bool:
 class RLController(KesslerController):
     name = "RLController"
 
-    # how many frames to hold a target before re-evaluating
+    # Hold the same target for a few frames so training signals stay stable.
     TARGET_LOCK_FRAMES = 10
-    # The target-locking mechanism is important for both the reward function and the features, to ensure they are consistent and stable. By locking onto a specific target asteroid for several frames, 
-    # we prevent the priority target from flickering between multiple asteroids in symmetric scenarios, which was causing the heading error feature to jump around and making it hard for the maneuver policy to learn a consistent turning behavior. The reward function also uses the locked target to calculate aiming rewards, so it benefits from the same stability.
 
     def __init__(
         self,
@@ -337,7 +332,7 @@ class RLController(KesslerController):
         self.prev_deaths = 0
         self._pending = None
 
-        # target-sticking state
+        # target sticking state
         self._locked_target = None
         self._locked_pos = None
         self._lock_frames_left = 0
@@ -404,8 +399,7 @@ class RLController(KesslerController):
         # check if current lock is still valid
         still_alive = False
         if self._locked_target is not None and self._lock_frames_left > 0:
-            # look for an asteroid at the locked position (destroyed asteroids
-            # get removed from the list, so we match by position)
+            # look for an asteroid at the locked position (destroyed asteroids get removed from the list, so we match by position)
             lx, ly = self._locked_pos
             for a in asteroids:
                 ax, ay = a.position
@@ -490,6 +484,7 @@ class RLController(KesslerController):
             "reward": 0.0,
         }
 
+        # Clamp final commands to the ship's actual limits from the environment.
         if hasattr(ship_state, "thrust_range"):
             lo, hi = ship_state.thrust_range
             thrust = max(lo, min(hi, thrust))
