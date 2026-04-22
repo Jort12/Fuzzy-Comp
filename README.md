@@ -128,7 +128,7 @@ These serve both as competition-candidate controllers and as expert policies for
 The base Kessler simulator is a packaged Python module. From the repo root:
 
 ```bash
-pip install -e .
+pip install -e .\kessler-game
 ```
 
 For the neuro-fuzzy and PPO pipelines, additionally install:
@@ -146,7 +146,7 @@ If you plan to use the Xbox controller for human demonstrations, also install yo
 ### Run a scenario with a controller
 
 ```bash
-cd examples
+cd kessler-game/examples
 python scenario_test.py          # single scenario
 python scenario_gauntlet.py      # sequence of scenarios
 ```
